@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { BaseApp } from '@/components/BaseApp';
 import { AppProps } from '@/types/app';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
@@ -56,6 +56,27 @@ interface Post {
 }
 
 /**
+ * DM連絡先の情報を格納するインターフェース
+ */
+interface DMContact {
+  id: string;
+  name: string;
+  status: 'online' | 'offline';
+  lastMessage: string;
+  lastTime: string;
+}
+
+/**
+ * DMメッセージの情報を格納するインターフェース
+ */
+interface DMMessage {
+  id: string;
+  sender: 'me' | 'other';
+  text: string;
+  time: string;
+}
+
+/**
  * ユーザーデータの初期値
  */
 const initialUsers: UserProfile[] = [
@@ -105,19 +126,9 @@ const initialUsers: UserProfile[] = [
 ];
 
 /**
- * ★変更点: 投稿データの初期値を定義
+ * 投稿データの初期値を定義
  */
 const initialPosts: Post[] = [
-    {
-    id: 'p1',
-    userId: 'user1',
-    content: '今日はABC Cloud Proのローンチイベントでした！チーム全員での3ヶ月の努力が実を結び、素晴らしいプロダクトができました。 #プロダクトローンチ',
-    timestamp: '2時間前',
-    likes: 45,
-    comments: 12,
-    shares: 8,
-    location: '東京, 日本'
-  },
   {
     id: 'p3',
     userId: 'user2',
@@ -233,7 +244,7 @@ const SearchPage = ({ users, posts, onUserSelect }: { users: UserProfile[], post
 };
 
 // ... (DMContactListPage, DMChatPage コンポーネントは変更なし)
-const DMContactListPage = ({ contacts, onSelectContact }: { contacts: any[], onSelectContact: (contact: any) => void }) => {
+const DMContactListPage = ({ contacts, onSelectContact }: { contacts: DMContact[], onSelectContact: (contact: DMContact) => void }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const filteredContacts = useMemo(() => {
     const lowercasedQuery = searchQuery.toLowerCase();
@@ -244,12 +255,17 @@ const DMContactListPage = ({ contacts, onSelectContact }: { contacts: any[], onS
   }, [contacts, searchQuery]);
   return (<div className="h-full bg-white flex flex-col"><div className="p-4 border-b"><h2 className="text-xl font-bold">メッセージ</h2></div><div className="p-3 border-b"><div className="relative"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="text" placeholder="連絡先を検索" className="w-full pl-10 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div></div><div className="flex-1 overflow-y-auto">{filteredContacts.length > 0 ? (filteredContacts.map((contact) => (<div key={contact.id} className="flex items-center space-x-3 p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100" onClick={() => onSelectContact(contact)}><div className="relative w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0"><User size={20} className="text-gray-600" />{contact.status === 'online' && (<span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-white border-2"></span>)}</div><div className="flex-1 min-w-0"><div className="flex justify-between items-center"><h3 className="font-semibold text-gray-800 truncate">{contact.name}</h3><span className="text-xs text-gray-500">{contact.lastTime}</span></div><p className="text-sm text-gray-500 truncate mt-1">{contact.lastMessage}</p></div></div>))) : (<div className="p-6 text-center"><p className="text-gray-500">{searchQuery ? `「${searchQuery}」に一致する連絡先は見つかりませんでした。` : "連絡先がありません。"}</p></div>)}</div></div>);
 };
-const DMChatPage = ({ contact, onBack }: { contact: any, onBack: () => void }) => {
-  const [messages, setMessages] = useState<{ [contactId: string]: Array<{id: string, sender: 'me' | 'other', text: string, time: string}> }>({});
+const DMChatPage = ({ contact, onBack }: { contact: DMContact, onBack: () => void }) => {
+  const [messages, setMessages] = useState<{ [contactId: string]: DMMessage[] }>({});
   const [inputText, setInputText] = useState('');
   const [chatHistory, setChatHistory] = useState<Content[]>([]);
-  const currentMessages = messages[contact.id] || [];
-  const handleSendMessage = useCallback(async () => { if (!inputText.trim()) return; const userMessage = { id: `m${contact.id}-${currentMessages.length + 1}`, sender: 'me' as const, text: inputText, time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),}; setMessages(prev => ({ ...prev, [contact.id]: [...(prev[contact.id] || []), userMessage] })); const currentInput = inputText; setInputText(''); try { const chat = model.startChat({ history: chatHistory }); const result = await chat.sendMessage(currentInput); const responseText = result.response.text(); const aiMessage = { id: `m${contact.id}-${currentMessages.length + 2}`, sender: 'other' as const, text: responseText, time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }), }; setMessages(prev => ({ ...prev, [contact.id]: [...(prev[contact.id] || []), aiMessage] })); setChatHistory(prevHistory => [ ...prevHistory, { role: 'user', parts: [{ text: currentInput }] }, { role: 'model', parts: [{ text: responseText }] } ]); } catch (error) { console.error("AI API call failed:", error); const errorMessage = { id: `m${contact.id}-${currentMessages.length + 2}`, sender: 'other' as const, text: 'エラーが発生しました。応答を生成できませんでした。', time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }), }; setMessages(prev => ({ ...prev, [contact.id]: [...(prev[contact.id] || []), errorMessage] })); } }, [inputText, contact, currentMessages, chatHistory]);
+
+  // currentMessagesをuseMemoでメモ化してuseCallbackの依存関係の警告を解決
+  const currentMessages = useMemo(() => {
+    return messages[contact.id] || [];
+  }, [messages, contact.id]);
+
+  const handleSendMessage = useCallback(async () => { if (!inputText.trim()) return; const userMessage: DMMessage = { id: `m${contact.id}-${currentMessages.length + 1}`, sender: 'me' as const, text: inputText, time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),}; setMessages(prev => ({ ...prev, [contact.id]: [...(prev[contact.id] || []), userMessage] })); const currentInput = inputText; setInputText(''); try { const chat = model.startChat({ history: chatHistory }); const result = await chat.sendMessage(currentInput); const responseText = result.response.text(); const aiMessage: DMMessage = { id: `m${contact.id}-${currentMessages.length + 2}`, sender: 'other' as const, text: responseText, time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }), }; setMessages(prev => ({ ...prev, [contact.id]: [...(prev[contact.id] || []), aiMessage] })); setChatHistory(prevHistory => [ ...prevHistory, { role: 'user', parts: [{ text: currentInput }] }, { role: 'model', parts: [{ text: responseText }] } ]); } catch (error) { console.error("AI API call failed:", error); const errorMessage: DMMessage = { id: `m${contact.id}-${currentMessages.length + 2}`, sender: 'other' as const, text: 'エラーが発生しました。応答を生成できませんでした。', time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }), }; setMessages(prev => ({ ...prev, [contact.id]: [...(prev[contact.id] || []), errorMessage] })); } }, [inputText, contact, currentMessages, chatHistory]);
   return (<div className="h-full flex flex-col bg-white"><div className="flex items-center p-4 bg-white border-b"><button onClick={onBack} className="mr-3 p-2 hover:bg-gray-100 rounded-full"><ArrowLeft size={20} className="text-gray-600" /></button><div className="flex items-center space-x-3"><div className="relative w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center"><User size={16} className="text-gray-600" />{contact.status === 'online' && (<span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-white border-2"></span>)}</div><div><h3 className="font-semibold text-gray-800">{contact.name}</h3><p className="text-xs text-gray-500">{contact.status === 'online' ? 'オンライン' : 'オフライン'}</p></div></div></div><div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">{currentMessages.map((message) => (<div key={message.id} className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-md p-3 rounded-lg shadow-sm text-sm ${ message.sender === 'me' ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none' }`}><p className="whitespace-pre-wrap">{message.text}</p><p className={`text-xs mt-1 text-right ${ message.sender === 'me' ? 'text-blue-200' : 'text-gray-500' }`}>{message.time}</p></div></div>))}</div><div className="flex-shrink-0 p-4 border-t bg-white"><div className="flex items-center space-x-3"><input type="text" placeholder="メッセージを入力..." className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }} /><button onClick={handleSendMessage} className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 disabled:bg-blue-300" disabled={!inputText.trim()}><MessageCircle size={20} /></button></div></div></div>);
 };
 
@@ -270,7 +286,7 @@ const ProfileEditPage = ({ user, onSave, onCancel }: { user: UserProfile, onSave
 };
 
 /**
- * ★追加: 新規投稿ページコンポーネント
+ * 新規投稿ページコンポーネント
  */
 const NewPostPage = ({ currentUser, onAddPost, onCancel }: { currentUser: UserProfile, onAddPost: (content: string) => void, onCancel: () => void }) => {
     const [content, setContent] = useState('');
@@ -304,27 +320,27 @@ type View = 'home' | 'search' | 'new-post' | 'dm' | 'dm-chat' | 'profile' | 'my-
 export const SocialApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [currentView, setCurrentView] = useState<View>('home');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedContact, setSelectedContact] = useState<any>(null);
-  const [contacts, setContacts] = useState<any[]>([]);
+  const [selectedContact, setSelectedContact] = useState<DMContact | null>(null);
+  const [contacts, setContacts] = useState<DMContact[]>([]);
   const [users, setUsers] = useState<UserProfile[]>(initialUsers);
-  // ★変更点: 投稿データをstateで管理
   const [posts, setPosts] = useState<Post[]>(initialPosts);
 
-  const currentUser = users.find(u => u.id === 'user1')!;
+  const currentUser = users.find(u => u.id === 'user1')!
 
   const handleUserSelect = (userId: string) => {
     setSelectedUserId(userId);
     setCurrentView(userId === currentUser.id ? 'my-profile' : 'profile');
   };
 
-  const handleContactSelect = (contact: any) => { setSelectedContact(contact); setCurrentView('dm-chat'); };
+  const handleContactSelect = (contact: DMContact) => { setSelectedContact(contact); setCurrentView('dm-chat'); };
   const handleBackToDMList = () => { setSelectedContact(null); setCurrentView('dm'); };
 
   const handleStartDM = (userToDM: UserProfile) => {
     let contact = contacts.find(c => c.id === userToDM.id);
     if (!contact) {
-      contact = { id: userToDM.id, name: userToDM.name, status: 'online', lastMessage: '', lastTime: '' };
-      setContacts(prev => [...prev, contact!]);
+      const newContact: DMContact = { id: userToDM.id, name: userToDM.name, status: 'online', lastMessage: '', lastTime: '' };
+      setContacts(prev => [...prev, newContact]);
+      contact = newContact;
     }
     setSelectedContact(contact);
     setCurrentView('dm-chat');
@@ -336,7 +352,7 @@ export const SocialApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   };
 
   /**
-   * ★追加: 新規投稿処理
+   * 新規投稿処理
    */
   const handleAddNewPost = (content: string) => {
       if (!content.trim()) return;
@@ -372,7 +388,7 @@ export const SocialApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         return <MorePage onNavigateToEdit={() => setCurrentView('edit-profile')} />;
       case 'edit-profile':
         return <ProfileEditPage user={currentUser} onSave={handleProfileUpdate} onCancel={() => setCurrentView('more')} />;
-      // ★追加: 新規投稿画面の表示
+      // 新規投稿画面の表示
       case 'new-post':
         return <NewPostPage currentUser={currentUser} onAddPost={handleAddNewPost} onCancel={() => setCurrentView('home')} />;
       default:
@@ -387,7 +403,6 @@ export const SocialApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       <div className="h-16 bg-white border-t flex justify-around items-center flex-shrink-0">
         <button onClick={() => setCurrentView('home')} className={`p-2 rounded-full transition-colors ${currentView === 'home' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:bg-gray-100'}`}><Home size={24} /></button>
         <button onClick={() => setCurrentView('search')} className={`p-2 rounded-full transition-colors ${currentView === 'search' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:bg-gray-100'}`}><Search size={24} /></button>
-        {/* ★変更点: 新規投稿タブを追加 */}
         <button onClick={() => setCurrentView('new-post')} className={`p-2 rounded-full transition-colors ${currentView === 'new-post' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:bg-gray-100'}`}><PlusSquare size={24} /></button>
         <button onClick={() => setCurrentView('dm')} className={`p-2 rounded-full transition-colors ${currentView === 'dm' || currentView === 'dm-chat' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:bg-gray-100'}`}><Mail size={24} /></button>
         <button onClick={() => setCurrentView('my-profile')} className={`p-2 rounded-full transition-colors ${currentView === 'my-profile' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:bg-gray-100'}`}><UserCircle size={24} /></button>

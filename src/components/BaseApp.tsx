@@ -18,12 +18,12 @@ interface BaseAppProps extends AppProps {
  * ベースアプリケーションコンポーネント - すべてのアプリケーションの共通レイアウト基盤
  * 統一されたアプリケーション構造を提供し、ツールバー、メインコンテンツ、ステータスバーの配置を管理
  * 各アプリケーション（ブラウザ、SNS、メッセンジャーなど）で再利用される共通のUIフレームワーク
- * 
+ *
  * レイアウト構造:
  * - ツールバー（オプション）: アプリの操作パネルや検索バーなど
  * - メインコンテンツエリア: 実際のアプリケーション機能
  * - ステータスバー（オプション）: 現在の状態や操作結果の表示
- * 
+ *
  * @param children - メインコンテンツエリアに表示する内容
  * @param toolbar - 上部に表示するツールバー（オプション）
  * @param statusBar - 下部に表示するステータスバー（オプション）
@@ -34,9 +34,9 @@ interface BaseAppProps extends AppProps {
 export const BaseApp: React.FC<BaseAppProps> = ({
   children,
   toolbar,
-  statusBar,
-  isActive,     // 将来的な機能拡張のため保持（現在は未使用）
-  windowId      // 将来的な機能拡張のため保持（現在は未使用）
+  statusBar
+  // isActive,     // 将来的な機能拡張のため保持（現在は未使用）
+  // windowId      // 将来的な機能拡張のため保持（現在は未使用）
 }) => {
   return (
     <div className="h-full flex flex-col bg-white">

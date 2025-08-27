@@ -173,7 +173,8 @@ export const Desktop: React.FC = () => {
   // ウィンドウストアからウィンドウ開く機能を取得
   const openWindow = useWindowStore(state => state.openWindow);
   // アプリストアから各種機能とデータを取得
-  const { updateUsage, getInstalledApps, installedApps, availableApps } = useAppStore();
+  const { updateUsage } = useAppStore();
+  const installedApps = useAppStore(state => state.installedApps);
   // コンテキストメニューの表示状態と位置
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   // アプリレジストリの初期化完了フラグ
@@ -212,11 +213,11 @@ export const Desktop: React.FC = () => {
   /**
    * デスクトップに表示するアプリケーションのリスト生成と並べ替え
    * システムアプリを優先し、その後は使用頻度順でソート
-   * useMemoでinstalledAppsが変更された時のみ再計算してパフォーマンス最適化
+   * useMemoでストアの状態が変更された時のみ再計算してパフォーマンス最適化
    */
   const displayedApps = useMemo(() => {
-    return getInstalledApps();
-  }, [installedApps, getInstalledApps]);
+    return installedApps;
+  }, [installedApps]);
 
   /**
    * アプリケーションアイコンクリック時の処理
@@ -254,7 +255,7 @@ export const Desktop: React.FC = () => {
    * displayedAppsからアプリストアアプリを検索し、起動する
    */
   const handleOpenAppStore = () => {
-    const appStoreApp = displayedApps.find(app => app.id === 'app-store');
+    const appStoreApp = displayedApps.find((app: AppMetadata) => app.id === 'app-store');
     if (appStoreApp) {
       handleAppClick(appStoreApp);
     }
@@ -274,7 +275,7 @@ export const Desktop: React.FC = () => {
       {/* アプリケーションアイコン配置エリア */}
       <div className="absolute top-8 left-8">
         <div className="grid grid-cols-1 gap-4">
-          {displayedApps.map((app) => (
+          {displayedApps.map((app: AppMetadata) => (
             <DesktopIcon
               key={app.id}
               app={app}

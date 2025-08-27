@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Rnd } from 'react-rnd';
-import { X, Minimize, Maximize, Minus } from 'lucide-react';
+import { X, Maximize, Minus } from 'lucide-react';
 import { useWindowStore, WindowState } from '@/store/windowStore';
 import { BrowserApp, SocialApp, MessengerApp, AppStoreApp, CalculatorApp } from '@/apps';
 
@@ -19,7 +19,7 @@ interface WindowProps {
  * アプリケーションレンダラー - アプリタイプに基づいて適切なアプリコンポーネントを描画
  * ファクトリーパターンを使用してアプリタイプを動的にコンポーネントにマップ
  * 各アプリケーションに共通のプロパティ（windowId、isActive）を渡す
- * 
+ *
  * @param appType - アプリケーションの種類識別子
  * @param windowId - ウィンドウの一意識別子
  * @param isActive - ウィンドウがアクティブかどうかのフラグ
@@ -59,13 +59,13 @@ const AppRenderer: React.FC<{ appType: string; windowId: string; isActive: boole
  * ウィンドウコンポーネント - 単一のウィンドウの表示と操作を管理
  * デスクトップ環境における個々のアプリケーションウィンドウを実装
  * ドラッグ&ドロップ、リサイズ、最小化/最大化、フォーカス制御を提供
- * 
+ *
  * 主な機能:
  * - ウィンドウの移動とサイズ変更（react-rndライブラリを使用）
  * - ウィンドウコントロールボタン（最小化、最大化、閉じる）
  * - フォーカス管理とz-indexによる重ね順制御
  * - アプリケーションコンテンツの描画
- * 
+ *
  * @param window - ウィンドウの状態情報
  * @returns JSX.Element | null - ウィンドウコンポーネント、または非表示の場合はnull
  */
@@ -168,36 +168,36 @@ export const Window: React.FC<WindowProps> = ({ window }) => {
           <div className="flex items-center space-x-2">
             <div className="font-medium">{window.title}</div>
           </div>
-          
+
           {/* ウィンドウコントロールボタン（最小化、最大化、閉じる） */}
           <div className="flex items-center space-x-1">
             {/* 最小化ボタン */}
             <button
               onClick={(e) => { e.stopPropagation(); minimizeWindow(window.id); }}
-              className={`w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${ 
-                isActiveWindow ? 'bg-yellow-400 hover:bg-yellow-300' : 'bg-gray-400 hover:bg-yellow-400' 
+              className={`w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
+                isActiveWindow ? 'bg-yellow-400 hover:bg-yellow-300' : 'bg-gray-400 hover:bg-yellow-400'
               }`}
               title="最小化"
             >
               <Minus size={10} className="text-gray-800" />
             </button>
-            
+
             {/* 最大化/復元ボタン */}
             <button
               onClick={(e) => { e.stopPropagation(); maximizeWindow(window.id); }}
-              className={`w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${ 
-                isActiveWindow ? 'bg-green-400 hover:bg-green-300' : 'bg-gray-400 hover:bg-green-400' 
+              className={`w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
+                isActiveWindow ? 'bg-green-400 hover:bg-green-300' : 'bg-gray-400 hover:bg-green-400'
               }`}
               title={window.isMaximized ? "元のサイズに戻す" : "最大化"}
             >
               <Maximize size={10} className="text-gray-800" />
             </button>
-            
+
             {/* 閉じるボタン */}
             <button
               onClick={(e) => { e.stopPropagation(); closeWindow(window.id); }}
-              className={`w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${ 
-                isActiveWindow ? 'bg-red-400 hover:bg-red-300' : 'bg-gray-400 hover:bg-red-400' 
+              className={`w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
+                isActiveWindow ? 'bg-red-400 hover:bg-red-300' : 'bg-gray-400 hover:bg-red-400'
               }`}
               title="閉じる"
             >

@@ -2,26 +2,25 @@ import React, { useState, useMemo } from 'react';
 import { BaseApp } from '@/components/BaseApp';
 import { AppProps } from '@/types/app';
 import { useAppStore, AppMetadata } from '@/store/appStore';
-import { Search, Download, Trash2, Star, Package, Filter } from 'lucide-react';
+import { Search, Download, Trash2, Package, Filter } from 'lucide-react';
 
 /**
  * アプリストアアプリケーション - アプリの検索、インストール、管理機能を提供
  * 利用可能なアプリの一覧表示、カテゴリ別フィルター、検索機能、インストール・アンインストール機能を実装
  * タブベースのUI（利用可能/インストール済み）でアプリ管理を効率化
- * 
+ *
  * @param windowId - アプリケーションウィンドウの一意識別子
  * @param isActive - アプリケーションがアクティブかどうかのフラグ
  * @returns JSX.Element - アプリストアアプリケーションのレンダリング結果
  */
 export const AppStoreApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   // アプリストアの状態管理とメソッドをuseAppStoreフックから取得
-  const { 
+  const {
     installedApps,      // インストール済みアプリ一覧
     availableApps,      // 利用可能なアプリ一覧
     installApp,         // アプリインストール関数
     uninstallApp,       // アプリアンインストール関数
-    searchApps,         // アプリ検索関数
-    getAppsByCategory   // カテゴリ別アプリ取得関数
+    searchApps          // アプリ検索関数
   } = useAppStore();
 
   // 検索クエリの状態管理
@@ -52,26 +51,26 @@ export const AppStoreApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const filteredApps = useMemo(() => {
     // 現在のタブに応じてベースとなるアプリリストを決定
     let apps = activeTab === 'available' ? availableApps : installedApps;
-    
+
     // 検索クエリが入力されている場合、検索結果を適用
     if (searchQuery) {
-      apps = searchApps(searchQuery).filter(app => 
+      apps = searchApps(searchQuery).filter(app =>
         activeTab === 'available' ? !app.isInstalled : app.isInstalled
       );
     }
-    
+
     // カテゴリフィルターが「すべて」以外の場合、カテゴリでフィルタリング
     if (selectedCategory !== 'all') {
       apps = apps.filter(app => app.category === selectedCategory);
     }
-    
+
     return apps;
   }, [availableApps, installedApps, searchQuery, selectedCategory, activeTab, searchApps]);
 
   /**
    * アプリインストール処理
    * 指定されたアプリをインストールし、ストアの状態を更新
-   * 
+   *
    * @param app - インストールするアプリのメタデータ
    */
   const handleInstall = (app: AppMetadata) => {
@@ -82,7 +81,7 @@ export const AppStoreApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * アプリアンインストール処理
    * システムアプリでない場合のみアンインストールを実行
    * システムアプリは削除不可の制約を適用
-   * 
+   *
    * @param appId - アンインストールするアプリのID
    */
   const handleUninstall = (appId: string) => {
@@ -112,7 +111,7 @@ export const AppStoreApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         >
           利用可能 ({availableApps.length})
         </button>
-        
+
         {/* インストール済みアプリタブ */}
         <button
           onClick={() => setActiveTab('installed')}
@@ -139,7 +138,7 @@ export const AppStoreApp: React.FC<AppProps> = ({ windowId, isActive }) => {
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        
+
         {/* カテゴリフィルタードロップダウン */}
         <div className="relative">
           <Filter size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -193,7 +192,7 @@ export const AppStoreApp: React.FC<AppProps> = ({ windowId, isActive }) => {
                     <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                       <app.icon size={32} className="text-gray-600" />
                     </div>
-                    
+
                     {/* アプリ詳細情報エリア */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
@@ -205,7 +204,7 @@ export const AppStoreApp: React.FC<AppProps> = ({ windowId, isActive }) => {
                           <p className="text-sm text-gray-600 mb-1">
                             v{app.version} • {app.author}
                           </p>
-                          
+
                           {/* カテゴリとシステムアプリ表示 */}
                           <div className="flex items-center space-x-2 mb-2">
                             <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
@@ -218,7 +217,7 @@ export const AppStoreApp: React.FC<AppProps> = ({ windowId, isActive }) => {
                             )}
                           </div>
                         </div>
-                        
+
                         {/* アクションボタンと統計情報エリア */}
                         <div className="flex items-center space-x-2 ml-4">
                           {/* インストール済みタブの場合は使用統計を表示 */}
@@ -230,7 +229,7 @@ export const AppStoreApp: React.FC<AppProps> = ({ windowId, isActive }) => {
                               )}
                             </div>
                           )}
-                          
+
                           {/* タブに応じてインストール・削除ボタンを表示 */}
                           {activeTab === 'available' ? (
                             // インストールボタン（利用可能タブ用）
@@ -255,12 +254,12 @@ export const AppStoreApp: React.FC<AppProps> = ({ windowId, isActive }) => {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* アプリの説明文 */}
                       <p className="text-gray-700 text-sm leading-relaxed">
                         {app.description}
                       </p>
-                      
+
                       {/* キーワードタグ表示（キーワードが存在する場合のみ） */}
                       {app.keywords.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
