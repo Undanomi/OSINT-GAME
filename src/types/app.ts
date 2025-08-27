@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+// import { ReactNode } from 'react'; // 現在未使用のためコメントアウト
 
 export interface AppProps {
   windowId: string;
