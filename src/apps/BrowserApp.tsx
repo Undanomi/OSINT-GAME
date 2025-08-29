@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BaseApp } from '@/components/BaseApp';
 import { AppProps } from '@/types/app';
 import { Search, ArrowLeft, ArrowRight, RotateCcw, Home, ExternalLink } from 'lucide-react';
-import { getFirebaseDocuments } from '@/actions/getFirebaseDocuments';
 import { UnifiedSearchResult } from '@/types/search';
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 // 各ページコンポーネントのインポート
 import { AbcCorpPage } from './pages/AbcCorpPage';
@@ -86,27 +87,6 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const currentView = history[historyIndex];
 
   /**
-   * Firebaseからsearch_resultコレクションを取得してキャッシュする
-   * アプリ初期化時に一度だけ実行される
-   */
-  useEffect(() => {
-    const loadFirebaseData = async () => {
-      if (isCacheLoaded) return;
-      try {
-        console.log('Loading Firebase search results...');
-        const firebaseResults = await getFirebaseDocuments();
-        console.log('Loaded Firebase results:', firebaseResults.length);
-        setFirebaseCache(firebaseResults);
-        setIsCacheLoaded(true);
-      } catch (error) {
-        console.error('Failed to load Firebase data:', error);
-        setIsCacheLoaded(true);
-      }
-    };
-    loadFirebaseData();
-  }, [isCacheLoaded]);
-
-  /**
    * 指定されたビューまたはURLにナビゲートする関数
    * ブラウザの履歴機能を再現し、戻る・進む操作に対応
    * 
@@ -147,10 +127,10 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   /**
    * 検索処理を実行する関数
-   * Firebaseキャッシュからkeywords完全一致で検索
+   * 初回検索時のみFirebaseからデータを取得し、その後は部分一致で検索
    * キーワードマッチングとページネーション機能を実装
    */
-  const performSearch = () => {
+  const performSearch = async () => {
     console.log('performSearch called');
     console.log('searchQuery:', searchQuery);
     
@@ -162,33 +142,71 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     setIsSearching(true); // 検索中状態を表示
     setCurrentPage(1); // 検索時はページを1に戻す
 
-    setTimeout(() => {
-      const query = searchQuery.toLowerCase();
-      
-      // Firebaseキャッシュから検索（keywordsプロパティで完全一致）
-      const firebaseResults = firebaseCache
-        .filter(item => {
-          console.log('Filtering item:', item);
-          const matchesKeywords = item.keywords?.some(keyword => {
-            const match = keyword.toLowerCase() === query;
-            console.log(`Keyword "${keyword}" matches "${query}":`, match);
-            return match;
+    try {
+      // 初回検索時のみFirebaseからデータを取得
+      if (!isCacheLoaded) {
+        console.log('Loading Firebase search results...');
+        const searchResultsRef = collection(db, 'search_results');
+        const querySnapshot = await getDocs(searchResultsRef);
+        const firebaseResults: UnifiedSearchResult[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data() as UnifiedSearchResult;
+          firebaseResults.push({
+            ...data,
+            id: doc.id,
           });
-          const matchesTitle = item.title.toLowerCase().includes(query);
-          const matchesDescription = item.description.toLowerCase().includes(query);
-          
-          console.log('Matches - keywords:', matchesKeywords, 'title:', matchesTitle, 'description:', matchesDescription);
-          return matchesKeywords || matchesTitle || matchesDescription;
-        })
-        .map(convertFirebaseResult);
-
-      console.log('検索結果:', firebaseResults);
-      console.log('検索結果数:', firebaseResults.length);
-      
-      setSearchResults(firebaseResults);
+        });
+        console.log('Loaded Firebase results:', firebaseResults.length);
+        setFirebaseCache(firebaseResults);
+        setIsCacheLoaded(true);
+        
+        // 取得したデータで検索を実行
+        performSearchOnCache(firebaseResults, searchQuery);
+      } else {
+        // キャッシュが既にある場合はそれを使用
+        performSearchOnCache(firebaseCache, searchQuery);
+      }
+    } catch (error) {
+      console.error('Failed to load Firebase data:', error);
       setIsSearching(false);
-      navigateTo(VIEW_SEARCH_RESULTS); // 検索結果ページに遷移
-    }, 500);
+    }
+  };
+
+  /**
+   * キャッシュされたデータに対して部分一致検索を実行する関数
+   */
+  const performSearchOnCache = (cache: UnifiedSearchResult[], query: string) => {
+    const queryLower = query.toLowerCase();
+    
+    // キャッシュから部分一致で検索
+    const filteredResults = cache
+      .filter(item => {
+        console.log('Filtering item:', item);
+        
+        // キーワードでの部分一致
+        const matchesKeywords = item.keywords?.some(keyword => {
+          const match = keyword.toLowerCase().includes(queryLower);
+          console.log(`Keyword "${keyword}" includes "${query}":`, match);
+          return match;
+        });
+        
+        // タイトルでの部分一致
+        const matchesTitle = item.title.toLowerCase().includes(queryLower);
+        
+        // 説明文での部分一致
+        const matchesDescription = item.description.toLowerCase().includes(queryLower);
+        
+        console.log('Matches - keywords:', matchesKeywords, 'title:', matchesTitle, 'description:', matchesDescription);
+        return matchesKeywords || matchesTitle || matchesDescription;
+      })
+      .map(convertFirebaseResult);
+
+    console.log('検索結果:', filteredResults);
+    console.log('検索結果数:', filteredResults.length);
+    
+    setSearchResults(filteredResults);
+    setIsSearching(false);
+    navigateTo(VIEW_SEARCH_RESULTS); // 検索結果ページに遷移
   };
 
   /**
