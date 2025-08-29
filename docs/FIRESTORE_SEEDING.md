@@ -192,8 +192,6 @@ node scripts/seedFirestore.js data/sample-facelook.json
 }
 ```
 
-**注意**: posts と friends に ID フィールドは不要です（1ページ完結型のため）
-
 ## Firebase Storage の画像を使用する場合
 
 `gs://` 形式のURLも使用可能です。1ページ完結型のため、各ページごとにフォルダを分けて管理：
@@ -230,37 +228,6 @@ node scripts/seedFirestore.js data/sample-facelook.json
     photo_001.jpg
 ```
 
-## トラブルシューティング
-
-### エラー: Permission denied
-
-Firestore のセキュリティルールを確認：
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /search_results/{document} {
-      allow read: if true;
-      allow write: if true; // 開発時のみ。本番環境では制限を追加
-    }
-  }
-}
-```
-
-### エラー: Cannot find module 'firebase-admin'
-
-```bash
-npm install firebase-admin
-```
-
-### エラー: Firebase プロジェクトIDが設定されていません
-
-以下のいずれかの方法で設定：
-
-1. `.env.local` に `NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id` を追加
-2. コマンド実行時に指定: `FIREBASE_PROJECT_ID=your-project-id node scripts/seedFirestore.js`
-
 ## 実行例
 
 ```bash
@@ -271,7 +238,7 @@ $ node scripts/seedFirestore.js data/sample-facelook.json
 ========================================
 
 [*] JSONファイルを読み込んでいます...
-    ファイルパス: C:\Users\matsu\osint-game\data\sample-facelook.json
+    ファイルパス: C:\Users\username\osint-game\data\sample-facelook.json
 
 [+] 2 件のデータを読み込みました
 

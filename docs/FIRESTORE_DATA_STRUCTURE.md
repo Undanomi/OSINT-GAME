@@ -91,31 +91,6 @@ interface FacelookContent {
 }
 ```
 
-### LinkedInProfilePage（今後実装時）
-
-```typescript
-interface LinkedInContent {
-  name: string;
-  headline: string;
-  location: string;
-  summary: string;
-  profileImage: string;
-  experience: Array<{
-    title: string;
-    company: string;
-    period?: string;
-    description?: string;
-  }>;
-  education: Array<{
-    school: string;
-    degree?: string;
-    field?: string;
-    period?: string;
-  }>;
-  skills: string[];
-}
-```
-
 ## Firestoreへのデータ追加例
 
 Firebase Consoleから手動でデータを追加する場合：
@@ -132,21 +107,6 @@ Firebase Consoleから手動でデータを追加する場合：
    - `template` (string): FacelookProfilePage
    - `content` (map): 上記の構造に従ってデータを入力
    - `keywords` (array): 検索用キーワードを配列で入力
-
-## セキュリティルール
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // search_resultsコレクションは読み取り専用
-    match /search_results/{document} {
-      allow read: if true;
-      allow write: if false;
-    }
-  }
-}
-```
 
 ## Firebase Storage構造
 
@@ -169,21 +129,11 @@ service cloud.firestore {
     cover.jpg
     ...
   
-  /linkedin_test_user/         # LinkedInページ（将来実装時）
-    profile.jpg
-    company_logo.jpg
-    ...
 ```
 
 Storage URLの形式：
 - `gs://[project-id].appspot.com/pages/facelook_test_taro/profile.jpg`
 - `gs://[project-id].appspot.com/pages/facelook_test_taro/post_001.jpg`
-
-**メリット：**
-- 各ページの画像が1つのフォルダにまとまる
-- ページ削除時にフォルダごと削除できる
-- ドキュメントIDと対応していて管理しやすい
-- 異なるテンプレート間で画像が混在しない
 
 ## 実装の流れ
 
@@ -199,11 +149,3 @@ Storage URLの形式：
    - documentIdを使用してFirestoreからデータを取得
    - templateフィールドで適切なコンポーネントを判定
    - contentフィールドからページ固有のデータを展開
-
-## メリット
-
-- **統一された検索実装**: すべてのページが同じ構造なので検索が簡単
-- **拡張性**: 新しいテンプレートの追加が容易
-- **メンテナンス性**: データ構造が明確で管理しやすい
-- **パフォーマンス**: 単一コレクションからの取得で効率的
-- **シンプルさ**: 1ページ完結型なのでID管理が不要
