@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 
+/**
+ * ウィンドウの状態を表すインターフェース
+ */
 export interface WindowState {
   id: string;
   title: string;
   isOpen: boolean;
-  isMaximized: boolean;
   isMinimized: boolean;
   x: number;
   y: number;
@@ -14,9 +16,13 @@ export interface WindowState {
   appType: string;
 }
 
+/**
+ * ウィンドウの状態管理インターフェース
+ */
 interface WindowStore {
   windows: WindowState[];
   maxZIndex: number;
+  activeWindowId: string | null;
   openWindow: (appConfig: {
     id: string;
     title: string;
@@ -26,17 +32,21 @@ interface WindowStore {
   }) => void;
   closeWindow: (id: string) => void;
   minimizeWindow: (id: string) => void;
-  maximizeWindow: (id: string) => void;
   focusWindow: (id: string) => void;
   updateWindowPosition: (id: string, x: number, y: number) => void;
   updateWindowSize: (id: string, width: number, height: number) => void;
   getWindowById: (id: string) => WindowState | undefined;
 }
 
+/**
+ * ウィンドウの状態管理ストア
+ */
 export const useWindowStore = create<WindowStore>((set, get) => ({
   windows: [],
   maxZIndex: 1000,
+  activeWindowId: null,
 
+  // ウィンドウを開く
   openWindow: (appConfig) => {
     const existingWindow = get().windows.find(w => w.id === appConfig.id);
     if (existingWindow && existingWindow.isOpen) {
@@ -49,7 +59,6 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       id: appConfig.id,
       title: appConfig.title,
       isOpen: true,
-      isMaximized: false,
       isMinimized: false,
       x: 100 + Math.random() * 200,
       y: 100 + Math.random() * 100,
@@ -67,6 +76,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     }));
   },
 
+  // ウィンドウを閉じる
   closeWindow: (id) => {
     set(state => ({
       windows: state.windows.map(w => 
@@ -75,6 +85,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     }));
   },
 
+  // ウィンドウを最小化
   minimizeWindow: (id) => {
     set(state => ({
       windows: state.windows.map(w => 
@@ -83,46 +94,20 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     }));
   },
 
-  maximizeWindow: (id) => {
-    set(state => ({
-      windows: state.windows.map(w => {
-        if (w.id !== id) return w;
-        
-        if (w.isMaximized) {
-          // 最大化を解除する場合
-          return {
-            ...w,
-            isMaximized: false,
-            x: w.x || 100,
-            y: w.y || 100,
-            width: w.width || 800,
-            height: w.height || 600,
-          };
-        } else {
-          // 最大化する場合
-          return {
-            ...w,
-            isMaximized: true,
-            x: 0,
-            y: 0,
-            width: typeof window !== 'undefined' ? window.innerWidth : 1200,
-            height: typeof window !== 'undefined' ? window.innerHeight - 50 : 700,
-          };
-        }
-      }),
-    }));
-  },
-
+  // ウィンドウをフォーカスする
   focusWindow: (id) => {
-    const newZIndex = get().maxZIndex + 1;
-    set(state => ({
-      windows: state.windows.map(w => 
-        w.id === id ? { ...w, zIndex: newZIndex, isMinimized: false } : w
-      ),
+    const { activeWindowId, windows, maxZIndex } = get();
+    // 既にアクティブなら何もしない
+    if (activeWindowId === id) return;
+    const newZIndex = maxZIndex + 1;
+    set({
+      windows: windows.map(w => w.id === id ? { ...w, zIndex: newZIndex, isMinimized: false } : w),
       maxZIndex: newZIndex,
-    }));
+      activeWindowId: id,
+    });
   },
 
+  // ウィンドウ位置の更新
   updateWindowPosition: (id, x, y) => {
     set(state => ({
       windows: state.windows.map(w => 
@@ -131,6 +116,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     }));
   },
 
+  // ウィンドウサイズの更新
   updateWindowSize: (id, width, height) => {
     set(state => ({
       windows: state.windows.map(w => 
@@ -139,6 +125,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     }));
   },
 
+  // ウィンドウの取得
   getWindowById: (id) => {
     return get().windows.find(w => w.id === id);
   },

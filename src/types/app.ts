@@ -5,7 +5,6 @@ export interface AppProps {
   isActive: boolean;
   onClose?: () => void;
   onMinimize?: () => void;
-  onMaximize?: () => void;
 }
 
 export interface AppMetadata {
