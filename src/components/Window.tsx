@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { Rnd } from 'react-rnd';
 import { X, Minus } from 'lucide-react';
 import { useWindowStore } from '@/store/windowStore';
@@ -21,7 +21,7 @@ interface WindowProps {
  * @param windowId - ウィンドウの一意識別子
  * @param isActive - ウィンドウがアクティブかどうかのフラグ
  */
-const AppRenderer: React.FC<{ appType: string; windowId: string; isActive: boolean }> = ({
+const AppRenderer: React.FC<{ appType: string; windowId: string; isActive: boolean }> = React.memo(({
   appType,
   windowId,
   isActive
@@ -49,38 +49,85 @@ const AppRenderer: React.FC<{ appType: string; windowId: string; isActive: boole
         </div>
       );
   }
-};
+});
+
+AppRenderer.displayName = 'AppRenderer';
 
 /**
  * 各アプリのウィンドウとアプリ内部UIを表示するコンポーネント
  */
-export const Window: React.FC<WindowProps> = ({ windowId }) => {
+export const Window: React.FC<WindowProps> = React.memo(({ windowId }) => {
   // ウィンドウストアから必要な状態とアクションを取得
   const targetWindow = useWindowStore(state => state.windows.find(w => w.id === windowId));
   const activeWindowId = useWindowStore(state => state.activeWindowId);
   const closeWindow = useWindowStore(state => state.closeWindow);
   const minimizeWindow = useWindowStore(state => state.minimizeWindow);
-  const focusWindow = useWindowStore(state => state.focusWindow);
+  const focusWindowOnInteraction = useWindowStore(state => state.focusWindowOnInteraction);
   const updateWindowPosition = useWindowStore(state => state.updateWindowPosition);
   const updateWindowSize = useWindowStore(state => state.updateWindowSize);
 
   // ウィンドウがアクティブか判定する
   const isActiveWindow = !!targetWindow && targetWindow.id === activeWindowId;
 
-  // ウィンドウを開いた時に自動フォーカス（アクティブでない && 最小化されていない && 開いている）
-  useEffect(() => {
-    if (!targetWindow) return;
-    if (
-      targetWindow.id !== activeWindowId &&
-      !targetWindow.isMinimized &&
-      targetWindow.isOpen
-    ) {
-      const timer = setTimeout(() => {
-        focusWindow(targetWindow.id);
-      }, 0);
-      return () => clearTimeout(timer);
+  // ドラッグ開始時と位置更新時にフォーカス
+  const handleDragStart = useCallback(() => {
+    if (targetWindow && !isActiveWindow) {
+      focusWindowOnInteraction(targetWindow.id);
     }
-  }, [targetWindow, activeWindowId, focusWindow]);
+  }, [targetWindow, isActiveWindow, focusWindowOnInteraction]);
+
+  const handleDragStop = useCallback((e: unknown, d: { x: number; y: number }) => {
+    if (!targetWindow) return;
+    if (d.x !== targetWindow.x || d.y !== targetWindow.y) {
+      updateWindowPosition(targetWindow.id, d.x, d.y);
+    }
+  }, [targetWindow, updateWindowPosition]);
+
+  const handleResizeStart = useCallback(() => {
+    if (targetWindow && !isActiveWindow) {
+      focusWindowOnInteraction(targetWindow.id);
+    }
+  }, [targetWindow, isActiveWindow, focusWindowOnInteraction]);
+
+  const handleResizeStop = useCallback((
+    e: unknown,
+    direction: unknown,
+    ref: { style: { width?: string; height?: string } },
+    delta: unknown,
+    position: { x: number; y: number }
+  ) => {
+    if (!targetWindow) return;
+    const newWidth = ref.style.width ? parseInt(ref.style.width) : targetWindow.width;
+    const newHeight = ref.style.height ? parseInt(ref.style.height) : targetWindow.height;
+
+    if (newWidth !== targetWindow.width || newHeight !== targetWindow.height) {
+      updateWindowSize(targetWindow.id, newWidth, newHeight);
+    }
+    if (position.x !== targetWindow.x || position.y !== targetWindow.y) {
+      updateWindowPosition(targetWindow.id, position.x, position.y);
+    }
+  }, [targetWindow, updateWindowSize, updateWindowPosition]);
+
+  const handleFocus = useCallback(() => {
+    if (targetWindow) {
+      focusWindowOnInteraction(targetWindow.id);
+    }
+  }, [targetWindow, focusWindowOnInteraction]);
+
+  const handleMinimize = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (targetWindow) {
+      minimizeWindow(targetWindow.id);
+    }
+  }, [targetWindow, minimizeWindow]);
+
+  const handleClose = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (targetWindow) {
+      closeWindow(targetWindow.id);
+    }
+  }, [targetWindow, closeWindow]);  // 自動フォーカスのuseEffectを削除（ちらつきの原因）
+  // ユーザー操作時のみフォーカスを変更するように修正
 
   // コンポーネントの表示条件
   if (!targetWindow || !targetWindow.isOpen || targetWindow.isMinimized) {
@@ -97,37 +144,31 @@ export const Window: React.FC<WindowProps> = ({ windowId }) => {
         x: targetWindow.x,
         y: targetWindow.y
       }}
+      // ドラッグ開始時にフォーカス
+      onDragStart={handleDragStart}
       // ドラッグ終了時の位置更新処理（変更時のみ）
-      onDragStop={(_e, d) => {
-        if (d.x !== targetWindow.x || d.y !== targetWindow.y) {
-          updateWindowPosition(targetWindow.id, d.x, d.y);
-        }
-      }}
+      onDragStop={handleDragStop}
+      // リサイズ開始時にフォーカス
+      onResizeStart={handleResizeStart}
       // リサイズ終了時のサイズと位置更新処理（変更時のみ）
-      onResizeStop={(_e, _direction, ref, _delta, position) => {
-        const newWidth = ref.style.width ? parseInt(ref.style.width) : targetWindow.width;
-        const newHeight = ref.style.height ? parseInt(ref.style.height) : targetWindow.height;
-        if (newWidth !== targetWindow.width || newHeight !== targetWindow.height) {
-          updateWindowSize(targetWindow.id, newWidth, newHeight);
-        }
-        if (position.x !== targetWindow.x || position.y !== targetWindow.y) {
-          updateWindowPosition(targetWindow.id, position.x, position.y);
-        }
-        }
-      }
+      onResizeStop={handleResizeStop}
       minWidth={300}                              // 最小幅
       minHeight={200}                             // 最小高さ
       bounds="parent"                             // 親要素内でのみ移動可能
       dragHandleClassName="window-drag-handle"    // ドラッグハンドルのクラス名
-      style={{ zIndex: targetWindow.zIndex }}     // z-indexで重ね順を制御
-      className={`transition-all duration-200 ${isActiveWindow ? 'shadow-2xl' : 'shadow-lg opacity-95'}`}
+      style={{
+        zIndex: targetWindow.zIndex,
+        willChange: 'transform',
+        transform: 'translateZ(0)'
+      }}
+      className={`window-container window-transition ${isActiveWindow ? 'shadow-2xl' : 'shadow-lg opacity-95'}`}
     >
       {/* ウィンドウ本体 */}
       <div
         className={`h-full w-full bg-white rounded-lg overflow-hidden border-2 flex flex-col transition-colors ${
           isActiveWindow ? 'border-blue-500' : 'border-gray-300'
         }`}
-        onClick={() => focusWindow(targetWindow.id)}
+        onClick={handleFocus}
       >
         {/* タイトルバー */}
         <div
@@ -144,8 +185,8 @@ export const Window: React.FC<WindowProps> = ({ windowId }) => {
           <div className="flex items-center space-x-1">
             {/* 最小化ボタン */}
             <button
-              onClick={(e) => { e.stopPropagation(); minimizeWindow(targetWindow.id); }}
-              className={`w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
+              onClick={handleMinimize}
+              className={`window-control-button w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
                 isActiveWindow ? 'bg-yellow-400 hover:bg-yellow-300' : 'bg-gray-400 hover:bg-yellow-400'
               }`}
               title="最小化"
@@ -155,8 +196,8 @@ export const Window: React.FC<WindowProps> = ({ windowId }) => {
 
             {/* 閉じるボタン */}
             <button
-              onClick={(e) => { e.stopPropagation(); closeWindow(targetWindow.id); }}
-              className={`w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
+              onClick={handleClose}
+              className={`window-control-button w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
                 isActiveWindow ? 'bg-red-400 hover:bg-red-300' : 'bg-gray-400 hover:bg-red-400'
               }`}
               title="閉じる"
@@ -167,7 +208,7 @@ export const Window: React.FC<WindowProps> = ({ windowId }) => {
         </div>
 
         {/* アプリ内部UI */}
-        <div className="flex-1 overflow-auto">
+        <div className="app-content flex-1 overflow-auto">
           <AppRenderer
             appType={targetWindow.appType}
             windowId={targetWindow.id}
@@ -177,4 +218,6 @@ export const Window: React.FC<WindowProps> = ({ windowId }) => {
       </div>
     </Rnd>
   );
-};
+});
+
+Window.displayName = 'Window';

@@ -1,0 +1,62 @@
+/* パフォーマンス最適化のためのCSS設定 */
+
+/* ウィンドウドラッグ時のGPU加速 */
+.window-container {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* ドラッグハンドルのパフォーマンス最適化 */
+.window-drag-handle {
+  will-change: transform;
+  cursor: move;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* リサイズハンドルの最適化 */
+.react-resizable-handle {
+  will-change: transform;
+}
+
+/* タスクバーのスムーズなアニメーション */
+.taskbar-item {
+  transition: background-color 0.15s ease-in-out, transform 0.1s ease-in-out;
+  will-change: background-color, transform;
+}
+
+.taskbar-item:hover {
+  transform: translateY(-1px);
+}
+
+/* ウィンドウのスムーズなトランジション */
+.window-transition {
+  transition: box-shadow 0.2s ease-in-out, opacity 0.2s ease-in-out;
+  will-change: box-shadow, opacity;
+}
+
+/* ドラッグ中のパフォーマンス最適化 */
+.dragging {
+  will-change: transform;
+  transform: translateZ(0);
+  pointer-events: none;
+}
+
+/* タイトルバーボタンのアニメーション最適化 */
+.window-control-button {
+  transition: transform 0.1s ease-in-out, background-color 0.15s ease-in-out;
+  will-change: transform, background-color;
+}
+
+.window-control-button:hover {
+  transform: scale(1.1);
+}
+
+/* アプリコンテンツのスクロール最適化 */
+.app-content {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
