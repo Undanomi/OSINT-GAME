@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BaseApp } from '@/components/BaseApp';
 import { AppProps } from '@/types/app';
 import { Search, ArrowLeft, ArrowRight, RotateCcw, Home, ExternalLink } from 'lucide-react';
@@ -6,6 +6,7 @@ import { Search, ArrowLeft, ArrowRight, RotateCcw, Home, ExternalLink } from 'lu
 // 各ページコンポーネントのインポート
 import { AbcCorpPage } from './pages/AbcCorpPage';
 import { LinkedInProfilePage } from './pages/LinkedInProfilePage';
+import { FacelookProfilePage } from './pages/FacelookProfilePage';
 import { GenericPage } from './pages/GenericPage';
 
 /**
@@ -37,6 +38,22 @@ const searchDatabase: SearchResult[] = [
     title: '田中太郎 - LinkedInプロフィール',
     url: 'https://linkedin.com/in/taro-tanaka',
     description: 'ABC株式会社のマーケティング部長。東京大学経済学部卒。デジタルマーケティングとブランド戦略の専門家。',
+    type: 'social',
+  },
+  {
+    // Facelookプロフィール - ソーシャルメディア情報
+    id: '1b',
+    title: '山田太郎 - Facelook',
+    url: 'https://facelook.com/yamada.taro',
+    description: 'Tech Solutions Inc.のソフトウェアエンジニア。テクノロジーとイノベーションに情熱を注ぐ。週末はハイキングとコーディングを楽しむ。',
+    type: 'social',
+  },
+  {
+    // Facelookプロフィール2 - ソーシャルメディア情報
+    id: '1c',
+    title: '佐藤花子 - Facelook',
+    url: 'https://facelook.com/sato.hanako',
+    description: 'Global Marketing Co.のマーケティングマネージャー。デジタルマーケティングとブランド戦略が専門。美味しいコーヒーと猫が大好き。',
     type: 'social',
   },
   {
@@ -81,6 +98,9 @@ const searchDatabase: SearchResult[] = [
 const pageComponents: { [key: string]: React.ReactElement } = {
   'https://abc-corp.co.jp': <AbcCorpPage />,                    // ABC株式会社の企業ページ
   'https://linkedin.com/in/taro-tanaka': <LinkedInProfilePage />, // 田中太郎のLinkedInプロフィール
+  'https://facelook.com/yamada.taro': <FacelookProfilePage documentId="facelook_yamada_taro" />, // 山田太郎のFacelookプロフィール
+  'https://facelook.com/sato.hanako': <FacelookProfilePage documentId="facelook_sato_hanako" />, // 佐藤花子のFacelookプロフィール
+  'https://facelook.com/test.user': <FacelookProfilePage documentId="facelook_test_user" />, // テストユーザーのFacelookプロフィール
 };
 
 // ブラウザの表示状態を識別するための定数
@@ -103,6 +123,8 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   // 検索中かどうかの状態管理
   const [isSearching, setIsSearching] = useState(false);
+  // URLバー入力の状態管理
+  const [urlInput, setUrlInput] = useState('');
 
   // ブラウザのナビゲーション履歴を管理
   const [history, setHistory] = useState<string[]>([VIEW_HOME]);
@@ -213,11 +235,32 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * 
    * @returns string - 表示するURL文字列
    */
-  const getDisplayUrl = () => {
+  const getDisplayUrl = useCallback(() => {
     if (currentView === VIEW_HOME) return 'https://www.google.com';
     if (currentView === VIEW_SEARCH_RESULTS) return `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
     return currentView;
+  }, [currentView, searchQuery]);
+
+  /**
+   * URLバーのEnterキー押下時の処理
+   * 入力されたURLに直接ナビゲート
+   */
+  const handleUrlSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && urlInput.trim()) {
+      // httpスキームがない場合は追加
+      let url = urlInput.trim();
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      navigateTo(url);
+      setUrlInput(''); // 入力をクリア
+    }
   };
+
+  // URLが変更されたときにURLバーを更新
+  useEffect(() => {
+    setUrlInput(getDisplayUrl());
+  }, [getDisplayUrl]);
 
   /**
    * 検索結果のタイプに応じたアイコンを返す関数
@@ -283,13 +326,16 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           <Home size={16} />
         </button>
 
-        {/* アドレスバー（読み取り専用） */}
+        {/* アドレスバー（編集可能） */}
         <div className="flex-1 bg-white border rounded-md flex items-center px-3 py-1">
           <input
             type="text"
-            value={getDisplayUrl()}
-            readOnly
-            className="flex-1 outline-none text-sm bg-gray-100"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            onKeyPress={handleUrlSubmit}
+            onFocus={(e) => e.target.select()}
+            className="flex-1 outline-none text-sm"
+            placeholder="URLを入力するか、検索キーワードを入力"
           />
         </div>
       </div>
