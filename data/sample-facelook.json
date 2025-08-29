@@ -1,0 +1,118 @@
+[
+  {
+    "id": "facelook_test_taro",
+    "title": "テスト太郎 - Facelookプロフィール",
+    "url": "https://facelook.com/test.taro",
+    "description": "テストエンジニア at テスト株式会社. テスト大学卒。",
+    "template": "FacelookProfilePage",
+    "content": {
+      "name": "テスト 太郎",
+      "profileImage": "https://via.placeholder.com/168",
+      "coverImage": "https://via.placeholder.com/940x348",
+      "job": "テストエンジニア",
+      "company": "テスト株式会社",
+      "location": "テスト市テスト区",
+      "hometown": "サンプル県サンプル市",
+      "education": "テスト大学",
+      "relationshipStatus": "テストステータス",
+      "bio": "これはテストデータです。実在の人物・団体とは一切関係ありません。",
+      "friendsCount": 523,
+      "joined": "2015年3月",
+      "website": "https://test-taro.example.com",
+      "posts": [
+        {
+          "content": "テスト投稿その1：これはサンプルデータです。実際の投稿ではありません。#TestData #SamplePost",
+          "timestamp": "2時間前",
+          "likes": 42,
+          "comments": 5,
+          "shares": 2
+        },
+        {
+          "content": "テスト投稿その2：サンプルテキストです。テスト用のダミーデータです。",
+          "image": "https://via.placeholder.com/600x400",
+          "timestamp": "昨日 18:30",
+          "likes": 128,
+          "comments": 23,
+          "shares": 8
+        },
+        {
+          "content": "テスト投稿その3：これはOSINTゲーム用のテストデータです。実在の投稿ではありません。",
+          "timestamp": "3日前",
+          "likes": 67,
+          "comments": 12,
+          "shares": 15
+        }
+      ],
+      "friends": [
+        {"name": "サンプル 花子", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 12},
+        {"name": "テスト 一郎", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 8},
+        {"name": "ダミー 美咲", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 23},
+        {"name": "サンプル 健太", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 5},
+        {"name": "テスト さくら", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 15},
+        {"name": "ダミー 大輔", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 7}
+      ],
+      "photos": [
+        "https://via.placeholder.com/200",
+        "https://via.placeholder.com/200",
+        "https://via.placeholder.com/200",
+        "https://via.placeholder.com/200",
+        "https://via.placeholder.com/200",
+        "https://via.placeholder.com/200",
+        "https://via.placeholder.com/200",
+        "https://via.placeholder.com/200",
+        "https://via.placeholder.com/200"
+      ]
+    },
+    "keywords": ["テスト太郎", "facelook", "テスト株式会社", "テストエンジニア", "テスト大学"]
+  },
+  {
+    "id": "facelook_test_hanako",
+    "title": "テスト花子 - Facelookプロフィール",
+    "url": "https://facelook.com/test.hanako",
+    "description": "テストデザイナー at サンプルスタジオ. ダミー美術大学卒。UI/UXデザインのテストスペシャリスト。",
+    "template": "FacelookProfilePage",
+    "content": {
+      "name": "テスト 花子",
+      "profileImage": "https://via.placeholder.com/168",
+      "coverImage": "https://via.placeholder.com/940x348",
+      "job": "テストデザイナー",
+      "company": "サンプルスタジオ",
+      "location": "ダミー市ダミー区",
+      "hometown": "テスト県テスト市",
+      "education": "ダミー美術大学",
+      "relationshipStatus": "テスト状態",
+      "bio": "テスト用のプロフィールです。これは架空のデータであり、実在の人物とは関係ありません。",
+      "friendsCount": 892,
+      "joined": "2016年8月",
+      "website": "https://test-hanako.example.com",
+      "posts": [
+        {
+          "content": "テストプロジェクトのサンプルデザインが完成！これはダミーデータです。",
+          "image": "https://via.placeholder.com/600x400",
+          "timestamp": "5時間前",
+          "likes": 234,
+          "comments": 45,
+          "shares": 12
+        },
+        {
+          "content": "テストワークショップのサンプル投稿です！架空のイベントです。",
+          "timestamp": "2日前",
+          "likes": 156,
+          "comments": 28,
+          "shares": 6
+        }
+      ],
+      "friends": [
+        {"name": "テスト 太郎", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 12},
+        {"name": "サンプル 翔", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 34},
+        {"name": "ダミー 美優", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 18}
+      ],
+      "photos": [
+        "https://via.placeholder.com/200",
+        "https://via.placeholder.com/200",
+        "https://via.placeholder.com/200"
+      ]
+    },
+    "keywords": ["テスト花子", "facelook", "サンプルスタジオ", "テストデザイナー", "ダミー美術大学"]
+  }
+]

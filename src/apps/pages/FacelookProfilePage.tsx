@@ -138,29 +138,29 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
 
   const getMockData = (): FacelookUser => ({
     userId: 'user001',
-    name: '山田 太郎',
+    name: 'テスト 太郎',
     profileImage: 'https://via.placeholder.com/168',
     coverImage: 'https://via.placeholder.com/940x348',
-    job: 'ソフトウェアエンジニア',
-    company: 'Tech Solutions Inc.',
-    location: '東京都渋谷区',
-    hometown: '大阪府大阪市',
-    education: '東京工業大学',
+    job: 'テストエンジニア',
+    company: 'テスト株式会社',
+    location: 'テスト市テスト区',
+    hometown: 'サンプル県サンプル市',
+    education: 'テスト大学',
     relationshipStatus: '既婚',
-    bio: 'テクノロジーとイノベーションに情熱を注ぐエンジニア。週末はハイキングとコーディングを楽しんでいます。',
+    bio: 'これはテストデータです。実在の人物・団体とは一切関係ありません。',
     friendsCount: 523,
     joined: '2015年3月',
-    website: 'https://yamada-taro.dev',
+    website: 'https://test-taro.example.com',
     posts: [
       {
-        content: '新しいプロジェクトのキックオフミーティングが終わりました！チーム全員のモチベーションが高くて、これからが楽しみです。#TeamWork #Innovation',
+        content: 'テスト投稿その1：これはサンプルデータです。実際の投稿ではありません。#TestData #SamplePost',
         timestamp: '2時間前',
         likes: 42,
         comments: 5,
         shares: 2
       },
       {
-        content: '週末は家族と一緒に箱根に行ってきました。自然の中でリフレッシュできました。',
+        content: 'テスト投稿その2：サンプルテキストです。テスト用のダミーデータです。',
         image: 'https://via.placeholder.com/600x400',
         timestamp: '昨日 18:30',
         likes: 128,
@@ -168,7 +168,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
         shares: 8
       },
       {
-        content: 'React 18の新機能について勉強中。Suspenseの使い方がようやく理解できてきた気がする。',
+        content: 'テスト投稿その3：これはOSINTゲーム用のテストデータです。実在の投稿ではありません。',
         timestamp: '3日前',
         likes: 67,
         comments: 12,
@@ -176,12 +176,12 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
       }
     ],
     friends: [
-      { name: '佐藤 花子', profileImage: 'https://via.placeholder.com/40', mutualFriends: 12 },
-      { name: '鈴木 一郎', profileImage: 'https://via.placeholder.com/40', mutualFriends: 8 },
-      { name: '高橋 美咲', profileImage: 'https://via.placeholder.com/40', mutualFriends: 23 },
-      { name: '田中 健太', profileImage: 'https://via.placeholder.com/40', mutualFriends: 5 },
-      { name: '伊藤 さくら', profileImage: 'https://via.placeholder.com/40', mutualFriends: 15 },
-      { name: '渡辺 大輔', profileImage: 'https://via.placeholder.com/40', mutualFriends: 7 }
+      { name: 'サンプル 花子', profileImage: 'https://via.placeholder.com/40', mutualFriends: 12 },
+      { name: 'テスト 一郎', profileImage: 'https://via.placeholder.com/40', mutualFriends: 8 },
+      { name: 'ダミー 美咲', profileImage: 'https://via.placeholder.com/40', mutualFriends: 23 },
+      { name: 'サンプル 健太', profileImage: 'https://via.placeholder.com/40', mutualFriends: 5 },
+      { name: 'テスト さくら', profileImage: 'https://via.placeholder.com/40', mutualFriends: 15 },
+      { name: 'ダミー 大輔', profileImage: 'https://via.placeholder.com/40', mutualFriends: 7 }
     ],
     photos: [
       'https://via.placeholder.com/200',
