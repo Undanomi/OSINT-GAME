@@ -5,7 +5,7 @@ export interface UnifiedSearchResult {
   url: string;
   description: string;
   template: string; // 使用するページコンポーネント名（アイコン判定にも使用）
-  content: Record<string, any>; // ページ固有のコンテンツ
+  content: Record<string, unknown>; // ページ固有のコンテンツ
   keywords: string[]; // 検索用キーワード
 }
 

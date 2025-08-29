@@ -1,5 +1,4 @@
 export interface FacelookPost {
-  id: string;
   content: string;
   image?: string;
   timestamp: string;
@@ -9,7 +8,6 @@ export interface FacelookPost {
 }
 
 export interface FacelookFriend {
-  id: string;
   name: string;
   profileImage: string;
   mutualFriends?: number;

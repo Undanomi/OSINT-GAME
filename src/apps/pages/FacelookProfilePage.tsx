@@ -46,7 +46,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
           }
           
           // contentをFacelookContentとして扱う
-          const facelookContent = searchResult.content as FacelookContent;
+          const facelookContent = searchResult.content as unknown as FacelookContent;
           
           // FacelookUser形式に変換（userIdはドキュメントIDを使用）
           const data: FacelookUser = {
@@ -115,9 +115,9 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
       } catch (error) {
         console.error('Error fetching user data:', error);
         console.error('Error details:', {
-          message: (error as any).message,
-          code: (error as any).code,
-          stack: (error as any).stack,
+          message: error instanceof Error ? error.message : String(error),
+          code: (error as { code?: string })?.code,
+          stack: error instanceof Error ? error.stack : undefined,
           fullError: error
         });
         console.log('Attempted path:', `search_results/${documentId}`);
@@ -153,7 +153,6 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
     website: 'https://yamada-taro.dev',
     posts: [
       {
-        id: '1',
         content: '新しいプロジェクトのキックオフミーティングが終わりました！チーム全員のモチベーションが高くて、これからが楽しみです。#TeamWork #Innovation',
         timestamp: '2時間前',
         likes: 42,
@@ -161,7 +160,6 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
         shares: 2
       },
       {
-        id: '2',
         content: '週末は家族と一緒に箱根に行ってきました。自然の中でリフレッシュできました。',
         image: 'https://via.placeholder.com/600x400',
         timestamp: '昨日 18:30',
@@ -170,7 +168,6 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
         shares: 8
       },
       {
-        id: '3',
         content: 'React 18の新機能について勉強中。Suspenseの使い方がようやく理解できてきた気がする。',
         timestamp: '3日前',
         likes: 67,
@@ -179,12 +176,12 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
       }
     ],
     friends: [
-      { id: 'f1', name: '佐藤 花子', profileImage: 'https://via.placeholder.com/40', mutualFriends: 12 },
-      { id: 'f2', name: '鈴木 一郎', profileImage: 'https://via.placeholder.com/40', mutualFriends: 8 },
-      { id: 'f3', name: '高橋 美咲', profileImage: 'https://via.placeholder.com/40', mutualFriends: 23 },
-      { id: 'f4', name: '田中 健太', profileImage: 'https://via.placeholder.com/40', mutualFriends: 5 },
-      { id: 'f5', name: '伊藤 さくら', profileImage: 'https://via.placeholder.com/40', mutualFriends: 15 },
-      { id: 'f6', name: '渡辺 大輔', profileImage: 'https://via.placeholder.com/40', mutualFriends: 7 }
+      { name: '佐藤 花子', profileImage: 'https://via.placeholder.com/40', mutualFriends: 12 },
+      { name: '鈴木 一郎', profileImage: 'https://via.placeholder.com/40', mutualFriends: 8 },
+      { name: '高橋 美咲', profileImage: 'https://via.placeholder.com/40', mutualFriends: 23 },
+      { name: '田中 健太', profileImage: 'https://via.placeholder.com/40', mutualFriends: 5 },
+      { name: '伊藤 さくら', profileImage: 'https://via.placeholder.com/40', mutualFriends: 15 },
+      { name: '渡辺 大輔', profileImage: 'https://via.placeholder.com/40', mutualFriends: 7 }
     ],
     photos: [
       'https://via.placeholder.com/200',

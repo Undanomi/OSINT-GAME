@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BaseApp } from '@/components/BaseApp';
 import { AppProps } from '@/types/app';
 import { Search, ArrowLeft, ArrowRight, RotateCcw, Home, ExternalLink } from 'lucide-react';
@@ -235,11 +235,11 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * 
    * @returns string - 表示するURL文字列
    */
-  const getDisplayUrl = () => {
+  const getDisplayUrl = useCallback(() => {
     if (currentView === VIEW_HOME) return 'https://www.google.com';
     if (currentView === VIEW_SEARCH_RESULTS) return `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
     return currentView;
-  };
+  }, [currentView, searchQuery]);
 
   /**
    * URLバーのEnterキー押下時の処理
@@ -260,7 +260,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   // URLが変更されたときにURLバーを更新
   useEffect(() => {
     setUrlInput(getDisplayUrl());
-  }, [currentView, searchQuery]);
+  }, [getDisplayUrl]);
 
   /**
    * 検索結果のタイプに応じたアイコンを返す関数
