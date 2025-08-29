@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BaseApp } from '@/components/BaseApp';
 import { AppProps } from '@/types/app';
 import { Search, ArrowLeft, ArrowRight, RotateCcw, Home, ExternalLink } from 'lucide-react';
+import { getFirebaseDocuments } from '@/actions/getFirebaseDocuments';
+import { UnifiedSearchResult } from '@/types/search';
 
 // 各ページコンポーネントのインポート
 import { AbcCorpPage } from './pages/AbcCorpPage';
@@ -25,86 +27,6 @@ interface SearchResult {
   /** ページの種類（企業サイト、SNS、ニュース、個人サイト、ディレクトリ） */
   type: 'corporate' | 'social' | 'news' | 'personal' | 'directory';
 }
-
-/**
- * 検索用のサンプルデータベース
- * OSINT調査ゲーム用に構成されたサンプル情報
- * 企業情報、個人プロフィール、ニュース記事などを含む
- */
-const searchDatabase: SearchResult[] = [
-  {
-    // LinkedInプロフィールサンプル - ソーシャルメディア情報
-    id: '1',
-    title: '田中太郎 - LinkedInプロフィール',
-    url: 'https://linkedin.com/in/taro-tanaka',
-    description: 'ABC株式会社のマーケティング部長。東京大学経済学部卒。デジタルマーケティングとブランド戦略の専門家。',
-    type: 'social',
-  },
-  {
-    // Facelookプロフィール - ソーシャルメディア情報
-    id: '1b',
-    title: '山田太郎 - Facelook',
-    url: 'https://facelook.com/yamada.taro',
-    description: 'Tech Solutions Inc.のソフトウェアエンジニア。テクノロジーとイノベーションに情熱を注ぐ。週末はハイキングとコーディングを楽しむ。',
-    type: 'social',
-  },
-  {
-    // Facelookプロフィール - テスト太郎
-    id: 'facelook_test_taro',
-    title: 'テスト太郎 - Facelookプロフィール',
-    url: 'https://facelook.com/test.taro',
-    description: 'テストエンジニア at テスト株式会社. テスト大学卒。',
-    type: 'social',
-  },
-  {
-    // Facelookプロフィール - テスト花子
-    id: 'facelook_test_hanako',
-    title: 'テスト花子 - Facelookプロフィール',
-    url: 'https://facelook.com/test.hanako',
-    description: 'テストデザイナー at サンプルスタジオ. ダミー美術大学卒。UI/UXデザインのテストスペシャリスト。',
-    type: 'social',
-  },
-  {
-    // Facelookプロフィール2 - ソーシャルメディア情報
-    id: '1c',
-    title: '佐藤花子 - Facelook',
-    url: 'https://facelook.com/sato.hanako',
-    description: 'Global Marketing Co.のマーケティングマネージャー。デジタルマーケティングとブランド戦略が専門。美味しいコーヒーと猫が大好き。',
-    type: 'social',
-  },
-  {
-    // 企業サイトサンプル - 企業情報調査用
-    id: '2',
-    title: 'ABC株式会社 - 企業情報',
-    url: 'https://abc-corp.co.jp',
-    description: '1985年設立のIT企業。従業員数500名。クラウドソリューション、AI、IoTサービスを提供。',
-    type: 'corporate',
-  },
-  {
-    // 個人ポートフォリオサンプル - 個人情報調査用
-    id: '3',
-    title: '佐藤花子のポートフォリオサイト',
-    url: 'https://hanako-portfolio.com',
-    description: 'フロントエンドエンジニア。React、TypeScript、Next.js専門。ABC株式会社勤務。',
-    type: 'personal',
-  },
-  {
-    // ニュース記事サンプル - 企業の最新情報収集用
-    id: '4',
-    title: 'ABC株式会社、新クラウドサービスを発表 - IT News Today',
-    url: 'https://it-news-today.com/abc-cloud-launch',
-    description: 'ABC株式会社が企業向けクラウドプラットフォーム「ABC Cloud Pro」をリリース。セキュリティ機能を強化。',
-    type: 'news',
-  },
-  {
-    // GitHubプロフィールサンプル - ソーシャルメディア情報
-    id: '5',
-    title: '鈴木次郎 - GitHub',
-    url: 'https://github.com/jiro-suzuki',
-    description: 'シニアソフトウェアエンジニア at ABC株式会社。Go、Python、Kubernetesの専門家。',
-    type: 'social',
-  }
-];
 
 /**
  * 特定URLに対応するカスタムページコンポーネントのマッピング
@@ -143,6 +65,15 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [isSearching, setIsSearching] = useState(false);
   // URLバー入力の状態管理
   const [urlInput, setUrlInput] = useState('');
+  
+  // Firebase検索結果のキャッシュ
+  const [firebaseCache, setFirebaseCache] = useState<UnifiedSearchResult[]>([]);
+  // Firebase初回読み込み完了フラグ
+  const [isCacheLoaded, setIsCacheLoaded] = useState(false);
+  
+  // ページネーション関連の状態
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   // ブラウザのナビゲーション履歴を管理
   const [history, setHistory] = useState<string[]>([VIEW_HOME]);
@@ -155,8 +86,29 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const currentView = history[historyIndex];
 
   /**
+   * Firebaseからsearch_resultコレクションを取得してキャッシュする
+   * アプリ初期化時に一度だけ実行される
+   */
+  useEffect(() => {
+    const loadFirebaseData = async () => {
+      if (isCacheLoaded) return;
+      try {
+        console.log('Loading Firebase search results...');
+        const firebaseResults = await getFirebaseDocuments();
+        console.log('Loaded Firebase results:', firebaseResults.length);
+        setFirebaseCache(firebaseResults);
+        setIsCacheLoaded(true);
+      } catch (error) {
+        console.error('Failed to load Firebase data:', error);
+        setIsCacheLoaded(true);
+      }
+    };
+    loadFirebaseData();
+  }, [isCacheLoaded]);
+
+  /**
    * 指定されたビューまたはURLにナビゲートする関数
-   * ブラウザの履歴機能を再現し、戸る・進む操作に対応
+   * ブラウザの履歴機能を再現し、戻る・進む操作に対応
    * 
    * @param viewIdentifier - ナビゲート先のURLまたはビュー識別子
    */
@@ -170,28 +122,73 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   };
 
   /**
+   * UnifiedSearchResultをSearchResultに変換する関数
+   * templateからページタイプを推測する
+   */
+  const convertFirebaseResult = (unifiedResult: UnifiedSearchResult): SearchResult => {
+    let type: SearchResult['type'] = 'directory';
+    
+    // templateからページタイプを判定
+    if (unifiedResult.template === 'FacelookProfilePage' || 
+        unifiedResult.template === 'LinkedInProfilePage') {
+      type = 'social';
+    } else if (unifiedResult.template === 'AbcCorpPage') {
+      type = 'corporate';
+    }
+
+    return {
+      id: unifiedResult.id,
+      title: unifiedResult.title,
+      url: unifiedResult.url,
+      description: unifiedResult.description,
+      type: type,
+    };
+  };
+
+  /**
    * 検索処理を実行する関数
-   * サンプルデータベースからキーワードにマッチする結果を検索
-   * リアルな検索体験のために意図的な遅延を設定
+   * Firebaseキャッシュからkeywords完全一致で検索
+   * キーワードマッチングとページネーション機能を実装
    */
   const performSearch = () => {
-    if (!searchQuery.trim()) return; // 空の検索クエリは無視
+    console.log('performSearch called');
+    console.log('searchQuery:', searchQuery);
+    
+    if (!searchQuery.trim()) {
+      console.log('Empty search query, returning');
+      return; // 空の検索クエリは無視
+    }
 
     setIsSearching(true); // 検索中状態を表示
+    setCurrentPage(1); // 検索時はページを1に戻す
 
-    // 0.8秒の遅延でリアルな検索体験をシミュレート
     setTimeout(() => {
       const query = searchQuery.toLowerCase();
-      // タイトルと説明文から部分一致検索を実行
-      const results = searchDatabase.filter(item =>
-        item.title.toLowerCase().includes(query) ||
-        item.description.toLowerCase().includes(query)
-      );
+      
+      // Firebaseキャッシュから検索（keywordsプロパティで完全一致）
+      const firebaseResults = firebaseCache
+        .filter(item => {
+          console.log('Filtering item:', item);
+          const matchesKeywords = item.keywords?.some(keyword => {
+            const match = keyword.toLowerCase() === query;
+            console.log(`Keyword "${keyword}" matches "${query}":`, match);
+            return match;
+          });
+          const matchesTitle = item.title.toLowerCase().includes(query);
+          const matchesDescription = item.description.toLowerCase().includes(query);
+          
+          console.log('Matches - keywords:', matchesKeywords, 'title:', matchesTitle, 'description:', matchesDescription);
+          return matchesKeywords || matchesTitle || matchesDescription;
+        })
+        .map(convertFirebaseResult);
 
-      setSearchResults(results);
+      console.log('検索結果:', firebaseResults);
+      console.log('検索結果数:', firebaseResults.length);
+      
+      setSearchResults(firebaseResults);
       setIsSearching(false);
       navigateTo(VIEW_SEARCH_RESULTS); // 検索結果ページに遷移
-    }, 800);
+    }, 500);
   };
 
   /**
@@ -213,7 +210,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   };
 
   /**
-   * ブラウザの「戸る」ボタンの処理
+   * ブラウザの「戻る」ボタンの処理
    * 履歴の前のページに戻る
    */
   const handleBack = () => {
@@ -384,6 +381,34 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const statusBar = `準備完了`;
 
   /**
+   * Firebaseキャッシュから動的にページコンポーネントを取得する関数
+   */
+  const getDynamicPageComponent = (url: string): React.ReactElement | null => {
+    // 1. 静的なページコンポーネントをチェック
+    if (pageComponents[url]) {
+      return pageComponents[url];
+    }
+
+    // 2. Firebaseキャッシュから該当するURLを探す
+    const firebaseResult = firebaseCache.find(item => item.url === url);
+    if (firebaseResult) {
+      // テンプレートに基づいてコンポーネントを動的生成
+      switch (firebaseResult.template) {
+        case 'FacelookProfilePage':
+          return <FacelookProfilePage documentId={firebaseResult.id} />;
+        case 'LinkedInProfilePage':
+          return <LinkedInProfilePage />;
+        case 'AbcCorpPage':
+          return <AbcCorpPage />;
+        default:
+          return null;
+      }
+    }
+
+    return null;
+  };
+
+  /**
    * 現在のビューに応じてコンテンツをレンダリングする関数
    * ホーム、検索結果、カスタムページの表示を制御
    * 
@@ -401,12 +426,23 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
     // 2. 検索結果画面
     if (currentView === VIEW_SEARCH_RESULTS) {
+      // ページネーションの計算
+      const totalResults = searchResults.length;
+      const totalPages = Math.ceil(totalResults / itemsPerPage);
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const currentResults = searchResults.slice(startIndex, endIndex);
+      
       return (
         <div className="p-4">
           {/* 検索結果の統計情報 */}
-          <div className="mb-4 pb-3 border-b">
-            <p className="text-sm text-gray-600">約 {searchResults.length} 件の結果 (0.3秒)</p>
-          </div>
+          {totalResults > 0 && (
+            <div className="mb-4 pb-3 border-b">
+              <p className="text-sm text-gray-600">
+                約 {totalResults} 件の結果 (0.3秒) - ページ {currentPage} / {totalPages}
+              </p>
+            </div>
+          )}
           
           {isSearching ? (
             // 検索中のローディング表示
@@ -423,42 +459,86 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
               <p className="text-sm text-gray-500 mt-2">別のキーワードで試してみてください</p>
             </div>
           ) : (
-            // 検索結果一覧の表示
-            <div className="space-y-6">
-              {searchResults.map((result) => (
-                <div key={result.id} className="border-b pb-4">
-                  <div className="flex items-start space-x-3">
-                    {/* サイトタイプアイコン */}
-                    <span className="text-lg">{getTypeIcon(result.type)}</span>
-                    <div className="flex-1">
-                      {/* タイトルとリンク */}
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3
-                          className="text-lg text-blue-600 hover:underline cursor-pointer font-medium"
-                          onClick={() => handleResultClick(result.url)}
-                        >
-                          {result.title}
-                        </h3>
-                        <ExternalLink size={14} className="text-gray-400" />
+            <>
+              {/* 検索結果一覧の表示 */}
+              <div className="space-y-6">
+                {currentResults.map((result) => (
+                  <div key={result.id} className="border-b pb-4">
+                    <div className="flex items-start space-x-3">
+                      {/* サイトタイプアイコン */}
+                      <span className="text-lg">{getTypeIcon(result.type)}</span>
+                      <div className="flex-1">
+                        {/* タイトルとリンク */}
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3
+                            className="text-lg text-blue-600 hover:underline cursor-pointer font-medium"
+                            onClick={() => handleResultClick(result.url)}
+                          >
+                            {result.title}
+                          </h3>
+                          <ExternalLink size={14} className="text-gray-400" />
+                        </div>
+                        {/* URL表示 */}
+                        <p className="text-green-700 text-sm mb-2">{result.url}</p>
+                        {/* 説明文 */}
+                        <p className="text-gray-700 text-sm leading-relaxed mb-3">
+                          {result.description}
+                        </p>
                       </div>
-                      {/* URL表示 */}
-                      <p className="text-green-700 text-sm mb-2">{result.url}</p>
-                      {/* 説明文 */}
-                      <p className="text-gray-700 text-sm leading-relaxed mb-3">
-                        {result.description}
-                      </p>
                     </div>
                   </div>
+                ))}
+              </div>
+
+              {/* ページネーション */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center space-x-2 mt-8 pt-4 border-t">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    前へ
+                  </button>
+                  
+                  {/* ページ番号 */}
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = Math.max(1, currentPage - 2) + i;
+                    if (pageNum > totalPages) return null;
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-1 text-sm border rounded ${
+                          currentPage === pageNum 
+                            ? 'bg-blue-600 text-white' 
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    次へ
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       );
     }
 
-    // 3. カスタムページまたはジェネリックページの表示
-    return pageComponents[currentView] || <GenericPage url={currentView} />;
+    // 3. カスタムページまたはジェネリックページの表示（動的対応）
+    const dynamicComponent = getDynamicPageComponent(currentView);
+    return dynamicComponent || <GenericPage url={currentView} />;
   };
 
   return (
