@@ -20,8 +20,8 @@ interface ScenarioSelectionProps {
 const scenarios: Scenario[] = [
   {
     id: 'social-media-analysis',
-    title: 'ソーシャルメディア分析',
-    description: '偽アカウントの特定や情報の真偽を判断するスキルを身につけます。',
+    title: 'SNSを活用したOSINTとスピアフィッシング',
+    description: 'SNSに公開されている情報を調査し、とある企業のエンジニアのアカウントが侵害されるまでの手順を攻撃者視点で体験します。',
     difficulty: 'beginner',
     estimatedTime: '20-30分',
     icon: Globe,
@@ -29,7 +29,7 @@ const scenarios: Scenario[] = [
   },
   {
     id: 'missing-person',
-    title: '行方不明者の調査',
+    title: '[ToDo]行方不明者の調査',
     description: 'SNSやインターネット上の情報を活用して、行方不明になった人物の手がかりを探します。',
     difficulty: 'beginner',
     estimatedTime: '30-45分',
@@ -38,7 +38,7 @@ const scenarios: Scenario[] = [
   },
   {
     id: 'corporate-investigation',
-    title: '企業調査',
+    title: '[ToDo]企業調査',
     description: '企業の背景、関係者、財務状況などを公開情報から調査します。',
     difficulty: 'intermediate',
     estimatedTime: '45-60分',
@@ -47,7 +47,7 @@ const scenarios: Scenario[] = [
   },
   {
     id: 'document-verification',
-    title: '文書検証',
+    title: '[ToDo]文書検証',
     description: '画像や文書の真正性を検証し、改ざんや偽造を見抜く方法を学びます。',
     difficulty: 'advanced',
     estimatedTime: '60-90分',
@@ -147,7 +147,7 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
             調査シナリオを選択
           </h1>
           <p className="text-xl text-cyan-300">
-            あなたの興味に合わせて調査ミッションを選んでください
+            あなたの興味に合わせて調査シナリオを選んでください
           </p>
         </div>
 

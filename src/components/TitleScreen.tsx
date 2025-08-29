@@ -12,6 +12,8 @@ interface TitleScreenProps {
 export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [showAbout, setShowAbout] = useState(false);
+  const [hasReadAbout, setHasReadAbout] = useState(false);
 
   const { user, loading, signInWithGoogle } = useAuth();
   const { setUser, setAuthenticated } = useGameStore();
@@ -25,6 +27,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
 
   const handleStart = () => {
     if (!user) {
+      if (!hasReadAbout) {
+        setShowAbout(true);
+        return;
+      }
       handleGoogleSignIn();
       return;
     }
@@ -44,6 +50,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
       const errorMessage = error instanceof Error ? error.message : 'Google認証に失敗しました。もう一度お試しください。';
       setAuthError(errorMessage);
     }
+  };
+
+  const handleAgreeAndLogin = async () => {
+    setHasReadAbout(true);
+    setShowAbout(false);
+    await handleGoogleSignIn();
   };
 
   if (loading) {
@@ -96,7 +108,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
           <button
             onClick={handleStart}
             disabled={isLoading || loading}
-            className="w-full max-w-xs mx-auto flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full max-w-sm mx-auto flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-10 py-5 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>
@@ -110,7 +122,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
               </>
             ) : (
               <>
-                <Play size={20} />
+                <Play size={21} />
                 <span>{user ? 'ゲーム開始' : 'Googleでログインしてゲーム開始'}</span>
               </>
             )}
@@ -121,7 +133,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
             <span>設定</span>
           </button>
 
-          <button className="w-full max-w-xs mx-auto flex items-center justify-center space-x-3 bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg font-medium transition-all">
+          <button
+            onClick={() => setShowAbout(true)}
+            className="w-full max-w-xs mx-auto flex items-center justify-center space-x-3 bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg font-medium transition-all"
+          >
             <Info size={18} />
             <span>ゲームについて</span>
           </button>
@@ -129,12 +144,89 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
 
         {/* フッター */}
         <div className="text-white/60 text-sm">
-          <p>情報収集と分析のスキルを身につけよう</p>
           {!user && (
-            <p className="mt-2 text-xs">※ ゲームを開始するにはGoogleアカウントでのログインが必要です</p>
+            <p className="mt-2 text-xs">
+              ※ ゲームを開始するには「ゲームについて」をお読みいただき、Googleアカウントでのログインが必要です
+            </p>
           )}
         </div>
       </div>
+
+      {/* ゲームについてモーダル */}
+      {showAbout && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-white">ゲームについて</h3>
+              <button
+                onClick={() => setShowAbout(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="text-gray-300 space-y-4">
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-2">免責事項</h4>
+                <p className="leading-relaxed">
+                  この物語はフィクションであり、実在の人物、団体などとは一切関係ありません。
+                  本ゲームは教育目的で作成されており、OSINT（オープンソースインテリジェンス）の
+                  基本的な技術と手法を学習するためのトレーニングゲームです。
+                  本ゲームの利用によって生じたトラブル・損失・損害には一切責任を負いかねます。
+                  また、本ゲームの利用は利用者の責任によって行っていただけるようお願い致します。
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-2">ゲームの目的</h4>
+                <p className="leading-relaxed">
+                  公開されている情報を活用して、与えられた課題を解決する能力を養うことを目的としています。
+                  情報の収集、分析、検証の手法を実践的に学ぶことができます。
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-2">注意事項</h4>
+                <ul className="list-disc list-inside space-y-1 leading-relaxed">
+                  <li>ゲーム内の情報は全て架空のものです</li>
+                  <li>学習目的でのみご利用ください</li>
+                  <li>本ゲームで習得した技術や知識は、倫理的かつ法的な範囲内でのみ使用してください</li>
+                  <li>他者のプライバシーの侵害や不正アクセス等の違法行為は一切禁止します</li>
+                  <li>本ゲームは、OSINTの技術と手法の学習を目的としており、正確性、完全性、最新性を保証するものではありません</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-2">技術仕様</h4>
+                <p className="leading-relaxed">
+                  本ゲームはWebブラウザ上で動作するデスクトップエミュレータです。
+                  様々なアプリケーションやウェブサイトを模擬した環境で調査体験を提供します。
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+              {!hasReadAbout && !user ? (
+                <button
+                  onClick={handleAgreeAndLogin}
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2"
+                >
+                  <span>同意してGoogleでログイン</span>
+                </button>
+              ) : null}
+              <button
+                onClick={() => setShowAbout(false)}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-all"
+              >
+                {user ? '閉じる' : 'キャンセル'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

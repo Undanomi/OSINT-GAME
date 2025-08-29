@@ -45,10 +45,10 @@ export const DisclaimerLoading: React.FC<DisclaimerLoadingProps> = ({ onComplete
         <div className="absolute w-96 h-96 rounded-full bg-cyan-500 blur-3xl -bottom-48 -right-48 animate-pulse"></div>
       </div>
 
-      <div className="relative z-10 text-center max-w-4xl mx-auto px-8">
+      <div className="relative z-10 text-center w-full max-w-4xl mx-auto px-8">
         {/* プログレスバー */}
-        <div className="mb-12">
-          <div className="w-full bg-white/20 rounded-full h-2 mb-4">
+        <div className="mb-12 w-full">
+          <div className="w-96 mx-auto bg-white/20 rounded-full h-2 mb-4">
             <div
               className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-1000 ease-out"
               style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
@@ -60,16 +60,12 @@ export const DisclaimerLoading: React.FC<DisclaimerLoadingProps> = ({ onComplete
         </div>
 
         {/* メインテキスト */}
-        <div className="mb-12">
-          <h1
-            className={`text-4xl md:text-6xl font-bold text-white mb-8 transition-all duration-500 ${
-              fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-          >
+        <div className="mb-12 w-full">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-8">
             OSINT GAME
           </h1>
 
-          <div className="min-h-[120px] flex items-center justify-center">
+          <div className="min-h-[120px] flex items-center justify-center w-full max-w-2xl mx-auto">
             <p
               className={`text-xl md:text-2xl text-white leading-relaxed transition-all duration-500 ${
                 fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'

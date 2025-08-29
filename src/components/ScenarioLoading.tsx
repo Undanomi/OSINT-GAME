@@ -11,14 +11,14 @@ const getScenarioInfo = (scenarioId: string | null) => {
   switch (scenarioId) {
     case 'social-media-analysis':
       return {
-        title: 'ソーシャルメディア分析',
-        subtitle: '偽アカウントの特定と情報の真偽判断',
-        description: 'あなたは情報分析のエキスパートとして、怪しいアカウントの調査を依頼されました。',
+        title: 'SNSを活用したOSINTとスピアフィッシング',
+        subtitle: '攻撃者視点でのアカウント侵害体験',
+        description: 'あなたは闇の組織のエージェントとして、とあるエンジニアのアカウントの侵害を依頼されました。',
         objectives: [
-          'SNSアカウントの真正性を検証する',
-          '投稿内容の一貫性を分析する',
-          'プロフィール情報の矛盾を発見する',
-          '関連アカウントとの関係性を調べる'
+          'ターゲットのSNSアカウントを特定する',
+          'ターゲットのプロファイリングをする',
+          '友人になりすまして情報を窃取する',
+          '窃取した情報をもとにアカウントを侵害する',
         ]
       };
     default:
@@ -39,6 +39,7 @@ const getScenarioInfo = (scenarioId: string | null) => {
 export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
   const { selectedScenario } = useGameStore();
 
   const scenarioInfo = getScenarioInfo(selectedScenario);
@@ -49,7 +50,6 @@ export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) 
     'セキュリティプロトコルを確認中...',
     'ミッション情報を読み込み中...',
     '調査ツールを初期化中...',
-    '準備完了'
   ];
 
   useEffect(() => {
@@ -57,9 +57,7 @@ export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) 
       setProgress(prev => {
         if (prev >= 100) {
           clearInterval(timer);
-          setTimeout(() => {
-            onComplete();
-          }, 1000);
+          setIsCompleted(true);
           return 100;
         }
         return prev + 2;
@@ -67,7 +65,7 @@ export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) 
     }, 100);
 
     return () => clearInterval(timer);
-  }, [onComplete]);
+  }, []);
 
   useEffect(() => {
     const stepTimer = setInterval(() => {
@@ -105,7 +103,7 @@ export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) 
           {/* ミッション情報 */}
           <div className="mb-12">
             <div className="mb-6">
-              <h1 className="text-5xl font-bold text-white mb-4 tracking-wide">
+              <h1 className="text-4xl font-bold text-white mb-4 tracking-wide">
                 {scenarioInfo.title}
               </h1>
               <h2 className="text-2xl text-cyan-300 mb-6">
@@ -123,7 +121,7 @@ export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) 
                 {scenarioInfo.objectives.map((objective, index) => (
                   <div key={index} className="flex items-center space-x-3 text-left">
                     <div className="w-2 h-2 bg-cyan-400 rounded-full flex-shrink-0"></div>
-                    <span className="text-gray-300">{objective}</span>
+                    <span className="text-gray-300 text-lg">{objective}</span>
                   </div>
                 ))}
               </div>
@@ -146,26 +144,47 @@ export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) 
               </div>
             </div>
 
-            {/* 現在のステップ */}
-            <div className="min-h-[2rem] flex items-center justify-center">
-              <p className="text-white text-lg font-medium">
-                {steps[currentStep]}
-              </p>
+            {/* 現在のステップ - 固定高さでレイアウト安定化 */}
+            <div className="h-24 flex flex-col items-center justify-center">
+              {isCompleted ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center space-x-2 text-green-400">
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-xl font-semibold">準備完了！</span>
+                  </div>
+                  <p className="text-gray-300">調査を開始する準備が整いました</p>
+                </div>
+              ) : (
+                <p className="text-white text-lg font-medium">
+                  {steps[currentStep]}
+                </p>
+              )}
             </div>
           </div>
 
-          {/* ローディングアニメーション */}
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-3 h-3 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-            <div className="w-3 h-3 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-            <div className="w-3 h-3 bg-white rounded-full animate-bounce"></div>
-          </div>
-
-          {/* 注意事項 */}
-          <div className="mt-12 text-center">
-            <p className="text-white/60 text-sm">
-              この調査は教育目的のシミュレーションです
-            </p>
+          {/* アクションセクション - 固定高さでレイアウト安定化 */}
+          <div className="h-20 flex flex-col items-center justify-center mb-8">
+            {isCompleted ? (
+              <div
+                onClick={onComplete}
+                className="cursor-pointer group inline-block"
+              >
+                <div className="flex items-center justify-center space-x-3 text-cyan-300 hover:text-cyan-200 transition-all duration-300">
+                  <span className="text-xl font-medium underline decoration-dotted underline-offset-4 decoration-cyan-300/50 group-hover:decoration-cyan-200/80">
+                    調査を開始する
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* ローディングアニメーション */
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-3 h-3 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-3 h-3 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-3 h-3 bg-white rounded-full animate-bounce"></div>
+              </div>
+            )}
           </div>
         </div>
       </div>
