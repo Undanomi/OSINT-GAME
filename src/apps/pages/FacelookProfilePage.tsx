@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { doc, getDoc } from 'firebase/firestore';
 import { ref, getDownloadURL } from 'firebase/storage';
@@ -22,6 +22,15 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
   const [userData, setUserData] = useState<FacelookUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+
+  // メモ化されたクリックハンドラー
+  const handlePhotoClick = useCallback((photo: string) => {
+    setSelectedPhoto(photo);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setSelectedPhoto(null);
+  }, []);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -270,7 +279,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
             <div className="relative">
               <div 
                 className="w-32 h-32 sm:w-40 sm:h-40 relative cursor-pointer"
-                onClick={() => setSelectedPhoto(userData.profileImage)}
+                onClick={() => handlePhotoClick(userData.profileImage)}
               >
                 <Image
                   src={userData.profileImage}
@@ -409,7 +418,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
                   <div 
                     key={idx} 
                     className="relative h-24"
-                    onClick={() => setSelectedPhoto(photo)}
+                    onClick={() => handlePhotoClick(photo)}
                   >
                     <Image
                       src={photo}
@@ -463,7 +472,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
                 {post.image && (
                   <div 
                     className="relative w-full h-[400px] cursor-pointer"
-                    onClick={() => setSelectedPhoto(post.image!)}
+                    onClick={() => handlePhotoClick(post.image!)}
                   >
                     <Image
                       src={post.image}
@@ -520,7 +529,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
           {/* Overlay */}
           <div 
             className="fixed inset-0 bg-black/60 z-40"
-            onClick={() => setSelectedPhoto(null)}
+            onClick={handleCloseModal}
           />
           {/* Modal content */}
           <div 
@@ -531,7 +540,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
                 className="absolute top-2 right-2 text-white bg-black bg-opacity-70 rounded-full p-2 hover:bg-opacity-90 z-10 transition-all"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedPhoto(null);
+                  handleCloseModal();
                 }}
               >
                 <X className="w-6 h-6" />
