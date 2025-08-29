@@ -32,6 +32,7 @@ interface WindowStore {
   }) => void;
   closeWindow: (id: string) => void;
   minimizeWindow: (id: string) => void;
+  restoreWindow: (id: string) => void;  // 新しく追加
   focusWindow: (id: string) => void;
   focusWindowOnInteraction: (id: string) => void; // ユーザー操作時のフォーカス
   updateWindowPosition: (id: string, x: number, y: number) => void;
@@ -92,7 +93,18 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   minimizeWindow: (id) => {
     set(state => ({
       windows: state.windows.map(w =>
-        w.id === id ? { ...w, isMinimized: !w.isMinimized } : w
+        w.id === id ? { ...w, isMinimized: true } : w
+      ),
+      // 最小化されたウィンドウがアクティブウィンドウの場合、アクティブウィンドウをクリア
+      activeWindowId: state.activeWindowId === id ? null : state.activeWindowId,
+    }));
+  },
+
+  // ウィンドウを復元（最小化解除）
+  restoreWindow: (id) => {
+    set(state => ({
+      windows: state.windows.map(w =>
+        w.id === id ? { ...w, isMinimized: false } : w
       ),
     }));
   },
@@ -111,11 +123,26 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   focusWindowOnInteraction: (id) => {
     const { activeWindowId, windows, maxZIndex } = get();
 
-    // 既にアクティブで最前面なら何もしない
-    if (activeWindowId === id) return;
-
     const targetWindow = windows.find(w => w.id === id);
     if (!targetWindow) return;
+
+    // 最小化されている場合は、activeWindowIdに関係なく復元する
+    if (targetWindow.isMinimized) {
+      const newZIndex = maxZIndex + 1;
+      set({
+        windows: windows.map(w =>
+          w.id === id
+            ? { ...w, zIndex: newZIndex, isMinimized: false }
+            : w
+        ),
+        maxZIndex: newZIndex,
+        activeWindowId: id,
+      });
+      return;
+    }
+
+    // 既にアクティブで最前面なら何もしない
+    if (activeWindowId === id) return;
 
     // 必要な場合のみzIndexを更新（他のウィンドウが前面にある場合）
     const needsZIndexUpdate = windows.some(w =>
