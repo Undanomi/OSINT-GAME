@@ -7,8 +7,8 @@
     "template": "FacelookProfilePage",
     "content": {
       "name": "テスト 太郎",
-      "profileImage": "https://via.placeholder.com/168",
-      "coverImage": "https://via.placeholder.com/940x348",
+      "profileImage": "https://picsum.photos/200/200?random=101",
+      "coverImage": "https://picsum.photos/1200/400?random=102",
       "job": "テストエンジニア",
       "company": "テスト株式会社",
       "location": "テスト市テスト区",
@@ -29,7 +29,7 @@
         },
         {
           "content": "テスト投稿その2：サンプルテキストです。テスト用のダミーデータです。",
-          "image": "https://via.placeholder.com/600x400",
+          "image": "https://picsum.photos/600/400?random=3",
           "timestamp": "昨日 18:30",
           "likes": 128,
           "comments": 23,
@@ -43,24 +43,16 @@
           "shares": 15
         }
       ],
-      "friends": [
-        {"name": "サンプル 花子", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 12},
-        {"name": "テスト 一郎", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 8},
-        {"name": "ダミー 美咲", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 23},
-        {"name": "サンプル 健太", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 5},
-        {"name": "テスト さくら", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 15},
-        {"name": "ダミー 大輔", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 7}
-      ],
       "photos": [
-        "https://via.placeholder.com/200",
-        "https://via.placeholder.com/200",
-        "https://via.placeholder.com/200",
-        "https://via.placeholder.com/200",
-        "https://via.placeholder.com/200",
-        "https://via.placeholder.com/200",
-        "https://via.placeholder.com/200",
-        "https://via.placeholder.com/200",
-        "https://via.placeholder.com/200"
+        "https://picsum.photos/200/200?random=200",
+        "https://picsum.photos/200/200?random=200",
+        "https://picsum.photos/200/200?random=200",
+        "https://picsum.photos/200/200?random=200",
+        "https://picsum.photos/200/200?random=200",
+        "https://picsum.photos/200/200?random=200",
+        "https://picsum.photos/200/200?random=200",
+        "https://picsum.photos/200/200?random=200",
+        "https://picsum.photos/200/200?random=200"
       ]
     },
     "keywords": ["テスト太郎", "facelook", "テスト株式会社", "テストエンジニア", "テスト大学"]
@@ -73,8 +65,8 @@
     "template": "FacelookProfilePage",
     "content": {
       "name": "テスト 花子",
-      "profileImage": "https://via.placeholder.com/168",
-      "coverImage": "https://via.placeholder.com/940x348",
+      "profileImage": "https://picsum.photos/200/200?random=201",
+      "coverImage": "https://picsum.photos/1200/400?random=202",
       "job": "テストデザイナー",
       "company": "サンプルスタジオ",
       "location": "ダミー市ダミー区",
@@ -88,7 +80,7 @@
       "posts": [
         {
           "content": "テストプロジェクトのサンプルデザインが完成！これはダミーデータです。",
-          "image": "https://via.placeholder.com/600x400",
+          "image": "https://picsum.photos/600/400?random=3",
           "timestamp": "5時間前",
           "likes": 234,
           "comments": 45,
@@ -102,15 +94,10 @@
           "shares": 6
         }
       ],
-      "friends": [
-        {"name": "テスト 太郎", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 12},
-        {"name": "サンプル 翔", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 34},
-        {"name": "ダミー 美優", "profileImage": "https://via.placeholder.com/40", "mutualFriends": 18}
-      ],
       "photos": [
-        "https://via.placeholder.com/200",
-        "https://via.placeholder.com/200",
-        "https://via.placeholder.com/200"
+        "https://picsum.photos/200/200?random=200",
+        "https://picsum.photos/200/200?random=200",
+        "https://picsum.photos/200/200?random=200"
       ]
     },
     "keywords": ["テスト花子", "facelook", "サンプルスタジオ", "テストデザイナー", "ダミー美術大学"]

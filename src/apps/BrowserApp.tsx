@@ -49,6 +49,22 @@ const searchDatabase: SearchResult[] = [
     type: 'social',
   },
   {
+    // Facelookプロフィール - テスト太郎
+    id: 'facelook_test_taro',
+    title: 'テスト太郎 - Facelookプロフィール',
+    url: 'https://facelook.com/test.taro',
+    description: 'テストエンジニア at テスト株式会社. テスト大学卒。',
+    type: 'social',
+  },
+  {
+    // Facelookプロフィール - テスト花子
+    id: 'facelook_test_hanako',
+    title: 'テスト花子 - Facelookプロフィール',
+    url: 'https://facelook.com/test.hanako',
+    description: 'テストデザイナー at サンプルスタジオ. ダミー美術大学卒。UI/UXデザインのテストスペシャリスト。',
+    type: 'social',
+  },
+  {
     // Facelookプロフィール2 - ソーシャルメディア情報
     id: '1c',
     title: '佐藤花子 - Facelook',
@@ -101,6 +117,8 @@ const pageComponents: { [key: string]: React.ReactElement } = {
   'https://facelook.com/yamada.taro': <FacelookProfilePage documentId="facelook_yamada_taro" />, // 山田太郎のFacelookプロフィール
   'https://facelook.com/sato.hanako': <FacelookProfilePage documentId="facelook_sato_hanako" />, // 佐藤花子のFacelookプロフィール
   'https://facelook.com/test.user': <FacelookProfilePage documentId="facelook_test_user" />, // テストユーザーのFacelookプロフィール
+  'https://facelook.com/test.taro': <FacelookProfilePage documentId="facelook_test_taro" />, // テスト太郎のFacelookプロフィール
+  'https://facelook.com/test.hanako': <FacelookProfilePage documentId="facelook_test_hanako" />, // テスト花子のFacelookプロフィール
 };
 
 // ブラウザの表示状態を識別するための定数
@@ -445,7 +463,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   return (
     <BaseApp windowId={windowId} isActive={isActive} toolbar={toolbar} statusBar={statusBar}>
-      <div key={reloadKey} className="h-full bg-white overflow-auto">
+      <div key={reloadKey} className="h-full bg-white overflow-auto relative">
         {renderContent()}
       </div>
     </BaseApp>

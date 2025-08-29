@@ -8,10 +8,10 @@ import { db, storage } from '@/lib/firebase';
 import { FacelookUser } from '@/types/facelook';
 import { UnifiedSearchResult, FacelookContent } from '@/types/search';
 import { 
-  Search, Home, Users, PlayCircle, Store, Menu, 
+  Search, Home, Menu, 
   MessageCircle, Bell, ChevronDown, ThumbsUp, MessageSquare, 
   Share2, MoreHorizontal, MapPin, Briefcase, GraduationCap,
-  Heart, Calendar, Globe, Camera, Video, Smile
+  Heart, Calendar, Globe, Camera, X
 } from 'lucide-react';
 
 interface FacelookProfilePageProps {
@@ -21,7 +21,7 @@ interface FacelookProfilePageProps {
 export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ documentId }) => {
   const [userData, setUserData] = useState<FacelookUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('posts');
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -213,14 +213,14 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 relative">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-300 sticky top-0 z-50">
+      <header className="bg-white shadow-sm border-b border-gray-300 sticky top-0 z-30">
         <div className="max-w-full px-2 sm:px-4">
           <div className="flex items-center justify-between h-14">
             {/* Left section */}
             <div className="flex items-center flex-1">
-              <div className="text-2xl font-bold text-[#1877f2] mr-2">f</div>
+              <div className="text-2xl text-[#1877f2] mr-2" style={{ fontWeight: 900, fontFamily: 'Arial Black, sans-serif', letterSpacing: '-1px' }}>facelook</div>
               <div className="relative hidden sm:block">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
@@ -231,24 +231,6 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
               </div>
             </div>
 
-            {/* Center section - Navigation */}
-            <nav className="hidden lg:flex items-center space-x-2">
-              <button className="px-8 py-2 hover:bg-gray-100 rounded-lg text-[#1877f2] border-b-3 border-[#1877f2]">
-                <Home className="w-6 h-6" />
-              </button>
-              <button className="px-8 py-2 hover:bg-gray-100 rounded-lg text-gray-600">
-                <Users className="w-6 h-6" />
-              </button>
-              <button className="px-8 py-2 hover:bg-gray-100 rounded-lg text-gray-600">
-                <PlayCircle className="w-6 h-6" />
-              </button>
-              <button className="px-8 py-2 hover:bg-gray-100 rounded-lg text-gray-600">
-                <Store className="w-6 h-6" />
-              </button>
-              <button className="px-8 py-2 hover:bg-gray-100 rounded-lg text-gray-600">
-                <Users className="w-6 h-6" />
-              </button>
-            </nav>
 
             {/* Right section */}
             <div className="flex items-center space-x-2 flex-1 justify-end">
@@ -260,16 +242,6 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
               </button>
               <button className="p-2 bg-gray-200 rounded-full hover:bg-gray-300">
                 <Bell className="w-5 h-5" />
-              </button>
-              <button className="p-2 hover:bg-gray-200 rounded-full">
-                <Image 
-                  src={userData.profileImage} 
-                  alt="Profile" 
-                  width={28} 
-                  height={28} 
-                  className="rounded-full" 
-                  unoptimized
-                />
               </button>
             </div>
           </div>
@@ -289,10 +261,6 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
               unoptimized
             />
           </div>
-          <button className="absolute bottom-4 right-4 bg-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-gray-100">
-            <Camera className="w-4 h-4" />
-            <span className="hidden sm:inline">カバー写真を編集</span>
-          </button>
         </div>
 
         {/* Profile Info */}
@@ -300,7 +268,10 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
           <div className="flex flex-col sm:flex-row items-center sm:items-end -mt-8 sm:-mt-12 pb-4">
             {/* Profile Picture */}
             <div className="relative">
-              <div className="w-32 h-32 sm:w-40 sm:h-40 relative">
+              <div 
+                className="w-32 h-32 sm:w-40 sm:h-40 relative cursor-pointer"
+                onClick={() => setSelectedPhoto(userData.profileImage)}
+              >
                 <Image
                   src={userData.profileImage}
                   alt={userData.name}
@@ -314,33 +285,17 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
               </button>
             </div>
 
-            {/* Name and Friends */}
+            {/* Name and Friends Count */}
             <div className="flex-1 sm:ml-6 text-center sm:text-left mt-4 sm:mt-0">
               <h1 className="text-2xl sm:text-3xl font-bold">{userData.name}</h1>
               <p className="text-gray-600 mt-1">{userData.friendsCount} 人の友達</p>
-              <div className="flex -space-x-2 mt-2 justify-center sm:justify-start">
-                {userData.friends.slice(0, 8).map((friend, idx) => (
-                  <div key={idx} className="w-8 h-8 relative">
-                    <Image
-                      src={friend.profileImage}
-                      alt={friend.name}
-                      fill
-                      className="rounded-full border-2 border-white object-cover"
-                      unoptimized
-                    />
-                  </div>
-                ))}
-              </div>
             </div>
 
             {/* Action Buttons */}
             <div className="flex space-x-2 mt-4 sm:mt-0">
-              <button className="bg-[#1877f2] text-white px-4 py-2 rounded-lg hover:bg-[#166fe5] flex items-center space-x-2">
-                <span>友達を追加</span>
-              </button>
-              <button className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center space-x-2">
-                <MessageCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">メッセージ</span>
+              <button className="bg-gray-100 px-4 py-2 rounded-lg flex items-center space-x-2 opacity-50 cursor-not-allowed" disabled>
+                <MessageCircle className="w-4 h-4 text-gray-400" />
+                <span className="hidden sm:inline text-gray-400">メッセージ</span>
               </button>
               <button className="bg-gray-200 p-2 rounded-lg hover:bg-gray-300">
                 <ChevronDown className="w-5 h-5" />
@@ -352,41 +307,29 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
           <div className="border-t mt-4">
             <nav className="flex space-x-1 overflow-x-auto">
               <button 
-                onClick={() => setActiveTab('posts')}
-                className={`px-4 py-3 font-medium hover:bg-gray-100 rounded-lg ${
-                  activeTab === 'posts' ? 'text-[#1877f2] border-b-3 border-[#1877f2]' : 'text-gray-600'
-                }`}
+                className="px-4 py-3 font-medium cursor-default text-[#1877f2] border-b-3 border-[#1877f2]"
               >
                 投稿
               </button>
               <button 
-                onClick={() => setActiveTab('about')}
-                className={`px-4 py-3 font-medium hover:bg-gray-100 rounded-lg ${
-                  activeTab === 'about' ? 'text-[#1877f2] border-b-3 border-[#1877f2]' : 'text-gray-600'
-                }`}
+                className="px-4 py-3 font-medium cursor-default text-gray-600"
               >
                 基本データ
               </button>
               <button 
-                onClick={() => setActiveTab('friends')}
-                className={`px-4 py-3 font-medium hover:bg-gray-100 rounded-lg ${
-                  activeTab === 'friends' ? 'text-[#1877f2] border-b-3 border-[#1877f2]' : 'text-gray-600'
-                }`}
+                className="px-4 py-3 font-medium cursor-default text-gray-600"
               >
                 友達
               </button>
               <button 
-                onClick={() => setActiveTab('photos')}
-                className={`px-4 py-3 font-medium hover:bg-gray-100 rounded-lg ${
-                  activeTab === 'photos' ? 'text-[#1877f2] border-b-3 border-[#1877f2]' : 'text-gray-600'
-                }`}
+                className="px-4 py-3 font-medium cursor-default text-gray-600"
               >
                 写真
               </button>
-              <button className="px-4 py-3 font-medium text-gray-600 hover:bg-gray-100 rounded-lg">
+              <button className="px-4 py-3 font-medium text-gray-600 cursor-default">
                 動画
               </button>
-              <button className="px-4 py-3 font-medium text-gray-600 hover:bg-gray-100 rounded-lg">
+              <button className="px-4 py-3 font-medium text-gray-600 cursor-default">
                 その他
               </button>
             </nav>
@@ -447,16 +390,12 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
                 {userData.website && (
                   <div className="flex items-center space-x-3">
                     <Globe className="w-5 h-5 text-gray-500" />
-                    <a href={userData.website} className="text-[#1877f2] hover:underline">
+                    <span className="text-[#1877f2]">
                       {userData.website.replace('https://', '')}
-                    </a>
+                    </span>
                   </div>
                 )}
               </div>
-
-              <button className="w-full mt-4 bg-gray-200 py-2 rounded-lg hover:bg-gray-300 font-medium">
-                自己紹介を編集
-              </button>
             </div>
 
             {/* Photos Card */}
@@ -467,7 +406,11 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {userData.photos.slice(0, 9).map((photo, idx) => (
-                  <div key={idx} className="relative h-24">
+                  <div 
+                    key={idx} 
+                    className="relative h-24"
+                    onClick={() => setSelectedPhoto(photo)}
+                  >
                     <Image
                       src={photo}
                       alt={`Photo ${idx + 1}`}
@@ -480,68 +423,10 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
               </div>
             </div>
 
-            {/* Friends Card */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h2 className="text-xl font-bold">友達</h2>
-                  <p className="text-gray-600">{userData.friendsCount}人の友達</p>
-                </div>
-                <a href="#" className="text-[#1877f2] hover:underline">すべて見る</a>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {userData.friends.slice(0, 9).map((friend, idx) => (
-                  <div key={idx} className="text-center">
-                    <div className="relative h-24">
-                      <Image
-                        src={friend.profileImage}
-                        alt={friend.name}
-                        fill
-                        className="object-cover rounded-lg cursor-pointer hover:opacity-90"
-                        unoptimized
-                      />
-                    </div>
-                    <p className="text-sm mt-1 truncate">{friend.name}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Main Feed */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Create Post */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex space-x-3">
-                <div className="w-10 h-10 relative flex-shrink-0">
-                  <Image
-                    src={userData.profileImage}
-                    alt={userData.name}
-                    fill
-                    className="rounded-full object-cover"
-                    unoptimized
-                  />
-                </div>
-                <button className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-left text-gray-500 hover:bg-gray-200">
-                  {userData.name}さん、その気持ち、シェアしよう
-                </button>
-              </div>
-              <div className="flex justify-around mt-3 pt-3 border-t">
-                <button className="flex items-center space-x-2 px-4 py-2 hover:bg-gray-100 rounded-lg">
-                  <Video className="w-5 h-5 text-red-500" />
-                  <span className="text-gray-600">ライブ動画</span>
-                </button>
-                <button className="flex items-center space-x-2 px-4 py-2 hover:bg-gray-100 rounded-lg">
-                  <Camera className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-600">写真/動画</span>
-                </button>
-                <button className="flex items-center space-x-2 px-4 py-2 hover:bg-gray-100 rounded-lg">
-                  <Smile className="w-5 h-5 text-yellow-500" />
-                  <span className="text-gray-600">気分/アクティビティ</span>
-                </button>
-              </div>
-            </div>
-
             {/* Posts */}
             {userData.posts.map((post, idx) => (
               <div key={idx} className="bg-white rounded-lg shadow">
@@ -576,12 +461,15 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
 
                 {/* Post Image */}
                 {post.image && (
-                  <div className="relative w-full h-[400px]">
+                  <div 
+                    className="relative w-full h-[400px] cursor-pointer"
+                    onClick={() => setSelectedPhoto(post.image!)}
+                  >
                     <Image
                       src={post.image}
                       alt="Post"
                       fill
-                      className="object-cover"
+                      className="object-cover hover:opacity-95"
                       unoptimized
                     />
                   </div>
@@ -625,6 +513,42 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
           </div>
         </div>
       </div>
+
+      {/* Photo Modal */}
+      {selectedPhoto && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/60 z-40"
+            onClick={() => setSelectedPhoto(null)}
+          />
+          {/* Modal content */}
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 pointer-events-none"
+          >
+            <div className="relative pointer-events-auto">
+              <button
+                className="absolute top-2 right-2 text-white bg-black bg-opacity-70 rounded-full p-2 hover:bg-opacity-90 z-10 transition-all"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedPhoto(null);
+                }}
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <Image
+                src={selectedPhoto}
+                alt="Enlarged photo"
+                width={800}
+                height={600}
+                className="object-contain max-w-[90vw] max-h-[80vh] w-auto h-auto"
+                unoptimized
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
