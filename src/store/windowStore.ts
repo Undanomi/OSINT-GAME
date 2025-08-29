@@ -33,6 +33,7 @@ interface WindowStore {
   closeWindow: (id: string) => void;
   minimizeWindow: (id: string) => void;
   focusWindow: (id: string) => void;
+  focusWindowOnInteraction: (id: string) => void; // ユーザー操作時のフォーカス
   updateWindowPosition: (id: string, x: number, y: number) => void;
   updateWindowSize: (id: string, width: number, height: number) => void;
   getWindowById: (id: string) => WindowState | undefined;
@@ -50,7 +51,8 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   openWindow: (appConfig) => {
     const existingWindow = get().windows.find(w => w.id === appConfig.id);
     if (existingWindow && existingWindow.isOpen) {
-      get().focusWindow(appConfig.id);
+      // 既に開いているウィンドウの場合は、最小化解除とフォーカスのみ
+      get().focusWindowOnInteraction(appConfig.id);
       return;
     }
 
@@ -69,17 +71,18 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     };
 
     set(state => ({
-      windows: existingWindow 
+      windows: existingWindow
         ? state.windows.map(w => w.id === appConfig.id ? newWindow : w)
         : [...state.windows, newWindow],
       maxZIndex: newZIndex,
+      activeWindowId: appConfig.id, // 新しく開いたウィンドウを即座にアクティブに
     }));
   },
 
   // ウィンドウを閉じる
   closeWindow: (id) => {
     set(state => ({
-      windows: state.windows.map(w => 
+      windows: state.windows.map(w =>
         w.id === id ? { ...w, isOpen: false } : w
       ),
     }));
@@ -88,21 +91,48 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   // ウィンドウを最小化
   minimizeWindow: (id) => {
     set(state => ({
-      windows: state.windows.map(w => 
+      windows: state.windows.map(w =>
         w.id === id ? { ...w, isMinimized: !w.isMinimized } : w
       ),
     }));
   },
 
-  // ウィンドウをフォーカスする
+  // ウィンドウをフォーカスする（自動フォーカス）
   focusWindow: (id) => {
-    const { activeWindowId, windows, maxZIndex } = get();
+    const { activeWindowId } = get();
+
     // 既にアクティブなら何もしない
     if (activeWindowId === id) return;
-    const newZIndex = maxZIndex + 1;
+
+    set({ activeWindowId: id });
+  },
+
+  // ユーザー操作によるウィンドウフォーカス（zIndex更新あり）
+  focusWindowOnInteraction: (id) => {
+    const { activeWindowId, windows, maxZIndex } = get();
+
+    // 既にアクティブで最前面なら何もしない
+    if (activeWindowId === id) return;
+
+    const targetWindow = windows.find(w => w.id === id);
+    if (!targetWindow) return;
+
+    // 必要な場合のみzIndexを更新（他のウィンドウが前面にある場合）
+    const needsZIndexUpdate = windows.some(w =>
+      w.id !== id &&
+      w.zIndex > targetWindow.zIndex &&
+      w.isOpen &&
+      !w.isMinimized
+    );
+    const newZIndex = needsZIndexUpdate ? maxZIndex + 1 : targetWindow.zIndex;
+
     set({
-      windows: windows.map(w => w.id === id ? { ...w, zIndex: newZIndex, isMinimized: false } : w),
-      maxZIndex: newZIndex,
+      windows: windows.map(w =>
+        w.id === id
+          ? { ...w, zIndex: newZIndex, isMinimized: false }
+          : w
+      ),
+      maxZIndex: needsZIndexUpdate ? newZIndex : maxZIndex,
       activeWindowId: id,
     });
   },
@@ -110,7 +140,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   // ウィンドウ位置の更新
   updateWindowPosition: (id, x, y) => {
     set(state => ({
-      windows: state.windows.map(w => 
+      windows: state.windows.map(w =>
         w.id === id ? { ...w, x, y } : w
       ),
     }));
@@ -119,7 +149,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   // ウィンドウサイズの更新
   updateWindowSize: (id, width, height) => {
     set(state => ({
-      windows: state.windows.map(w => 
+      windows: state.windows.map(w =>
         w.id === id ? { ...w, width, height } : w
       ),
     }));
