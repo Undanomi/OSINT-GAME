@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 
 // Firebase設定（環境変数から読み込み）
 // 最小限の設定のみ使用
@@ -21,5 +22,8 @@ export const db = getFirestore(app);
 
 // Storageインスタンス
 export const storage = getStorage(app);
+
+// Authenticationインスタンス
+export const auth = getAuth(app);
 
 export default app;
