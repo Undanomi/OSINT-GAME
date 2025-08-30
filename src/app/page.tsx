@@ -10,7 +10,7 @@ import { ScenarioSelection } from '@/components/ScenarioSelection';
 import { ScenarioLoading } from '@/components/ScenarioLoading';
 import { useGameStore } from '@/store/gameStore';
 import { useWindowStore } from '@/store/windowStore';
-import { useAuthContext } from '@/components/AuthProvider';
+import { useAuthContext } from '@/providers/AuthProvider';
 
 export default function HomePage() {
   const {

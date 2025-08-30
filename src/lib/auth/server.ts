@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { verifyIdToken } from '@/lib/firebase-admin';
+import { verifyIdToken } from '@/lib/auth/firebase-admin';
 
 /**
  * リクエストからFirebase IDトークンを取得

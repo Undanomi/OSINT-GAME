@@ -1,4 +1,4 @@
-import { NOTES_LIMITS, PATTERNS } from '@/lib/constants';
+import { NOTES_LIMITS, PATTERNS } from '@/lib/notes/constants';
 
 /**
  * 共通バリデーション関数
@@ -25,12 +25,14 @@ export function validateNoteId(noteId: string): { valid: boolean; error?: string
 
 /**
  * タイトルの検証
+ * 長すぎる場合は自動的に切り詰める（エラーにしない）
  */
-export function validateTitle(title: string): { valid: boolean; error?: string } {
+export function validateTitle(title: string): { valid: boolean; error?: string; truncated?: string } {
   if (title.length > NOTES_LIMITS.MAX_TITLE_LENGTH) {
+    // エラーではなく切り詰めた値を返す
     return { 
-      valid: false, 
-      error: `タイトルが長すぎます（最大${NOTES_LIMITS.MAX_TITLE_LENGTH}文字）` 
+      valid: true,
+      truncated: title.slice(0, NOTES_LIMITS.MAX_TITLE_LENGTH)
     };
   }
   
@@ -39,12 +41,14 @@ export function validateTitle(title: string): { valid: boolean; error?: string }
 
 /**
  * コンテンツの検証
+ * 長すぎる場合は自動的に切り詰める（エラーにしない）
  */
-export function validateContent(content: string): { valid: boolean; error?: string } {
+export function validateContent(content: string): { valid: boolean; error?: string; truncated?: string } {
   if (content.length > NOTES_LIMITS.MAX_CONTENT_LENGTH) {
+    // エラーではなく切り詰めた値を返す
     return { 
-      valid: false, 
-      error: `内容が長すぎます（最大${NOTES_LIMITS.MAX_CONTENT_LENGTH}文字）` 
+      valid: true,
+      truncated: content.slice(0, NOTES_LIMITS.MAX_CONTENT_LENGTH)
     };
   }
   

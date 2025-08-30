@@ -1,7 +1,9 @@
+// NotesApp用の定数定義
+
 // セキュリティとコスト管理のための制限値
 export const NOTES_LIMITS = {
   // メモの制限
-  MAX_NOTES_PER_USER: 100,        // ユーザーあたりの最大メモ数
+  MAX_NOTES_PER_USER: 10,          // ユーザーあたりの最大メモ数（10件まで）
   MAX_TITLE_LENGTH: 100,           // タイトルの最大文字数
   MAX_CONTENT_LENGTH: 10000,       // 内容の最大文字数（約10KB）
   
@@ -24,14 +26,7 @@ export const NOTES_LIMITS = {
 
 // エラーメッセージ
 export const NOTES_ERRORS = {
-  MAX_NOTES_REACHED: 'メモの上限（100件）に達しました。不要なメモを削除してください。',
-} as const;
-
-// 認証トークン設定
-export const AUTH_TOKEN = {
-  COOKIE_NAME: 'firebase-auth-token',
-  MAX_AGE_SECONDS: 3600,           // 1時間
-  REFRESH_INTERVAL_MS: 55 * 60 * 1000, // 55分
+  MAX_NOTES_REACHED: 'メモの上限（10件）に達しました。不要なメモを削除してください。',
 } as const;
 
 // 正規表現パターン

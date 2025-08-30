@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Play, Settings, Info, User as UserIcon } from 'lucide-react';
-import { useAuthContext } from '@/components/AuthProvider';
+import { useAuthContext } from '@/providers/AuthProvider';
 import { useGameStore } from '@/store/gameStore';
 
 interface TitleScreenProps {

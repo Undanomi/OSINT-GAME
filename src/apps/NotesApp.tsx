@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusIcon, TrashIcon, SearchIcon, CloudIcon, CloudOffIcon } from 'lucide-react';
-import { useAuthContext } from '@/components/AuthProvider';
+import { useAuthContext } from '@/providers/AuthProvider';
 import {
   getNotesList,
   getNote,
@@ -15,8 +15,8 @@ import {
   deleteNote,
   batchUpdateNotes
 } from '@/actions/notes';
-import { isEmptyNote } from '@/lib/validation';
-import { NOTES_LIMITS, NOTES_ERRORS } from '@/lib/constants';
+import { isEmptyNote } from '@/lib/notes/validation';
+import { NOTES_LIMITS, NOTES_ERRORS } from '@/lib/notes/constants';
 
 interface Note {
   id: string;
@@ -27,6 +27,17 @@ interface Note {
   userId?: string;
 }
 
+/**
+ * NotesApp - メモ管理アプリケーション
+ * 
+ * @description
+ * 主な機能：
+ * - メモの作成・編集・削除（最大${NOTES_LIMITS.MAX_NOTES_PER_USER}件）
+ * - 自動保存（${NOTES_LIMITS.SAVE_DEBOUNCE_MS/1000}秒のデバウンス）
+ * - キャッシュによる高速なメモ切り替え
+ * - 空の新規メモの自動削除
+ * - Firebaseによるクラウド同期
+ */
 export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
   const { user } = useAuthContext();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -35,9 +46,12 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   
-  // デバウンス用のタイマー参照
+  // デバウンス用のタイマー参照（自動保存の遅延実行 - ${NOTES_LIMITS.SAVE_DEBOUNCE_MS}ms）
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingUpdatesRef = useRef<Map<string, { title: string; content: string; updatedAt?: Date }>>(new Map());
+  const pendingUpdatesRef = useRef<Map<string, { title: string; content: string }>>(new Map());
+  
+  // メモの完全版をキャッシュ（サーバーアクセスを削減）
+  const noteCacheRef = useRef<Map<string, Note>>(new Map());
 
   // 初回読み込み
   useEffect(() => {
@@ -104,7 +118,10 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
     }
   }, [notes, isSyncing]);
 
-  // デバウンスされた保存処理
+  /**
+   * デバウンスされた保存処理
+   * 保留中の更新をFirestoreに一括保存する
+   */
   const saveToServer = useCallback(async () => {
     if (!user || pendingUpdatesRef.current.size === 0) return;
 
@@ -120,9 +137,8 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
           continue;
         }
         
-        // upsertNoteで新規作成と更新の両方に対応（楽観的ロック付き）
-        const note = notes.find(n => n.id === id);
-        await upsertNote(id, data.title, data.content, data.updatedAt || note?.updatedAt);
+        // upsertNoteで新規作成と更新の両方に対応
+        await upsertNote(id, data.title, data.content);
       }
       
       pendingUpdatesRef.current.clear();
@@ -135,7 +151,7 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
     } finally {
       setIsSyncing(false);
     }
-  }, [user, notes]);
+  }, [user]);
 
   // コンポーネントのアンマウント時にタイマーをクリーンアップ
   useEffect(() => {
@@ -163,6 +179,11 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
     };
   }, [user]);
 
+  /**
+   * 新規メモを作成する
+   * - 最大1つの「新しいメモ」のみ存在可能
+   * - 空のメモはFirestoreに保存せず、編集時に初めて保存
+   */
   const handleCreateNote = () => {
     // メモ数の上限チェック
     if (notes.length >= NOTES_LIMITS.MAX_NOTES_PER_USER) {
@@ -170,34 +191,62 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
       return;
     }
 
+    // 既に「新しいメモ」が存在する場合は、それを選択するだけ
+    const existingNewNote = notes.find(n => n.title === '新しいメモ' && n.content === '');
+    if (existingNewNote) {
+      setSelectedNote(existingNewNote);
+      return;
+    }
+
+    // ユニークなIDを生成（タイムスタンプ + ランダム文字列）
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 9);
+    const uniqueId = `${timestamp}_${randomStr}`;
+
     const newNote: Note = {
-      id: Date.now().toString(),
+      id: uniqueId,
       title: '新しいメモ',
       content: '',
       createdAt: new Date(),
       updatedAt: new Date(),
-      userId: user?.uid
+      userId: undefined  // まだFirestoreに保存していないことを示すフラグ
     };
 
-    // ローカル状態を即座に更新（Firestoreには保存しない）
+    // ローカル状態を即座に更新
     setNotes([newNote, ...notes]);
     setSelectedNote(newNote);
     setSyncError(null);
     
     // 空のメモはFirestoreに保存しない
-    // 内容が入力されたらhandleUpdateNoteのデバウンス処理で自動保存される
+    // 内容が入力されたら自動的にFirestoreに保存される
   };
 
+  /**
+   * メモを更新する
+   * - 文字数制限を自動適用
+   * - 新規メモの初回編集時にFirestore保存を開始
+   * - デバウンス処理により${NOTES_LIMITS.SAVE_DEBOUNCE_MS/1000}秒後に自動保存
+   */
   const handleUpdateNote = (id: string, title: string, content: string) => {
 
+    // クライアント側でも文字数制限を適用（保険的な対策）
+    const truncatedTitle = title.slice(0, NOTES_LIMITS.MAX_TITLE_LENGTH);
+    const truncatedContent = content.slice(0, NOTES_LIMITS.MAX_CONTENT_LENGTH);
+    
     // Reactは自動的にXSS対策をするため、ここでのサニタイゼーションは不要
     // ただし、Server Actions側で検証は必要
     const now = new Date();
+    const currentNote = notes.find(n => n.id === id)!;
+    
+    // 新規メモが初めて編集された場合、userIdを設定（Firestore保存開始のトリガー）
+    const isFirstEdit = !currentNote.userId && (truncatedTitle !== '新しいメモ' || truncatedContent !== '');
+    
     const updatedNote = { 
-      ...notes.find(n => n.id === id)!, 
-      title, 
-      content, 
-      updatedAt: now 
+      ...currentNote, 
+      title: truncatedTitle, 
+      content: truncatedContent, 
+      updatedAt: now,
+      userId: isFirstEdit ? user?.uid : currentNote.userId  // 初回編集時にuserIdを設定
     };
     
     // ローカル状態を即座に更新（UIの即座な反映）
@@ -208,30 +257,41 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
     if (selectedNote?.id === id) {
       setSelectedNote(updatedNote);
     }
+    
+    // キャッシュも更新
+    noteCacheRef.current.set(id, updatedNote);
 
     // Server Actionへの保存をデバウンス処理
     if (user) {
-      // 保留中の更新に追加（更新日時も保持）
-      pendingUpdatesRef.current.set(id, { title, content, updatedAt: now });
+      // 保留中の更新に追加 - 切り詰めた値を使用
+      pendingUpdatesRef.current.set(id, { title: truncatedTitle, content: truncatedContent });
 
       // 既存のタイマーをクリア
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
       }
 
-      // 5秒後に保存（デバウンス - EDoS対策）
+      // デバウンス時間後に保存（${NOTES_LIMITS.SAVE_DEBOUNCE_MS}ms後、EDoS対策）
       saveTimerRef.current = setTimeout(() => {
         saveToServer();
       }, NOTES_LIMITS.SAVE_DEBOUNCE_MS);
     }
   };
 
+  /**
+   * メモを削除する
+   * - ローカル状態とキャッシュから即座に削除
+   * - Firestoreからの削除は非同期で実行
+   */
   const handleDeleteNote = (id: string) => {
     // ローカル状態を即座に更新
     setNotes(notes.filter(note => note.id !== id));
     if (selectedNote?.id === id) {
       setSelectedNote(null);
     }
+    
+    // キャッシュからも削除
+    noteCacheRef.current.delete(id);
 
     // Server Actionで削除（非同期で実行）
     if (user) {
@@ -327,11 +387,38 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
                 <div
                   key={note.id}
                   onClick={async () => {
-                    // 選択時に完全なメモを取得（パフォーマンス最適化）
+                    // 現在選択中のメモが空の「新しいメモ」（まだ保存されていない）なら削除
+                    if (selectedNote && !selectedNote.userId && selectedNote.title === '新しいメモ' && selectedNote.content === '') {
+                      // ローカルから削除（Firestoreには保存されていないので削除不要）
+                      setNotes(prev => prev.filter(n => n.id !== selectedNote.id));
+                      noteCacheRef.current.delete(selectedNote.id);
+                    }
+                    
+                    // キャッシュから取得を試みる
+                    const cachedNote = noteCacheRef.current.get(note.id);
+                    
+                    // キャッシュにあり、更新日時が同じならキャッシュを使用
+                    if (cachedNote && cachedNote.updatedAt.getTime() === note.updatedAt.getTime()) {
+                      setSelectedNote(cachedNote);
+                      return;
+                    }
+                    
+                    // 新規作成したローカルメモ（userIdがない）はサーバーに存在しない
+                    const isLocalOnlyNote = !note.userId;
+                    if (isLocalOnlyNote) {
+                      // ローカルのメモをそのまま使用（完全なデータがすでにある）
+                      setSelectedNote(note);
+                      noteCacheRef.current.set(note.id, note);
+                      return;
+                    }
+                    
+                    // サーバーに保存済みのメモのみサーバーから取得
                     try {
                       const fullNote = await getNote(note.id);
                       if (fullNote) {
                         setSelectedNote(fullNote);
+                        // キャッシュに保存
+                        noteCacheRef.current.set(note.id, fullNote);
                         // ローカルのnotesも更新
                         setNotes(prev => prev.map(n => n.id === fullNote.id ? fullNote : n));
                       }

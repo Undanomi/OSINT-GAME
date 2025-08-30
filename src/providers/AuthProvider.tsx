@@ -1,7 +1,18 @@
 'use client';
 
+/**
+ * TODO: 残りのフォルダ構成のリファクタリング
+ * 
+ * 残りのタスク:
+ * 1. hooksフォルダの削除
+ *    - /src/hooks/useHydration.ts は使用されていないため削除可能
+ * 
+ * 2. utils.tsの確認
+ *    - 使用状況を確認して削除または維持を判断
+ */
+
 import { useState, useEffect, createContext, useContext } from 'react';
-import { initializeAuthCookie } from '@/lib/auth-client';
+import { initializeAuthCookie } from '@/lib/auth/client';
 import {
   User,
   signInWithPopup,

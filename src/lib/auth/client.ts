@@ -1,6 +1,6 @@
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { AUTH_TOKEN } from '@/lib/constants';
+import { AUTH_TOKEN } from '@/lib/auth/constants';
 
 // トークン更新タイマー - コンポーネントアンマウント時にクリア必須
 let refreshTimerId: NodeJS.Timeout | null = null;

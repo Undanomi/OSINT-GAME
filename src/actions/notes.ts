@@ -13,9 +13,9 @@ import {
   limit,
   Timestamp
 } from 'firebase/firestore';
-import { NOTES_LIMITS, PATTERNS } from '@/lib/constants';
-import { getAuthenticatedUserId } from '@/lib/auth-server';
-import { validateNoteId, validateTitle, validateContent } from '@/lib/validation';
+import { NOTES_LIMITS, PATTERNS } from '@/lib/notes/constants';
+import { getAuthenticatedUserId } from '@/lib/auth/server';
+import { validateNoteId, validateTitle, validateContent } from '@/lib/notes/validation';
 
 interface Note {
   id: string;
@@ -26,7 +26,16 @@ interface Note {
   userId?: string;
 }
 
-// メモ一覧を取得（プレビュー付き）
+/**
+ * メモ一覧を取得する
+ * 
+ * @description
+ * 認証済みユーザーのメモ一覧を最新順で取得します。
+ * 最大件数はNOTES_LIMITS.MAX_NOTES_PER_USER（${NOTES_LIMITS.MAX_NOTES_PER_USER}件）に制限されています。
+ * 
+ * @returns {Promise<Note[]>} メモの配列（全文を含む）
+ * @throws {Error} 認証エラーまたは取得エラー
+ */
 export async function getNotesList(): Promise<Note[]> {
   try {
     // 認証済みユーザーIDを取得
@@ -36,11 +45,11 @@ export async function getNotesList(): Promise<Note[]> {
     }
 
     const notesRef = collection(db, 'users', userId, 'notes');
-    // 最新30件に制限（パフォーマンス改善）
+    // 最新のメモを取得（メモの上限まで）
     const q = query(
       notesRef, 
       orderBy('updatedAt', 'desc'),
-      limit(30)
+      limit(NOTES_LIMITS.MAX_NOTES_PER_USER)
     );
     const snapshot = await getDocs(q);
 
@@ -50,8 +59,7 @@ export async function getNotesList(): Promise<Note[]> {
       notes.push({
         id: doc.id,
         title: data.title || '',
-        // リスト表示用に最初の100文字のみ（パフォーマンス改善）
-        content: (data.content || '').substring(0, 100),
+        content: data.content || '',
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
         userId: data.userId
@@ -102,12 +110,23 @@ export async function getAllNotes(): Promise<Note[]> {
   }
 }
 
-// メモを作成または更新（Upsert）
+/**
+ * メモを作成または更新する（Upsert操作）
+ * 
+ * @description
+ * 指定されたIDのメモが存在する場合は更新、存在しない場合は新規作成します。
+ * タイトルと内容は文字数制限を超えた場合、自動的に切り詰められます。
+ * 
+ * @param {string} noteId - メモのID（タイムスタンプ_ランダム文字列形式）
+ * @param {string} title - メモのタイトル（最大${NOTES_LIMITS.MAX_TITLE_LENGTH}文字、超過時は自動切り詰め）
+ * @param {string} content - メモの内容（最大${NOTES_LIMITS.MAX_CONTENT_LENGTH}文字、超過時は自動切り詰め）
+ * @returns {Promise<Note>} 保存されたメモオブジェクト
+ * @throws {Error} 認証エラー、バリデーションエラー、または保存エラー
+ */
 export async function upsertNote(
   noteId: string,
   title: string,
-  content: string,
-  lastUpdatedAt?: Date  // 楽観的ロック用
+  content: string
 ): Promise<Note> {
   try {
     // 認証済みユーザーIDを取得
@@ -120,40 +139,29 @@ export async function upsertNote(
     const idValidation = validateNoteId(noteId);
     if (!idValidation.valid) throw new Error(idValidation.error);
     
+    // タイトルとコンテンツは自動的に切り詰める
     const titleValidation = validateTitle(title);
-    if (!titleValidation.valid) throw new Error(titleValidation.error);
+    const finalTitle = titleValidation.truncated || title;
     
     const contentValidation = validateContent(content);
-    if (!contentValidation.valid) throw new Error(contentValidation.error);
+    const finalContent = contentValidation.truncated || content;
 
     const now = new Date();
     const noteRef = doc(db, 'users', userId, 'notes', noteId);
     
-    // 楽観的ロック: 既存メモの場合は更新日時をチェック
-    if (lastUpdatedAt) {
-      const noteDoc = await getDoc(noteRef);
-      if (noteDoc.exists()) {
-        const currentUpdatedAt = noteDoc.data().updatedAt?.toDate();
-        if (currentUpdatedAt && currentUpdatedAt.getTime() !== lastUpdatedAt.getTime()) {
-          throw new Error('このメモは他の場所で更新されています。最新の内容を取得してください。');
-        }
-      }
-    }
-    
     // 1回のsetDocで全フィールドを設定（パフォーマンス改善）
     await setDoc(noteRef, {
-      title,
-      content,
+      title: finalTitle,    // 切り詰めた値を使用
+      content: finalContent, // 切り詰めた値を使用
       createdAt: Timestamp.fromDate(now),  // merge: trueなので既存の場合は無視される
       updatedAt: Timestamp.fromDate(now),
-      userId,
-      version: (lastUpdatedAt ? 2 : 1)  // バージョン管理
+      userId
     }, { merge: true });
 
     return {
       id: noteId,
-      title,
-      content,
+      title: finalTitle,    // 切り詰めた値を返す
+      content: finalContent, // 切り詰めた値を返す
       createdAt: now,
       updatedAt: now,
       userId
@@ -163,7 +171,6 @@ export async function upsertNote(
     if (process.env.NODE_ENV === 'development') {
       console.error('Error upserting note:', error);
     }
-    // エラーの詳細を隠蔽（セキュリティ対策）
     throw new Error('メモの保存に失敗しました');
   }
 }
@@ -216,7 +223,17 @@ export async function updateNote(
   }
 }
 
-// 単一メモの詳細を取得
+/**
+ * 単一メモの詳細を取得する
+ * 
+ * @description
+ * 指定されたIDのメモの完全な内容を取得します。
+ * メモが存在しない場合はnullを返します。
+ * 
+ * @param {string} noteId - 取得するメモのID
+ * @returns {Promise<Note | null>} メモオブジェクトまたはnull
+ * @throws {Error} 認証エラーまたは取得エラー
+ */
 export async function getNote(noteId: string): Promise<Note | null> {
   try {
     // 認証済みユーザーIDを取得
@@ -254,7 +271,17 @@ export async function getNote(noteId: string): Promise<Note | null> {
   }
 }
 
-// メモを削除
+/**
+ * メモを削除する
+ * 
+ * @description
+ * 指定されたIDのメモをFirestoreから完全に削除します。
+ * 削除は元に戻せません。
+ * 
+ * @param {string} noteId - 削除するメモのID
+ * @returns {Promise<void>} なし
+ * @throws {Error} 認証エラー、バリデーションエラー、または削除エラー
+ */
 export async function deleteNote(
   noteId: string
 ): Promise<void> {
@@ -295,8 +322,8 @@ export async function batchUpdateNotes(
     }
     
     // バッチサイズの制限
-    if (updates.length > 10) {
-      throw new Error('一度に更新できるメモは10件までです');
+    if (updates.length > NOTES_LIMITS.MAX_BATCH_ITEMS) {
+      throw new Error(`一度に更新できるメモは${NOTES_LIMITS.MAX_BATCH_ITEMS}件までです`);
     }
 
     const updatePromises = updates.map(async (update) => {
@@ -304,7 +331,7 @@ export async function batchUpdateNotes(
       if (!update.id || !/^[a-zA-Z0-9_-]+$/.test(update.id)) {
         throw new Error('不正なメモIDが含まれています');
       }
-      if (update.id.length > 100) {
+      if (update.id.length > NOTES_LIMITS.NOTE_ID_MAX_LENGTH) {
         throw new Error('メモIDが長すぎます');
       }
       if (update.title.length > NOTES_LIMITS.MAX_TITLE_LENGTH) {
