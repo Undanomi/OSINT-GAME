@@ -10,7 +10,7 @@ import { ScenarioSelection } from '@/components/ScenarioSelection';
 import { ScenarioLoading } from '@/components/ScenarioLoading';
 import { useGameStore } from '@/store/gameStore';
 import { useWindowStore } from '@/store/windowStore';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/providers/AuthProvider';
 
 export default function HomePage() {
   const {
@@ -23,7 +23,7 @@ export default function HomePage() {
     setSelectedScenario
   } = useGameStore();
   const windows = useWindowStore(state => state.windows);
-  const { user } = useAuth();
+  const { user } = useAuthContext();
 
   useEffect(() => {
     if (user) {

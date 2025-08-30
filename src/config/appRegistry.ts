@@ -1,4 +1,4 @@
-import { Globe, MessageCircle, Users, Settings, Package, Calculator } from 'lucide-react';
+import { Globe, MessageCircle, Users, Settings, Package, Calculator, StickyNote } from 'lucide-react';
 import { AppMetadata } from '@/store/appStore';
 
 export const systemApps: AppMetadata[] = [
@@ -90,6 +90,22 @@ export const availableApps: AppMetadata[] = [
     defaultHeight: 450,
     minWidth: 280,
     minHeight: 380,
+    isInstalled: false,
+    usageCount: 0
+  },
+  {
+    id: 'notes',
+    name: 'メモ',
+    version: '1.0.0',
+    description: 'メモの作成、編集、検索ができるシンプルなメモアプリケーション',
+    category: 'productivity',
+    keywords: ['メモ', 'ノート', '記録', 'テキスト'],
+    author: 'System',
+    icon: StickyNote,
+    defaultWidth: 700,
+    defaultHeight: 500,
+    minWidth: 500,
+    minHeight: 400,
     isInstalled: false,
     usageCount: 0
   },
