@@ -4,7 +4,7 @@ import React, { useCallback } from 'react';
 import { Rnd } from 'react-rnd';
 import { X, Minus } from 'lucide-react';
 import { useWindowStore } from '@/store/windowStore';
-import { BrowserApp, SocialApp, MessengerApp, AppStoreApp, CalculatorApp } from '@/apps';
+import { BrowserApp, SocialApp, MessengerApp, AppStoreApp, CalculatorApp, NotesApp } from '@/apps';
 
 /**
  * ウィンドウコンポーネントの受け取るプロパティ
@@ -41,6 +41,8 @@ const AppRenderer: React.FC<{ appType: string; windowId: string; isActive: boole
       return <AppStoreApp {...appProps} />;
     case 'calculator':
       return <CalculatorApp {...appProps} />;
+    case 'notes':
+      return <NotesApp {...appProps} />;
     default:
       // 不明なアプリ
       return (

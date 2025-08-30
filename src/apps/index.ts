@@ -22,3 +22,6 @@ export { AppStoreApp } from './AppStoreApp';
 
 /** 計算機アプリケーション - 基本的な計算機能を提供 */
 export { CalculatorApp } from './CalculatorApp';
+
+/** メモアプリケーション - メモの作成・編集・検索機能を提供 */
+export { NotesApp } from './NotesApp';
