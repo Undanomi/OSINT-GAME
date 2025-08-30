@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Play, Settings, Info, User as UserIcon } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/components/AuthProvider';
 import { useGameStore } from '@/store/gameStore';
 
 interface TitleScreenProps {
@@ -15,7 +15,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
   const [showAbout, setShowAbout] = useState(false);
   const [hasReadAbout, setHasReadAbout] = useState(false);
 
-  const { user, loading, signInWithGoogle } = useAuth();
+  const { user, loading, signInWithGoogle } = useAuthContext();
   const { setUser, setAuthenticated } = useGameStore();
 
   useEffect(() => {
