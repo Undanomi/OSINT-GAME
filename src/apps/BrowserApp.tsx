@@ -7,8 +7,8 @@ import { getFirebaseDocuments, filterFirebaseResults, SearchResult} from '@/acti
 
 // 各ページコンポーネントのインポート
 import { AbcCorpPage } from './pages/AbcCorpPage';
-import { LinkedInProfilePage } from './pages/LinkedInProfilePage';
 import { FacelookProfilePage } from './pages/FacelookProfilePage';
+import { RankedOnProfilePage } from './pages/RankedOnProfilePage';
 import { GenericPage } from './pages/GenericPage';
 
 /**
@@ -18,12 +18,14 @@ import { GenericPage } from './pages/GenericPage';
  */
 const pageComponents: { [key: string]: React.ReactElement } = {
   'https://abc-corp.co.jp': <AbcCorpPage />,                    // ABC株式会社の企業ページ
-  'https://linkedin.com/in/taro-tanaka': <LinkedInProfilePage />, // 田中太郎のLinkedInプロフィール
   'https://facelook.com/yamada.taro': <FacelookProfilePage documentId="facelook_yamada_taro" />, // 山田太郎のFacelookプロフィール
   'https://facelook.com/sato.hanako': <FacelookProfilePage documentId="facelook_sato_hanako" />, // 佐藤花子のFacelookプロフィール
   'https://facelook.com/test.user': <FacelookProfilePage documentId="facelook_test_user" />, // テストユーザーのFacelookプロフィール
   'https://facelook.com/test.taro': <FacelookProfilePage documentId="facelook_test_taro" />, // テスト太郎のFacelookプロフィール
   'https://facelook.com/test.hanako': <FacelookProfilePage documentId="facelook_test_hanako" />, // テスト花子のFacelookプロフィール
+  'https://rankedon.com/on/test-taro': <RankedOnProfilePage documentId="rankedon_test_taro" />, // テスト太郎のRankedOnプロフィール
+  'https://rankedon.com/on/test-hanako': <RankedOnProfilePage documentId="rankedon_test_hanako" />, // テスト花子のRankedOnプロフィール
+  'https://rankedon.com/on/dummy-jiro': <RankedOnProfilePage documentId="rankedon_dummy_jiro" />, // ダミー次郎のRankedOnプロフィール
 };
 
 // ブラウザの表示状態を識別するための定数
@@ -227,7 +229,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   /**
    * 検索結果のタイプに応じたアイコンを返す関数
-   * 各タイプのページを視觚的に区別するための絵文字
+   * 各タイプのページを視覚的に区別するための絵文字
    * 
    * @param type - 検索結果アイテムのタイプ
    * @returns string - 対応する絵文字
@@ -341,11 +343,14 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     const firebaseResult = firebaseCache.find(item => item.url === url);
     if (firebaseResult) {
       // テンプレートに基づいてコンポーネントを動的生成
+      // TODO: パフォーマンス最適化 - firebaseResultのデータ全体を各コンポーネントに渡すことで、
+      // 各ページコンポーネント内でのFirestoreへの重複リクエストを避けることができる
+      // 例: <RankedOnProfilePage documentId={firebaseResult.id} initialData={firebaseResult} />
       switch (firebaseResult.template) {
         case 'FacelookProfilePage':
           return <FacelookProfilePage documentId={firebaseResult.id} />;
-        case 'LinkedInProfilePage':
-          return <LinkedInProfilePage />;
+        case 'RankedOnProfilePage':
+          return <RankedOnProfilePage documentId={firebaseResult.id} />;
         case 'AbcCorpPage':
           return <AbcCorpPage />;
         default:
