@@ -409,7 +409,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
               <button
                 onClick={() => {
                   // NOTE: ランダムな検索クエリを設定
-                  const randomQueries = ['Facelook', 'Rankedin', 'Kilogram', 'Z'];
+                  const randomQueries = ['Facelook', 'Rankedon', 'Kilogram', 'Z'];
                   const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
                   setSearchQuery(randomQuery);
                 }}
