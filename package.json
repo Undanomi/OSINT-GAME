@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "node scripts/seedFirestore.js",
+    "seed:overwrite": "node scripts/seedFirestore.js --overwrite",
+    "seed:skip": "node scripts/seedFirestore.js --skip-existing"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

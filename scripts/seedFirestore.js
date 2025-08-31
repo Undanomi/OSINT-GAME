@@ -3,29 +3,53 @@
  * JSONファイルからデータを読み込んでFirestoreに登録
  * 
  * 使い方:
- * 1. データを data/seed.json に配置（またはパスを指定）
- * 2. npm install firebase-admin を実行
- * 3. node scripts/seedFirestore.js [JSONファイルパス] を実行
+ * node scripts/seedFirestore.js <JSONファイルパス> [オプション]
  * 
  * 例:
- * node scripts/seedFirestore.js                    # デフォルト: data/seed.json
- * node scripts/seedFirestore.js data/facelook.json # カスタムパス
+ * node scripts/seedFirestore.js data/facelook.json
+ * node scripts/seedFirestore.js data/facelook.json --overwrite
+ * node scripts/seedFirestore.js data/facelook.json --skip-existing
  */
 
-const admin = require('firebase-admin');
-const fs = require('fs');
-const path = require('path');
+import admin from 'firebase-admin';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import dotenv from 'dotenv';
+
+// ES modulesで__dirnameを使うための設定
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // .env.localを読み込む
-require('dotenv').config({ path: '.env.local' });
-
-// コマンドライン引数からJSONファイルパスを取得（デフォルト: data/seed.json）
-const jsonFilePath = process.argv[2] || 'data/seed.json';
-const absolutePath = path.resolve(jsonFilePath);
+dotenv.config({ path: '.env.local' });
 
 // オプション: --overwrite フラグで上書きを許可
 const allowOverwrite = process.argv.includes('--overwrite');
 const skipExisting = process.argv.includes('--skip-existing');
+
+// コマンドライン引数からJSONファイルパスを取得（必須）
+// オプションフラグを除外してファイルパスを探す
+const args = process.argv.slice(2).filter(arg => !arg.startsWith('--'));
+const jsonFilePath = args[0];
+
+// ファイルパスが指定されていない場合はエラー
+if (!jsonFilePath) {
+  console.error('[-] エラー: JSONファイルパスを指定してください');
+  console.log('\n使い方:');
+  console.log('  node scripts/seedFirestore.js <JSONファイルパス> [オプション]');
+  console.log('\n例:');
+  console.log('  node scripts/seedFirestore.js data/sample.json');
+  console.log('  node scripts/seedFirestore.js data/sample.json --overwrite');
+  console.log('  node scripts/seedFirestore.js data/sample.json --skip-existing');
+  console.log('\nまたはnpmスクリプトを使用:');
+  console.log('  npm run seed data/sample.json');
+  console.log('  npm run seed:overwrite data/sample.json');
+  console.log('  npm run seed:skip data/sample.json');
+  process.exit(1);
+}
+const absolutePath = path.resolve(jsonFilePath);
 
 // Firebase Admin SDK の初期化
 // プロジェクトIDは環境変数から取得
@@ -44,7 +68,7 @@ if (!projectId) {
 const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
 if (fs.existsSync(serviceAccountPath)) {
   console.log('[i] サービスアカウントキーを使用して認証します');
-  const serviceAccount = require(serviceAccountPath);
+  const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     projectId: projectId,
