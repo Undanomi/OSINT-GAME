@@ -3,31 +3,13 @@ import { BaseApp } from '@/components/BaseApp';
 import { AppProps } from '@/types/app';
 import { Search, ArrowLeft, ArrowRight, RotateCcw, Home, ExternalLink } from 'lucide-react';
 import { UnifiedSearchResult } from '@/types/search';
-import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { getFirebaseDocuments, filterFirebaseResults, SearchResult} from '@/actions/searchResults';
 
 // 各ページコンポーネントのインポート
 import { AbcCorpPage } from './pages/AbcCorpPage';
 import { FacelookProfilePage } from './pages/FacelookProfilePage';
 import { RankedOnProfilePage } from './pages/RankedOnProfilePage';
 import { GenericPage } from './pages/GenericPage';
-
-/**
- * 検索結果アイテムのデータ構造を定義するインターフェース
- * ブラウザアプリの検索機能で使用される情報を統一管理
- */
-interface SearchResult {
-  /** 検索結果アイテムの一意識別子 */
-  id: string;
-  /** ページのタイトル */
-  title: string;
-  /** ページのURL */
-  url: string;
-  /** ページの説明文 */
-  description: string;
-  /** ページの種類（企業サイト、SNS、ニュース、個人サイト、ディレクトリ） */
-  type: 'corporate' | 'social' | 'news' | 'personal' | 'directory';
-}
 
 /**
  * 特定URLに対応するカスタムページコンポーネントのマッピング
@@ -47,13 +29,12 @@ const pageComponents: { [key: string]: React.ReactElement } = {
 };
 
 // ブラウザの表示状態を識別するための定数
-const VIEW_HOME = 'view:home';                 // ホームページ（Google風）
+const VIEW_HOME = 'view:home';                 // ホームページ
 const VIEW_SEARCH_RESULTS = 'view:search_results'; // 検索結果ページ
 
 /**
  * ブラウザアプリケーション - OSINT調査ゲーム用のブラウザシミュレータ
  * 検索機能、ナビゲーション履歴、カスタムページ表示機能を実装
- * Google風のインターフェースと検索結果表示を提供
  * 
  * @param windowId - アプリケーションウィンドウの一意識別子
  * @param isActive - アプリケーションがアクティブかどうかのフラグ
@@ -104,30 +85,6 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   };
 
   /**
-   * UnifiedSearchResultをSearchResultに変換する関数
-   * templateからページタイプを推測する
-   */
-  const convertFirebaseResult = (unifiedResult: UnifiedSearchResult): SearchResult => {
-    let type: SearchResult['type'] = 'directory';
-    
-    // templateからページタイプを判定
-    if (unifiedResult.template === 'FacelookProfilePage' || 
-        unifiedResult.template === 'RankedOnProfilePage') {
-      type = 'social';
-    } else if (unifiedResult.template === 'AbcCorpPage') {
-      type = 'corporate';
-    }
-
-    return {
-      id: unifiedResult.id,
-      title: unifiedResult.title,
-      url: unifiedResult.url,
-      description: unifiedResult.description,
-      type: type,
-    };
-  };
-
-  /**
    * 検索処理を実行する関数
    * 初回検索時のみFirebaseからデータを取得し、その後は部分一致で検索
    * キーワードマッチングとページネーション機能を実装
@@ -148,16 +105,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       // 初回検索時のみFirebaseからデータを取得
       if (!isCacheLoaded) {
         console.log('Loading Firebase search results...');
-        const searchResultsRef = collection(db, 'search_results');
-        const querySnapshot = await getDocs(searchResultsRef);
-        const firebaseResults: UnifiedSearchResult[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data() as UnifiedSearchResult;
-          firebaseResults.push({
-            ...data,
-            id: doc.id,
-          });
-        });
+        const firebaseResults = await getFirebaseDocuments();
         console.log('Loaded Firebase results:', firebaseResults.length);
         setFirebaseCache(firebaseResults);
         setIsCacheLoaded(true);
@@ -177,38 +125,20 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   /**
    * キャッシュされたデータに対して部分一致検索を実行する関数
    */
-  const performSearchOnCache = (cache: UnifiedSearchResult[], query: string) => {
-    const queryLower = query.toLowerCase();
-    
-    // キャッシュから部分一致で検索
-    const filteredResults = cache
-      .filter(item => {
-        console.log('Filtering item:', item);
-        
-        // キーワードでの部分一致
-        const matchesKeywords = item.keywords?.some(keyword => {
-          const match = keyword.toLowerCase().includes(queryLower);
-          console.log(`Keyword "${keyword}" includes "${query}":`, match);
-          return match;
-        });
-        
-        // タイトルでの部分一致
-        const matchesTitle = item.title.toLowerCase().includes(queryLower);
-        
-        // 説明文での部分一致
-        const matchesDescription = item.description.toLowerCase().includes(queryLower);
-        
-        console.log('Matches - keywords:', matchesKeywords, 'title:', matchesTitle, 'description:', matchesDescription);
-        return matchesKeywords || matchesTitle || matchesDescription;
-      })
-      .map(convertFirebaseResult);
-
-    console.log('検索結果:', filteredResults);
-    console.log('検索結果数:', filteredResults.length);
-    
-    setSearchResults(filteredResults);
-    setIsSearching(false);
-    navigateTo(VIEW_SEARCH_RESULTS); // 検索結果ページに遷移
+  const performSearchOnCache = async (cache: UnifiedSearchResult[], query: string) => {
+    try {
+      const filteredResults = await filterFirebaseResults(cache, query);
+      
+      console.log('検索結果:', filteredResults);
+      console.log('検索結果数:', filteredResults.length);
+      
+      setSearchResults(filteredResults);
+      setIsSearching(false);
+      navigateTo(VIEW_SEARCH_RESULTS); // 検索結果ページに遷移
+    } catch (error) {
+      console.error('Failed to filter results:', error);
+      setIsSearching(false);
+    }
   };
 
   /**
@@ -271,8 +201,8 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * @returns string - 表示するURL文字列
    */
   const getDisplayUrl = useCallback(() => {
-    if (currentView === VIEW_HOME) return 'https://www.google.com';
-    if (currentView === VIEW_SEARCH_RESULTS) return `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+    if (currentView === VIEW_HOME) return 'https://www.goggles.com';
+    if (currentView === VIEW_SEARCH_RESULTS) return `https://www.goggles.com/search?q=${encodeURIComponent(searchQuery)}`;
     return currentView;
   }, [currentView, searchQuery]);
 
@@ -299,7 +229,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   /**
    * 検索結果のタイプに応じたアイコンを返す関数
-   * 各タイプのページを視觚的に区別するための絵文字
+   * 各タイプのページを視覚的に区別するための絵文字
    * 
    * @param type - 検索結果アイテムのタイプ
    * @returns string - 対応する絵文字
@@ -367,7 +297,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
             type="text"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
-            onKeyPress={handleUrlSubmit}
+            onKeyUp={handleUrlSubmit}
             onFocus={(e) => e.target.select()}
             className="flex-1 outline-none text-sm"
             placeholder="URLを入力するか、検索キーワードを入力"
@@ -382,7 +312,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyUp={handleKeyPress}
           className="flex-1 bg-white border rounded-md px-3 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="検索キーワードを入力"
         />
@@ -438,11 +368,69 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * @returns JSX.Element - 表示するコンテンツ
    */
   const renderContent = () => {
-    // 1. ホーム画面（Google風の空白ページ）
+    // 1. ホーム画面
     if (currentView === VIEW_HOME) {
       return (
-        <div className="h-full flex items-center justify-center">
-          {/* 意図的に空白 - Google風のシンプルなホーム */}
+        <div className="h-full flex flex-col items-center justify-center bg-white px-4">
+          {/* ロゴ */}
+          <div className="text-center mb-8">
+            <h1 className="text-6xl font-light text-gray-700 mb-2">
+              <span className="text-purple-600">G</span>
+              <span className="text-orange-500">o</span>
+              <span className="text-cyan-500">g</span>
+              <span className="text-pink-500">g</span>
+              <span className="text-indigo-500">l</span>
+              <span className="text-emerald-500">e</span>
+              <span className="text-amber-500">s</span>
+            </h1>
+          </div>
+
+          {/* 検索バー */}
+          <div className="w-full max-w-2xl">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyUp={handleKeyPress}
+                className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-full shadow-sm hover:shadow-md focus:shadow-md focus:border-blue-400 focus:outline-none transition-all duration-200"
+                placeholder="検索"
+                autoFocus
+              />
+              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-3">
+                <Search size={20} className="text-gray-400 cursor-pointer hover:text-gray-600" onClick={() => performSearch()} />
+              </div>
+            </div>
+
+            {/* 検索ボタン */}
+            <div className="flex justify-center mt-8 space-x-4">
+              <button
+                onClick={performSearch}
+                disabled={!searchQuery.trim()}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded hover:shadow-sm hover:bg-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Goggles検索
+              </button>
+              <button
+                onClick={() => {
+                  // NOTE: ランダムな検索クエリを設定
+                  const randomQueries = ['Facelook', 'Rankedon', 'Kilogram', 'Z'];
+                  const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
+                  setSearchQuery(randomQuery);
+                }}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded hover:shadow-sm hover:bg-gray-200 transition-all duration-200"
+              >
+                You&apos;re Feeling Happy?
+              </button>
+            </div>
+          </div>
+
+          {/* フッター情報 */}
+          <div className="absolute bottom-8 text-center">
+            <p className="text-sm text-gray-500">
+              Goggles - あなたの情報検索パートナー
+            </p>
+          </div>
         </div>
       );
     }
