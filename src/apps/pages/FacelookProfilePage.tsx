@@ -411,7 +411,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
             <div className="bg-white rounded-lg shadow p-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">写真</h2>
-                <a href="#" className="text-[#1877f2] hover:underline">すべて見る</a>
+                <span className="text-[#1877f2] cursor-default">すべて見る</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {userData.photos.slice(0, 9).map((photo, idx) => (

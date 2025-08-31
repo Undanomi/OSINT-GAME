@@ -1,0 +1,350 @@
+[
+  {
+    "id": "rankedon_test_taro",
+    "title": "テスト太郎 - RankedOnプロフィール",
+    "url": "https://rankedon.com/on/test-taro",
+    "description": "[テストデータ] テストシニアエンジニア at テスト株式会社（架空）| テスト大学修士",
+    "template": "RankedOnProfilePage",
+    "content": {
+      "name": "テスト 太郎",
+      "profileImage": "https://picsum.photos/200/200?random=301",
+      "backgroundImage": "https://picsum.photos/800/200?random=302",
+      "headline": "[テストデータ] テストエンジニア | サンプル開発者 | ダミープロフィール",
+      "currentPosition": "テストシニアエンジニア",
+      "currentCompany": "テスト株式会社（架空）",
+      "location": "テスト県 サンプル市",
+      "industry": "テスト・IT業界",
+      "summary": "[これはテストデータです] OSINTゲーム用のサンプルプロフィールです。実在の人物・企業・団体とは一切関係ありません。このデータは架空のものであり、実際のプロフェッショナルネットワーキングサイトのプロフィールではありません。",
+      "connectionsCount": 999,
+      "profileViews": 777,
+      "searchAppearances": 2345,
+      "experience": [
+        {
+          "title": "テストシニアエンジニア",
+          "company": "テスト株式会社（架空）",
+          "companyLogo": "https://picsum.photos/48/48?random=303",
+          "employmentType": "テストフルタイム",
+          "location": "テスト県",
+          "startDate": "2020年4月",
+          "current": true,
+          "description": "[テストデータ] これは架空の職歴です。実在の企業ではありません。サンプルのマイクロサービス開発、ダミーのチームリード経験。",
+          "skills": ["TestReact", "TestNode.js", "TestAWS", "TestDocker"]
+        },
+        {
+          "title": "テストエンジニア",
+          "company": "サンプルテック（架空）",
+          "companyLogo": "https://picsum.photos/48/48?random=304",
+          "employmentType": "テストフルタイム",
+          "location": "サンプル県",
+          "startDate": "2017年4月",
+          "endDate": "2020年3月",
+          "description": "[テストデータ] 架空のWebアプリケーション開発、ダミーAPI設計。",
+          "skills": ["TestJavaScript", "TestPython", "TestSQL"]
+        },
+        {
+          "title": "テストジュニアエンジニア",
+          "company": "ダミーソフト（架空）",
+          "companyLogo": "https://picsum.photos/48/48?random=305",
+          "employmentType": "テスト契約",
+          "location": "ダミー県",
+          "startDate": "2015年4月",
+          "endDate": "2017年3月",
+          "description": "[テストデータ] 架空のシステム開発支援、サンプルコーディング。",
+          "skills": ["TestJava", "TestSpring", "TestMySQL"]
+        }
+      ],
+      "education": [
+        {
+          "school": "テスト大学（架空）",
+          "schoolLogo": "https://picsum.photos/48/48?random=306",
+          "degree": "テスト修士",
+          "fieldOfStudy": "テストコンピュータサイエンス",
+          "startYear": "2013",
+          "endYear": "2015",
+          "grade": "テストGPA 4.0",
+          "activities": "[テストデータ] テストプログラミング研究会、サンプルハッカソン優勝（架空）",
+          "description": "架空の研究：ダミー機械学習アルゴリズムの最適化"
+        },
+        {
+          "school": "サンプル工科大学（架空）",
+          "schoolLogo": "https://picsum.photos/48/48?random=307",
+          "degree": "テスト学士",
+          "fieldOfStudy": "ダミー情報工学",
+          "startYear": "2009",
+          "endYear": "2013",
+          "activities": "[テストデータ] サンプルロボット研究会"
+        }
+      ],
+      "skills": [
+        { "name": "TestJavaScript", "endorsements": 99, "endorsed": false },
+        { "name": "TestReact", "endorsements": 87, "endorsed": false },
+        { "name": "TestNode.js", "endorsements": 76, "endorsed": false },
+        { "name": "TestPython", "endorsements": 65, "endorsed": false },
+        { "name": "TestAWS", "endorsements": 54, "endorsed": false },
+        { "name": "TestDocker", "endorsements": 43, "endorsed": false },
+        { "name": "TestKubernetes", "endorsements": 32, "endorsed": false },
+        { "name": "TestGraphQL", "endorsements": 21, "endorsed": false },
+        { "name": "TestTypeScript", "endorsements": 45, "endorsed": false },
+        { "name": "TestPostgreSQL", "endorsements": 38, "endorsed": false }
+      ],
+      "certifications": [
+        {
+          "name": "テストクラウドアーキテクト認定（架空）",
+          "issuingOrganization": "テスト認定機関（実在しません）",
+          "issueDate": "2021年6月",
+          "expirationDate": "2024年6月",
+          "credentialId": "TEST-CERT-123456",
+          "credentialUrl": "https://test-cert.example.com/verify/TEST-CERT-123456"
+        },
+        {
+          "name": "サンプルAI専門家認定（架空）",
+          "issuingOrganization": "ダミー認定協会（実在しません）",
+          "issueDate": "2022年3月",
+          "credentialId": "SAMPLE-AI-789012"
+        }
+      ],
+      "posts": [
+        {
+          "content": "[テスト投稿] 架空のNext.js 14プロジェクトでサンプルApp Routerを実装しました。これはテストデータです。実際の技術記事ではありません。#TestData #DummyPost #NotReal",
+          "timestamp": "3時間前",
+          "likes": 234,
+          "comments": 45,
+          "reposts": 12,
+          "impressions": 3456
+        },
+        {
+          "content": "[テスト投稿] テストカンファレンス2024（架空）に参加しました！サンプルAIサービスの発表が印象的でした。これはOSINTゲーム用のダミーデータです。",
+          "image": "https://picsum.photos/600/400?random=308",
+          "timestamp": "2日前",
+          "likes": 456,
+          "comments": 78,
+          "reposts": 23,
+          "impressions": 5678
+        },
+        {
+          "content": "[テスト投稿] ダミーマイクロサービスアーキテクチャの設計パターンについて。これは架空の技術内容です。実在のシステムではありません。",
+          "timestamp": "1週間前",
+          "likes": 123,
+          "comments": 34,
+          "reposts": 8,
+          "impressions": 2345
+        }
+      ],
+      "recommendations": [
+        {
+          "recommenderName": "テスト 花子",
+          "recommenderTitle": "テストプロダクトマネージャー",
+          "recommenderImage": "https://picsum.photos/40/40?random=309",
+          "relationship": "テスト同僚（架空）として一緒に働いていました",
+          "text": "[テスト推薦文] テスト太郎さんは架空の優れた技術力を持つダミーエンジニアです。これはOSINTゲーム用のサンプル推薦文であり、実在の人物による推薦ではありません。",
+          "date": "2023年8月"
+        },
+        {
+          "recommenderName": "サンプル 次郎",
+          "recommenderTitle": "ダミーテックリード",
+          "recommenderImage": "https://picsum.photos/40/40?random=310",
+          "relationship": "テスト上司（架空）として指導しました",
+          "text": "[テスト推薦文] 架空のプロジェクトで素晴らしいパフォーマンスを発揮しました。これはテストデータです。",
+          "date": "2022年12月"
+        }
+      ],
+      "languages": [
+        { "name": "テスト日本語", "proficiency": "テストネイティブ" },
+        { "name": "テスト英語", "proficiency": "テストビジネスレベル" },
+        { "name": "ダミー中国語", "proficiency": "サンプル初級" }
+      ],
+      "email": "test.taro@test-example.com",
+      "phone": "+81-TEST-1234-5678",
+      "website": "https://test-taro-tech-blog.example.com",
+      "rankedonUrl": "https://test-rankedon.com/on/test-taro-dummy"
+    },
+    "keywords": ["テスト太郎", "rankedon", "テスト株式会社", "テストエンジニア", "架空プロフィール"]
+  },
+  {
+    "id": "rankedon_test_hanako",
+    "title": "テスト花子 - RankedOnプロフィール",
+    "url": "https://rankedon.com/on/test-hanako",
+    "description": "[テストデータ] テストプロダクトマネージャー at サンプルイノベーション（架空）| ダミービジネススクールMBA",
+    "template": "RankedOnProfilePage",
+    "content": {
+      "name": "テスト 花子",
+      "profileImage": "https://picsum.photos/200/200?random=401",
+      "backgroundImage": "https://picsum.photos/800/200?random=402",
+      "headline": "[テストデータ] テストプロダクトマネージャー | サンプルストラテジスト | ダミーリーダー",
+      "currentPosition": "テストシニアプロダクトマネージャー",
+      "currentCompany": "サンプルイノベーション（架空）",
+      "location": "ダミー都 サンプル区",
+      "industry": "テスト・プロダクト管理",
+      "summary": "[これはテストデータです] 架空の10年以上のプロダクト管理経験。実在しないスタートアップから架空の大企業まで、ダミープロダクトの成長を支援。OSINTゲーム用のサンプルデータです。",
+      "connectionsCount": 1500,
+      "profileViews": 456,
+      "searchAppearances": 1234,
+      "experience": [
+        {
+          "title": "テストシニアプロダクトマネージャー",
+          "company": "サンプルイノベーション（架空）",
+          "companyLogo": "https://picsum.photos/48/48?random=403",
+          "employmentType": "テストフルタイム",
+          "location": "ダミー都",
+          "startDate": "2019年1月",
+          "current": true,
+          "description": "[テストデータ] 架空のB2B SaaSプロダクトの戦略立案。ダミーユーザー数を1000%増加（架空の成果）。",
+          "skills": ["TestProductStrategy", "TestAgile", "TestDataAnalysis"]
+        },
+        {
+          "title": "テストプロダクトマネージャー",
+          "company": "ダミーテクノロジー（架空）",
+          "companyLogo": "https://picsum.photos/48/48?random=404",
+          "employmentType": "テストフルタイム",
+          "location": "サンプル市",
+          "startDate": "2016年4月",
+          "endDate": "2018年12月",
+          "description": "[テストデータ] 架空のモバイルアプリのプロダクト管理。サンプル機能の企画と実装。",
+          "skills": ["TestMobileProduct", "TestUserResearch", "TestA/BTesting"]
+        }
+      ],
+      "education": [
+        {
+          "school": "ダミービジネススクール（架空）",
+          "schoolLogo": "https://picsum.photos/48/48?random=405",
+          "degree": "テストMBA",
+          "fieldOfStudy": "サンプル経営管理",
+          "startYear": "2014",
+          "endYear": "2016",
+          "grade": "テスト最優秀賞",
+          "activities": "[テストデータ] 架空のビジネスケースコンペティション優勝"
+        },
+        {
+          "school": "テスト経済大学（架空）",
+          "schoolLogo": "https://picsum.photos/48/48?random=406",
+          "degree": "テスト学士",
+          "fieldOfStudy": "ダミー経済学",
+          "startYear": "2008",
+          "endYear": "2012"
+        }
+      ],
+      "skills": [
+        { "name": "TestProductManagement", "endorsements": 156, "endorsed": false },
+        { "name": "TestAgile/Scrum", "endorsements": 134, "endorsed": false },
+        { "name": "TestDataAnalysis", "endorsements": 98, "endorsed": false },
+        { "name": "TestUserExperience", "endorsements": 87, "endorsed": false },
+        { "name": "TestStrategicPlanning", "endorsements": 76, "endorsed": false },
+        { "name": "TestSQL", "endorsements": 65, "endorsed": false }
+      ],
+      "certifications": [
+        {
+          "name": "テスト認定スクラムプロダクトオーナー（架空）",
+          "issuingOrganization": "サンプルスクラム協会（実在しません）",
+          "issueDate": "2020年5月",
+          "credentialId": "TEST-CSPO-999888"
+        }
+      ],
+      "posts": [
+        {
+          "content": "[テスト投稿] 架空のプロダクトロードマップ作成のベストプラクティス。これはテストデータであり、実際のビジネス手法ではありません。#TestProductManagement #DummyContent",
+          "timestamp": "6時間前",
+          "likes": 345,
+          "comments": 67,
+          "reposts": 19,
+          "impressions": 4567
+        },
+        {
+          "content": "[テスト投稿] サンプルユーザーインタビューから得た架空のインサイト。ダミーペルソナの重要性について。OSINTゲーム用のテストデータです。",
+          "image": "https://picsum.photos/600/400?random=407",
+          "timestamp": "3日前",
+          "likes": 234,
+          "comments": 45,
+          "reposts": 11,
+          "impressions": 3456
+        }
+      ],
+      "recommendations": [
+        {
+          "recommenderName": "ダミー 太郎",
+          "recommenderTitle": "テストCEO",
+          "recommenderImage": "https://picsum.photos/40/40?random=408",
+          "relationship": "架空の上司として",
+          "text": "[テスト推薦文] テスト花子さんは架空の素晴らしいプロダクトマネージャーです。これはサンプル推薦文です。",
+          "date": "2023年3月"
+        }
+      ],
+      "languages": [
+        { "name": "テスト日本語", "proficiency": "テストネイティブ" },
+        { "name": "テスト英語", "proficiency": "テストビジネスレベル" }
+      ],
+      "email": "test.hanako@sample-example.com",
+      "website": "https://test-hanako-portfolio.example.com",
+      "rankedonUrl": "https://test-rankedon.com/on/test-hanako-dummy"
+    },
+    "keywords": ["テスト花子", "rankedon", "サンプルイノベーション", "テストプロダクトマネージャー", "架空プロフィール"]
+  },
+  {
+    "id": "rankedon_dummy_jiro",
+    "title": "ダミー次郎 - RankedOnプロフィール",
+    "url": "https://rankedon.com/on/dummy-jiro",
+    "description": "[テストデータ] テストデータサイエンティスト at ダミーアナリティクス（架空）| サンプル統計大学博士",
+    "template": "RankedOnProfilePage",
+    "content": {
+      "name": "ダミー 次郎",
+      "profileImage": "https://picsum.photos/200/200?random=501",
+      "backgroundImage": "https://picsum.photos/800/200?random=502",
+      "headline": "[テストデータ] テストデータサイエンティスト | サンプルAI研究者 | ダミー機械学習エキスパート",
+      "currentPosition": "テストリードデータサイエンティスト",
+      "currentCompany": "ダミーアナリティクス（架空）",
+      "location": "サンプル県 テスト市",
+      "industry": "テスト・データサイエンス",
+      "summary": "[これはテストデータです] 架空の機械学習モデルの開発と実装。ダミービッグデータの分析。サンプル予測モデルの構築。すべて架空のプロジェクトです。OSINTゲーム用のテストプロフィール。",
+      "connectionsCount": 888,
+      "profileViews": 333,
+      "searchAppearances": 999,
+      "experience": [
+        {
+          "title": "テストリードデータサイエンティスト",
+          "company": "ダミーアナリティクス（架空）",
+          "companyLogo": "https://picsum.photos/48/48?random=503",
+          "employmentType": "テストフルタイム",
+          "location": "サンプル県",
+          "startDate": "2018年7月",
+          "current": true,
+          "description": "[テストデータ] 架空の深層学習モデルの研究開発。サンプルビッグデータ処理パイプラインの構築。",
+          "skills": ["TestPython", "TestTensorFlow", "TestPyTorch", "TestSQL", "TestSpark"]
+        }
+      ],
+      "education": [
+        {
+          "school": "サンプル統計大学（架空）",
+          "schoolLogo": "https://picsum.photos/48/48?random=504",
+          "degree": "テスト博士",
+          "fieldOfStudy": "ダミー統計学・機械学習",
+          "startYear": "2015",
+          "endYear": "2018",
+          "description": "[テストデータ] 架空の論文：ダミーニューラルネットワークの最適化手法"
+        }
+      ],
+      "skills": [
+        { "name": "TestPython", "endorsements": 123, "endorsed": false },
+        { "name": "TestMachineLearning", "endorsements": 111, "endorsed": false },
+        { "name": "TestDeepLearning", "endorsements": 99, "endorsed": false },
+        { "name": "TestTensorFlow", "endorsements": 88, "endorsed": false },
+        { "name": "TestDataVisualization", "endorsements": 77, "endorsed": false }
+      ],
+      "posts": [
+        {
+          "content": "[テスト投稿] 架空のTransformerモデルの実装について。サンプルGPTの仕組みを解説（すべてダミーデータ）。#TestAI #DummyML",
+          "timestamp": "昨日",
+          "likes": 567,
+          "comments": 89,
+          "reposts": 34,
+          "impressions": 6789
+        }
+      ],
+      "languages": [
+        { "name": "テスト日本語", "proficiency": "テストネイティブ" },
+        { "name": "ダミー英語", "proficiency": "サンプル上級" }
+      ],
+      "email": "dummy.jiro@test-analytics.example.com",
+      "rankedonUrl": "https://test-rankedon.com/on/dummy-jiro-test"
+    },
+    "keywords": ["ダミー次郎", "rankedon", "ダミーアナリティクス", "テストデータサイエンティスト", "架空プロフィール"]
+  }
+]
