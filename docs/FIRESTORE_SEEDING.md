@@ -66,34 +66,20 @@ export GOOGLE_APPLICATION_CREDENTIALS=path/to/serviceAccountKey.json
 
 ## 使い方
 
-### 基本的な使い方
+JSONファイルパスは必須パラメータです。
 
 ```bash
-# サンプルデータを使用（環境変数を直接指定）
-FIREBASE_PROJECT_ID=your-project-id node scripts/seedFirestore.js data/sample-facelook.json
+# 基本的な使い方
+npm run seed data/sample.json
 
-# .env.localから読み込む場合（dotenvが必要）
-npm install dotenv
-node -r dotenv/config scripts/seedFirestore.js data/sample-facelook.json
-
-# または独自のJSONファイルを指定
-node scripts/seedFirestore.js path/to/your/data.json
-```
-
-### オプション
-
-```bash
 # 既存のドキュメントを上書きする
-node scripts/seedFirestore.js data/sample-facelook.json --overwrite
+npm run seed:overwrite data/sample.json
 
 # 既存のドキュメントをスキップする
-node scripts/seedFirestore.js data/sample-facelook.json --skip-existing
-
-# デフォルト（既存があれば警告を表示）
-node scripts/seedFirestore.js data/sample-facelook.json
+npm run seed:skip data/sample.json
 ```
 
-#### 動作モード
+### 動作モード
 
 - **通常モード**（デフォルト）: 既存のIDがある場合は警告を表示してスキップ
 - **`--overwrite`**: 既存のドキュメントを上書き
