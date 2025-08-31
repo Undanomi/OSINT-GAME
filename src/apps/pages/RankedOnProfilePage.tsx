@@ -120,7 +120,7 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
           
           setUserData(data);
         }
-      } catch (error) {
+      } catch {
         // エラーは静かに処理
       } finally {
         setLoading(false);
