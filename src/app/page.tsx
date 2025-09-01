@@ -8,6 +8,7 @@ import { TitleScreen } from '@/components/TitleScreen';
 import { DisclaimerLoading } from '@/components/DisclaimerLoading';
 import { ScenarioSelection } from '@/components/ScenarioSelection';
 import { ScenarioLoading } from '@/components/ScenarioLoading';
+import { NotificationSystem } from '@/components/NotificationSystem';
 import { useGameStore } from '@/store/gameStore';
 import { useWindowStore } from '@/store/windowStore';
 import { useAuthContext } from '@/providers/AuthProvider';
@@ -80,6 +81,9 @@ export default function HomePage() {
 
           {/* タスクバー */}
           <Taskbar />
+
+          {/* 通知システム */}
+          <NotificationSystem />
         </div>
       );
 
