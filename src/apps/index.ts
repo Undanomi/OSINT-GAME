@@ -1,9 +1,9 @@
 /**
  * アプリケーションコンポーネントのエクスポートファイル
- * 
+ *
  * OSINTゲーム内で使用される各種アプリケーションコンポーネントを
  * 一元的にエクスポートするモジュール。
- * 
+ *
  * 各アプリケーションは独立したウィンドウとして動作し、
  * BaseAppコンポーネントをベースとしたUI構造を持つ。
  */
@@ -25,3 +25,6 @@ export { CalculatorApp } from './CalculatorApp';
 
 /** メモアプリケーション - メモの作成・編集・検索機能を提供 */
 export { NotesApp } from './NotesApp';
+
+/** 通知テストアプリケーション - 通知システムの動作テスト機能を提供 */
+export { NotificationTestApp } from './NotificationTestApp';

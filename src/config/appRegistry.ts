@@ -1,4 +1,4 @@
-import { Globe, MessageCircle, Users, Settings, Package, Calculator, StickyNote } from 'lucide-react';
+import { Globe, MessageCircle, Users, Settings, Package, Calculator, StickyNote, Bell } from 'lucide-react';
 import { AppMetadata } from '@/store/appStore';
 
 export const systemApps: AppMetadata[] = [
@@ -77,6 +77,22 @@ export const systemApps: AppMetadata[] = [
 ];
 
 export const availableApps: AppMetadata[] = [
+  ...(process.env.NODE_ENV === 'development' ? [{
+    id: 'notification-test',
+    name: '通知テスト',
+    version: '1.0.0',
+    description: '通知システムの動作をテストするためのアプリケーション',
+    category: 'system' as const,
+    keywords: ['通知', 'テスト', 'デバッグ', 'システム'],
+    author: 'System',
+    icon: Bell,
+    defaultWidth: 800,
+    defaultHeight: 600,
+    minWidth: 600,
+    minHeight: 500,
+    isInstalled: false,
+    usageCount: 0
+  }] : []),
   {
     id: 'calculator',
     name: '電卓',
