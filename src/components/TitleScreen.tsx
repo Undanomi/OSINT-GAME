@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Play, Settings, Info, User as UserIcon } from 'lucide-react';
 import { useAuthContext } from '@/providers/AuthProvider';
-import { useGameStore } from '@/store/gameStore';
 
 interface TitleScreenProps {
   onGameStart: () => void;
@@ -16,14 +15,6 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
   const [hasReadAbout, setHasReadAbout] = useState(false);
 
   const { user, loading, signInWithGoogle } = useAuthContext();
-  const { setUser, setAuthenticated } = useGameStore();
-
-  useEffect(() => {
-    if (user) {
-      setUser(user);
-      setAuthenticated(true);
-    }
-  }, [user, setUser, setAuthenticated]);
 
   const handleStart = () => {
     if (!user) {
