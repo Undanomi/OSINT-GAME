@@ -10,6 +10,7 @@ import { AbcCorpPage } from './pages/AbcCorpPage';
 import { FacelookProfilePage } from './pages/FacelookProfilePage';
 import { RankedOnProfilePage } from './pages/RankedOnProfilePage';
 import { GenericPage } from './pages/GenericPage';
+import { ErrorPage } from './pages/ErrorPage';
 
 /**
  * 特定URLに対応するカスタムページコンポーネントのマッピング
@@ -547,9 +548,33 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       );
     }
 
-    // 3. カスタムページまたはジェネリックページの表示（動的対応）
+    // 3. カスタムページまたはエラーページの表示（動的対応）
     const dynamicComponent = getDynamicPageComponent(currentView);
-    return dynamicComponent || <GenericPage url={currentView} />;
+    
+    // URLの妥当性をチェック
+    const isValidUrl = (url: string) => {
+      try {
+        new URL(url);
+        // Firebaseキャッシュに存在するか、静的ページに存在するかチェック
+        const exists = firebaseCache.some(item => item.url === url) || !!pageComponents[url];
+        return exists;
+      } catch {
+        return false;
+      }
+    };
+    
+    // 動的コンポーネントが見つかった場合はそれを表示
+    if (dynamicComponent) {
+      return dynamicComponent;
+    }
+    
+    // URLが無効な場合はエラーページを表示
+    if (!isValidUrl(currentView)) {
+      return <ErrorPage url={currentView} />;
+    }
+    
+    // それ以外はジェネリックページを表示
+    return <GenericPage url={currentView} />;
   };
 
   return (
