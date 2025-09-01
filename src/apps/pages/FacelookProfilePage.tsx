@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { doc, getDoc } from 'firebase/firestore';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
-import { FacelookUser } from '@/types/facelook';
-import { UnifiedSearchResult, FacelookContent } from '@/types/search';
+import { FacelookUser, FacelookContent } from '@/types/facelook';
+import { UnifiedSearchResult } from '@/types/search';
 import { 
   Search, Home, Menu, 
   MessageCircle, Bell, ChevronDown, ThumbsUp, MessageSquare, 
