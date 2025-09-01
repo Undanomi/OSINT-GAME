@@ -110,7 +110,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
         return {
           notifications: updatedNotifications,
-          notificationCenter: [...state.notificationCenter, ...newCenterNotifications]
+          notificationCenter: [...newCenterNotifications, ...state.notificationCenter]
         };
       }
 
@@ -159,7 +159,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
         return {
           notifications: state.notifications.filter(n => n.id !== id),
-          notificationCenter: [...state.notificationCenter, centerNotification]
+          notificationCenter: [centerNotification, ...state.notificationCenter]
         };
       });
     }, 300); // アニメーション時間に合わせる
