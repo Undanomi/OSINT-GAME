@@ -6,28 +6,9 @@ import { UnifiedSearchResult } from '@/types/search';
 import { getFirebaseDocuments, filterFirebaseResults, SearchResult} from '@/actions/searchResults';
 
 // 各ページコンポーネントのインポート
-import { AbcCorpPage } from './pages/AbcCorpPage';
-import { FacelookProfilePage } from './pages/FacelookProfilePage';
-import { RankedOnProfilePage } from './pages/RankedOnProfilePage';
 import { GenericPage } from './pages/GenericPage';
 import { ErrorPage } from './pages/ErrorPage';
-
-/**
- * 特定URLに対応するカスタムページコンポーネントのマッピング
- * 検索結果からクリックされたURLに対して、カスタムページを表示
- * 登録されていないURLはジェネリックページで表示
- */
-const pageComponents: { [key: string]: React.ReactElement } = {
-  'https://abc-corp.co.jp': <AbcCorpPage />,                    // ABC株式会社の企業ページ
-  'https://facelook.com/yamada.taro': <FacelookProfilePage documentId="facelook_yamada_taro" />, // 山田太郎のFacelookプロフィール
-  'https://facelook.com/sato.hanako': <FacelookProfilePage documentId="facelook_sato_hanako" />, // 佐藤花子のFacelookプロフィール
-  'https://facelook.com/test.user': <FacelookProfilePage documentId="facelook_test_user" />, // テストユーザーのFacelookプロフィール
-  'https://facelook.com/test.taro': <FacelookProfilePage documentId="facelook_test_taro" />, // テスト太郎のFacelookプロフィール
-  'https://facelook.com/test.hanako': <FacelookProfilePage documentId="facelook_test_hanako" />, // テスト花子のFacelookプロフィール
-  'https://rankedon.com/on/test-taro': <RankedOnProfilePage documentId="rankedon_test_taro" />, // テスト太郎のRankedOnプロフィール
-  'https://rankedon.com/on/test-hanako': <RankedOnProfilePage documentId="rankedon_test_hanako" />, // テスト花子のRankedOnプロフィール
-  'https://rankedon.com/on/dummy-jiro': <RankedOnProfilePage documentId="rankedon_dummy_jiro" />, // ダミー次郎のRankedOnプロフィール
-};
+import { staticPages, dynamicPageComponentMap } from './pages/config/PageMapping';
 
 // ブラウザの表示状態を識別するための定数
 const VIEW_HOME = 'view:home';                 // ホームページ
@@ -335,28 +316,13 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * Firebaseキャッシュから動的にページコンポーネントを取得する関数
    */
   const getDynamicPageComponent = (url: string): React.ReactElement | null => {
-    // 1. 静的なページコンポーネントをチェック
-    if (pageComponents[url]) {
-      return pageComponents[url];
-    }
-
-    // 2. Firebaseキャッシュから該当するURLを探す
+    // Firebaseキャッシュから該当するURLを探す
     const firebaseResult = firebaseCache.find(item => item.url === url);
     if (firebaseResult) {
       // テンプレートに基づいてコンポーネントを動的生成
-      // TODO: パフォーマンス最適化 - firebaseResultのデータ全体を各コンポーネントに渡すことで、
-      // 各ページコンポーネント内でのFirestoreへの重複リクエストを避けることができる
-      // 例: <RankedOnProfilePage documentId={firebaseResult.id} initialData={firebaseResult} />
-      switch (firebaseResult.template) {
-        case 'FacelookProfilePage':
-          return <FacelookProfilePage documentId={firebaseResult.id} />;
-        case 'RankedOnProfilePage':
-          return <RankedOnProfilePage documentId={firebaseResult.id} />;
-        case 'AbcCorpPage':
-          return <AbcCorpPage />;
-        default:
-          return null;
-      }
+      // キャッシュされたデータをプロップスとして渡す
+      const ComponentFactory = dynamicPageComponentMap[firebaseResult.template];
+      return ComponentFactory ? ComponentFactory(firebaseResult.id, firebaseResult) : null;
     }
 
     return null;
@@ -556,7 +522,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       try {
         new URL(url);
         // Firebaseキャッシュに存在するか、静的ページに存在するかチェック
-        const exists = firebaseCache.some(item => item.url === url) || !!pageComponents[url];
+        const exists = firebaseCache.some(item => item.url === url) || !!staticPages[url];
         return exists;
       } catch {
         return false;

@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { doc, getDoc } from 'firebase/firestore';
 import { ref, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { storage } from '@/lib/firebase';
 import { FacelookUser, FacelookContent } from '@/types/facelook';
 import { UnifiedSearchResult } from '@/types/search';
 import { 
@@ -16,9 +15,10 @@ import {
 
 interface FacelookProfilePageProps {
   documentId: string; // Firestore document ID
+  initialData: UnifiedSearchResult;
 }
 
-export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ documentId }) => {
+export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ documentId, initialData }) => {
   const [userData, setUserData] = useState<FacelookUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
@@ -35,92 +35,79 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        console.log('Fetching document with ID:', documentId);
+        console.log('Using provided initial data for document ID:', documentId);
+        const searchResult = initialData;
         
-        // 統一された構造からデータを取得
-        const docRef = doc(db, 'search_results', documentId);
-        console.log('Document path:', docRef.path);
+        console.log('Raw search result:', searchResult);
         
-        const docSnapshot = await getDoc(docRef);
-        console.log('Document exists:', docSnapshot.exists());
-        
-        if (docSnapshot.exists()) {
-          const searchResult = docSnapshot.data() as UnifiedSearchResult;
-          console.log('Raw search result:', searchResult);
-          
-          // templateがFacelookProfilePageであることを確認
-          if (searchResult.template !== 'FacelookProfilePage') {
-            console.error('Invalid template for Facelook:', searchResult.template);
+        // templateがFacelookProfilePageであることを確認
+        if (searchResult.template !== 'FacelookProfilePage') {
+          console.error('Invalid template for Facelook:', searchResult.template);
             throw new Error('Invalid template');
-          }
-          
-          // contentをFacelookContentとして扱う
-          const facelookContent = searchResult.content as unknown as FacelookContent;
-          
-          // FacelookUser形式に変換（userIdはドキュメントIDを使用）
-          const data: FacelookUser = {
-            userId: documentId, // ドキュメントIDをuserIdとして使用
-            name: facelookContent.name,
-            profileImage: facelookContent.profileImage,
-            coverImage: facelookContent.coverImage,
-            job: facelookContent.job,
-            company: facelookContent.company,
-            location: facelookContent.location,
-            hometown: facelookContent.hometown,
-            education: facelookContent.education,
-            relationshipStatus: facelookContent.relationshipStatus,
-            bio: facelookContent.bio,
-            friendsCount: facelookContent.friendsCount,
-            joined: facelookContent.joined,
-            website: facelookContent.website,
-            posts: facelookContent.posts, // IDは不要（インデックスをkeyに使用）
-            friends: facelookContent.friends, // IDは不要（インデックスをkeyに使用）
-            photos: facelookContent.photos
-          };
-          console.log('Raw data from Firestore:', data);
-          
-          // gs:// URLをHTTPS URLに変換
-          if (data.profileImage?.startsWith('gs://')) {
-            console.log('Converting profile image:', data.profileImage);
-            data.profileImage = await getDownloadURL(ref(storage, data.profileImage));
-            console.log('Converted to:', data.profileImage);
-          }
-          if (data.coverImage?.startsWith('gs://')) {
-            console.log('Converting cover image:', data.coverImage);
-            data.coverImage = await getDownloadURL(ref(storage, data.coverImage));
-            console.log('Converted to:', data.coverImage);
-          }
-          
-          // 投稿画像のURL変換
-          for (const post of data.posts) {
-            if (post.image?.startsWith('gs://')) {
-              console.log('Converting post image:', post.image);
-              post.image = await getDownloadURL(ref(storage, post.image));
-              console.log('Converted to:', post.image);
-            }
-          }
-          
-          // 友達のプロフィール画像URL変換
-          for (const friend of data.friends) {
-            if (friend.profileImage?.startsWith('gs://')) {
-              friend.profileImage = await getDownloadURL(ref(storage, friend.profileImage));
-            }
-          }
-          
-          // フォトギャラリーのURL変換
-          for (let i = 0; i < data.photos.length; i++) {
-            if (data.photos[i]?.startsWith('gs://')) {
-              data.photos[i] = await getDownloadURL(ref(storage, data.photos[i]));
-            }
-          }
-          
-          console.log('Final data after URL conversion:', data);
-          setUserData(data);
-        } else {
-          console.log('Document does not exist, using mock data');
-          // モックデータを使用
-          setUserData(getMockData());
         }
+        
+        // contentをFacelookContentとして扱う
+        const facelookContent = searchResult.content as unknown as FacelookContent;
+        
+        // FacelookUser形式に変換（userIdはドキュメントIDを使用）
+        const data: FacelookUser = {
+          userId: documentId, // ドキュメントIDをuserIdとして使用
+          name: facelookContent.name,
+          profileImage: facelookContent.profileImage,
+          coverImage: facelookContent.coverImage,
+          job: facelookContent.job,
+          company: facelookContent.company,
+          location: facelookContent.location,
+          hometown: facelookContent.hometown,
+          education: facelookContent.education,
+          relationshipStatus: facelookContent.relationshipStatus,
+          bio: facelookContent.bio,
+          friendsCount: facelookContent.friendsCount,
+          joined: facelookContent.joined,
+          website: facelookContent.website,
+          posts: facelookContent.posts, // IDは不要（インデックスをkeyに使用）
+          friends: facelookContent.friends, // IDは不要（インデックスをkeyに使用）
+          photos: facelookContent.photos
+        };
+        console.log('Raw data from Firestore:', data);
+        
+        // gs:// URLをHTTPS URLに変換
+        if (data.profileImage?.startsWith('gs://')) {
+          console.log('Converting profile image:', data.profileImage);
+          data.profileImage = await getDownloadURL(ref(storage, data.profileImage));
+          console.log('Converted to:', data.profileImage);
+        }
+        if (data.coverImage?.startsWith('gs://')) {
+          console.log('Converting cover image:', data.coverImage);
+          data.coverImage = await getDownloadURL(ref(storage, data.coverImage));
+          console.log('Converted to:', data.coverImage);
+        }
+        
+        // 投稿画像のURL変換
+        for (const post of data.posts) {
+          if (post.image?.startsWith('gs://')) {
+            console.log('Converting post image:', post.image);
+            post.image = await getDownloadURL(ref(storage, post.image));
+            console.log('Converted to:', post.image);
+          }
+        }
+        
+        // 友達のプロフィール画像URL変換
+        for (const friend of data.friends) {
+          if (friend.profileImage?.startsWith('gs://')) {
+            friend.profileImage = await getDownloadURL(ref(storage, friend.profileImage));
+          }
+        }
+        
+        // フォトギャラリーのURL変換
+        for (let i = 0; i < data.photos.length; i++) {
+          if (data.photos[i]?.startsWith('gs://')) {
+            data.photos[i] = await getDownloadURL(ref(storage, data.photos[i]));
+          }
+        }
+        
+        console.log('Final data after URL conversion:', data);
+        setUserData(data);
       } catch (error) {
         console.error('Error fetching user data:', error);
         console.error('Error details:', {
@@ -130,11 +117,6 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
           fullError: error
         });
         console.log('Attempted path:', `search_results/${documentId}`);
-        console.log('Firebase config:', {
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-          hasApiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-          storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-        });
         // エラー時はモックデータを使用
         setUserData(getMockData());
       } finally {
@@ -143,7 +125,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
     };
 
     fetchUserData();
-  }, [documentId]);
+  }, [documentId, initialData]);
 
   const getMockData = (): FacelookUser => ({
     userId: 'user001',

@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { doc, getDoc } from 'firebase/firestore';
 import { ref, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { storage } from '@/lib/firebase';
 import { RankedOnUser } from '@/types/rankedon';
 import { UnifiedSearchResult } from '@/types/search';
 import { 
@@ -17,9 +16,10 @@ import {
 
 interface RankedOnProfilePageProps {
   documentId: string;
+  initialData: UnifiedSearchResult;
 }
 
-export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ documentId }) => {
+export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ documentId, initialData }) => {
   const [userData, setUserData] = useState<RankedOnUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
@@ -36,18 +36,14 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
   useEffect(() => {
     const fetchUserData = async () => {
       try {
+        const searchResult = initialData;
         
-        const docRef = doc(db, 'search_results', documentId);
-        const docSnapshot = await getDoc(docRef);
+        if (searchResult.template !== 'RankedOnProfilePage') {
+          console.error('Invalid template for RankedOn:', searchResult.template);
+          throw new Error('Invalid template');
+        }
         
-        if (docSnapshot.exists()) {
-          const searchResult = docSnapshot.data() as UnifiedSearchResult;
-          
-          if (searchResult.template !== 'RankedOnProfilePage') {
-            return;
-          }
-          
-          const rankedOnContent = searchResult.content as unknown as RankedOnUser;
+        const rankedOnContent = searchResult.content as unknown as RankedOnUser;
           
           
           const data: RankedOnUser = {
@@ -119,7 +115,6 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
           }
           
           setUserData(data);
-        }
       } catch {
         // エラーは静かに処理
       } finally {
@@ -128,7 +123,7 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
     };
 
     fetchUserData();
-  }, [documentId]);
+  }, [documentId, initialData]);
 
   if (loading) {
     return (
