@@ -9,6 +9,8 @@ import { useWindowStore } from '@/store/windowStore';
 import { appNotifications } from '@/utils/notifications';
 import { getChatHistory, addMessage, ChatMessage, generateAIResponse } from '@/actions/messenger';
 import { useAuthContext } from '@/providers/AuthProvider';
+import { useMessengerContacts } from '@/hooks/useMessengerContacts';
+import { MessengerContactDocument } from '@/types/messenger';
 
 // セキュアなID生成関数
 function generateSecureId(): string {
@@ -16,20 +18,14 @@ function generateSecureId(): string {
 }
 
 /**
- * 連絡先の情報を表すインターフェース
- * @interface Contact
+ * メッセンジャー連絡先の情報を表すインターフェース（UI用の拡張）
+ * @interface MessengerContact
  */
-interface Contact {
-  /** 連絡先の一意識別子 */
-  id: string;
-  /** 連絡先の表示名 */
-  name: string;
+interface MessengerContact extends MessengerContactDocument {
   /** 最後に受信したメッセージ */
   lastMessage: string;
   /** 未読メッセージ数 */
   unreadCount: number;
-  /** 連絡先のタイプ（エラーメッセージのカスタマイズに使用） */
-  type?: string;
 }
 
 /**
@@ -43,14 +39,18 @@ interface Message {
   time: string;
 }
 
-/** サンプル連絡先データ - デモンストレーション用の初期データ */
-const sampleContacts: Contact[] = [
-  { id: '1', name: '闇の組織', lastMessage: 'メッセージを待っています...', unreadCount: 0, type: 'darkOrganization' },
-];
+/** デフォルトメッセンジャー連絡先データ - Firestore取得前の初期状態 */
+const defaultMessengerContact: MessengerContact = {
+  id: 'dark_organization',
+  name: '闇の組織',
+  type: 'darkOrganization',
+  lastMessage: 'メッセージを待っています...',
+  unreadCount: 0
+};
 
-/** 全メッセージデータ - 連絡先IDをキーとするメッセージ配列のマップ */
-const allMessages: { [contactId: string]: Message[] } = {
-  '1': [], // 初期状態では空のメッセージ配列
+/** 全メッセージデータ - メッセンジャー連絡先IDをキーとするメッセージ配列のマップ */
+const allMessengerMessages: { [contactId: string]: Message[] } = {
+  'dark_organization': [], // 初期状態では空のメッセージ配列
 };
 
 
@@ -68,14 +68,16 @@ const allMessages: { [contactId: string]: Message[] } = {
  */
 export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const { user } = useAuthContext();
-  // 連絡先リスト（未読カウントも含む）
-  const [contacts, setContacts] = useState<Contact[]>(sampleContacts);
+  const { contacts: firestoreContacts, loading: contactsLoading } = useMessengerContacts();
 
-  // 現在選択されている連絡先
-  const [selectedContact, setSelectedContact] = useState<Contact>(sampleContacts[0]);
+  // メッセンジャー連絡先リスト（未読カウントも含む）
+  const [contacts, setContacts] = useState<MessengerContact[]>([defaultMessengerContact]);
 
-  // 全ての連絡先のメッセージデータ
-  const [messages, setMessages] = useState<{ [contactId: string]: Message[] }>(allMessages);
+  // 現在選択されているメッセンジャー連絡先
+  const [selectedContact, setSelectedContact] = useState<MessengerContact>(defaultMessengerContact);
+
+  // 全てのメッセンジャー連絡先のメッセージデータ
+  const [messages, setMessages] = useState<{ [contactId: string]: Message[] }>(allMessengerMessages);
 
 
   // メッセージ入力フィールドのテキスト
@@ -302,6 +304,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       const aiChatMessage: ChatMessage = {
         id: aiMessageId,
         sender: 'npc',
+        npcId: selectedContact.id,
         text: aiText,
         timestamp: new Date()
       };
@@ -372,6 +375,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         const errorChatMessage: ChatMessage = {
           id: errorMessageId,
           sender: 'npc',
+          npcId: selectedContact.id,
           text: errorText,
           timestamp: new Date()
         };
@@ -418,6 +422,28 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       handleSendMessage();
     }
   }, [handleSendMessage]);
+
+  /**
+   * Firestore連絡先データが読み込まれた時の初期化処理
+   */
+  useEffect(() => {
+    if (!contactsLoading && firestoreContacts.length > 0) {
+      // Firestoreのメッセンジャー連絡先データをUI用の形式に変換
+      const uiContacts: MessengerContact[] = firestoreContacts.map(contact => ({
+        ...contact,
+        lastMessage: 'メッセージを待っています...',
+        unreadCount: 0
+      }));
+
+      setContacts(uiContacts);
+
+      // 選択中の連絡先が存在しない場合は最初の連絡先を選択
+      const currentSelectedExists = uiContacts.find(c => c.id === selectedContact.id);
+      if (!currentSelectedExists && uiContacts.length > 0) {
+        setSelectedContact(uiContacts[0]);
+      }
+    }
+  }, [firestoreContacts, contactsLoading, selectedContact.id]);
 
   /**
    * 選択された連絡先が変更されたときの初期化処理

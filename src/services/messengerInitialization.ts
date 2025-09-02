@@ -4,6 +4,8 @@
  */
 
 import { getChatHistory, addMessage, ChatMessage } from '@/actions/messenger';
+import { defaultMessengerContacts } from '@/types/messenger';
+import { addMessengerContact } from '@/actions/messengerContacts';
 import { appNotifications } from '@/utils/notifications';
 import { getIntroductionMessage } from '@/prompts/introductionMessages';
 
@@ -22,7 +24,8 @@ export interface MessengerInitializationOptions {
 /**
  * メッセンジャーのイントロダクション初期化を実行
  * クライアントサイドで実行され、Server Actions経由でデータを保存、通知もクライアントサイドで行う
- * 
+ * 初回ログイン時にデフォルト連絡先を追加する
+ *
  * @param options 初期化オプション
  * @returns Promise<boolean> 初期化が実行されたかどうか（既に初期化済みの場合はfalse）
  */
@@ -38,7 +41,7 @@ export async function initializeMessengerIntroduction(
   try {
     // 既存のチャット履歴を確認
     const history = await getChatHistory();
-    
+
     // 既にメッセージがある場合は何もしない
     if (history && history.messages.length > 0) {
       if (process.env.NODE_ENV === 'development') {
@@ -50,6 +53,9 @@ export async function initializeMessengerIntroduction(
     if (process.env.NODE_ENV === 'development') {
       console.log('Initializing messenger with introduction message, delay:', delay);
     }
+
+    // デフォルト連絡先をユーザーのデータベースに追加
+    await initializeUserContacts();
 
     // 指定された遅延時間後にイントロダクションメッセージを送信
     setTimeout(async () => {
@@ -73,8 +79,33 @@ export async function initializeMessengerIntroduction(
 }
 
 /**
+ * ユーザーのデフォルト連絡先を初期化する内部関数
+ */
+async function initializeUserContacts(): Promise<void> {
+  try {
+    // デフォルトメッセンジャー連絡先をユーザーのデータベースに追加
+    for (const contact of defaultMessengerContacts) {
+      await addMessengerContact(contact);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Contact added: ${contact.name} (${contact.id})`);
+      }
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('User contacts initialization completed');
+    }
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error initializing user contacts:', error);
+    }
+    throw error;
+  }
+}
+
+/**
  * イントロダクションメッセージを送信する内部関数
- * 
+ *
  * @param sendNotification 通知を送信するかどうか
  * @param notificationDuration 通知の表示時間
  */
@@ -85,11 +116,12 @@ async function sendIntroductionMessage(
   try {
     // イントロダクションメッセージを取得
     const { text: introText } = getIntroductionMessage('darkOrganization');
-    
+
     // イントロダクションメッセージを作成
     const introMessage: ChatMessage = {
       id: `intro-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
       sender: 'npc',
+      npcId: 'dark_organization',
       text: introText,
       timestamp: new Date()
     };
@@ -103,10 +135,10 @@ async function sendIntroductionMessage(
 
     // クライアントサイドで通知を送信
     if (sendNotification) {
-      const previewText = introText.length > 50 
-        ? introText.substring(0, 50) + '...' 
+      const previewText = introText.length > 50
+        ? introText.substring(0, 50) + '...'
         : introText;
-        
+
       appNotifications.fromApp(
         'messenger',
         '闇の組織からの新着メッセージ',
@@ -134,7 +166,7 @@ async function sendIntroductionMessage(
 
 /**
  * メッセンジャーが既に初期化済みかどうかを確認
- * 
+ *
  * @returns Promise<boolean> 初期化済みの場合はtrue
  */
 export async function isMessengerInitialized(): Promise<boolean> {

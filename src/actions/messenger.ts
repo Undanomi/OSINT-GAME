@@ -172,6 +172,7 @@ function optimizeConversationHistory(history: Content[]): Content[] {
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'npc';
+  npcId?: string;
   text: string;
   timestamp: Date;
 }
@@ -185,6 +186,7 @@ export interface ChatHistory {
 export interface MessageDocument {
   id: string;
   sender: 'user' | 'npc';
+  npcId?: string;
   text: string;
   timestamp: Date;
   userId: string;
@@ -274,6 +276,7 @@ export const addMessage = requireAuth(async (userId: string, message: ChatMessag
 
     await setDoc(messageRef, {
       sender: message.sender || 'npc',
+      npcId: message.npcId || null,
       text: typeof message.text === 'string' ? message.text.substring(0, 1000) : '',
       timestamp: message.timestamp ? Timestamp.fromDate(message.timestamp) : Timestamp.fromDate(new Date()),
       userId
@@ -469,6 +472,7 @@ export const addMessagesBatch = requireAuth(async (userId: string, messages: Cha
         // 個別ドキュメントなので競合状態なし
         batch.set(messageRef, {
           sender: message.sender || 'npc',
+          npcId: message.npcId || null,
           text: typeof message.text === 'string' ? message.text.substring(0, 1000) : '',
           timestamp: message.timestamp ? Timestamp.fromDate(message.timestamp) : Timestamp.fromDate(new Date()),
           userId
