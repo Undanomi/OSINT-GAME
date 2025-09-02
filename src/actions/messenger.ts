@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { requireAuth } from '@/lib/auth/server';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
-import { getMessengerAIPrompt } from '@/prompts/messengerAIPrompts';
+import { getMessengerAIPrompt, MESSENGER_AI_PROMPTS } from '@/prompts/messengerAIPrompts';
 
 /**
  * ユーザーごとのレート制限管理
@@ -323,9 +323,13 @@ export const generateAIResponse = requireAuth(async (
     const genAI = new GoogleGenerativeAI(apiKey);
 
     // AI モデルの設定
+    const npcType = (contactType && contactType in MESSENGER_AI_PROMPTS)
+      ? contactType as keyof typeof MESSENGER_AI_PROMPTS
+      : 'darkOrganization';
+
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash-lite",
-      systemInstruction: getMessengerAIPrompt('darkOrganization'),
+      systemInstruction: getMessengerAIPrompt(npcType),
     });
 
     // 会話履歴の最適化（メモリ使用量制御）
