@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Desktop } from '@/components/Desktop';
 import { Window } from '@/components/Window';
 import { Taskbar } from '@/components/Taskbar';
@@ -16,28 +16,15 @@ import { useAuthContext } from '@/providers/AuthProvider';
 export default function HomePage() {
   const {
     gamePhase,
-    isAuthenticated,
     startGame,
-    setUser,
-    setAuthenticated,
     setGamePhase,
     setSelectedScenario
   } = useGameStore();
   const windows = useWindowStore(state => state.windows);
   const { user } = useAuthContext();
 
-  useEffect(() => {
-    if (user) {
-      setUser(user);
-      setAuthenticated(true);
-    } else {
-      setUser(null);
-      setAuthenticated(false);
-    }
-  }, [user, setUser, setAuthenticated]);
-
   const handleGameStart = () => {
-    if (isAuthenticated) {
+    if (user) {
       startGame(); // gamePhase を 'disclaimer' に設定
     }
   };
