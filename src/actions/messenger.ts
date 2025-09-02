@@ -34,56 +34,11 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1分間
 const MAX_CONVERSATION_HISTORY_LENGTH = 20; // 最大20件の会話履歴
 const MAX_CONVERSATION_HISTORY_SIZE = 50000; // 最大50KB（文字数換算）
 
-/**
- * 連絡先ごとのゲームテーマに沿ったエラーメッセージ
- */
-const ERROR_MESSAGES = {
-  darkOrganization: {
-    rateLimit: [
-      "通信が混雑している...少し時間を置いてから再度連絡してくれ。",
-      "セキュリティシステムが過負荷状態だ。しばらく待機してほしい。",
-      "暗号化回線が不安定になっている。1分後に再試行してくれ。",
-      "組織の通信プロトコルにより、頻繁な接続は制限されている。",
-      "監視を避けるため、通信頻度を下げる必要がある。少し間を空けてくれ。"
-    ],
-    general: [
-      "通信エラーが発生した。セキュリティプロトコルを確認中...",
-      "暗号化システムに問題が生じている。復旧作業を行っている。",
-      "組織のネットワークが不安定だ。しばらく待ってくれ。",
-      "セキュリティ上の問題で一時的に通信が中断された。",
-      "システムの異常を検知した。安全な接続を再確立している。"
-    ]
-  },
-  default: {
-    rateLimit: [
-      "少し時間を空けてからもう一度試してください。",
-      "しばらく待ってから再度お試しください。",
-      "通信が混雑しています。1分後に再試行してください。"
-    ],
-    general: [
-      "申し訳ありません。エラーが発生しました。",
-      "通信エラーが発生しました。しばらく待ってから再試行してください。",
-      "システムエラーが発生しました。"
-    ]
-  }
-};
-
-/**
- * 連絡先タイプからエラーメッセージタイプを取得
- */
-function getErrorMessageType(contactType?: string): keyof typeof ERROR_MESSAGES {
-  switch (contactType) {
-    case 'darkOrganization':
-      return 'darkOrganization';
-    default:
-      return 'default';
-  }
-}
 
 /**
  * レート制限チェック関数
  */
-function checkRateLimit(userId: string, contactType?: string): { allowed: boolean; rateLimitMessage?: string } {
+function checkRateLimit(userId: string): { allowed: boolean } {
   const now = Date.now();
   const userLimit = userRateLimit.get(userId);
 
@@ -100,14 +55,8 @@ function checkRateLimit(userId: string, contactType?: string): { allowed: boolea
   }
 
   if (userLimit.count >= RATE_LIMIT_PER_MINUTE) {
-    // レート制限に達している
-    const messageType = getErrorMessageType(contactType);
-    const messages = ERROR_MESSAGES[messageType].rateLimit;
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    return {
-      allowed: false,
-      rateLimitMessage: randomMessage
-    };
+    // レート制限に達している - ErrorTypeに従ったエラーを投げる
+    throw new Error('rateLimit');
   }
 
   // カウントアップして許可
@@ -162,10 +111,6 @@ function optimizeConversationHistory(history: Content[]): Content[] {
 
   optimizedHistory = optimizedHistory.slice(-validHistoryLength);
 
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`Conversation history optimized: ${history.length} -> ${optimizedHistory.length} entries, ~${totalSize} chars`);
-  }
-
   return optimizedHistory;
 }
 
@@ -219,9 +164,6 @@ async function _getChatHistory(userId: string): Promise<ChatHistory | null> {
 
       // データ構造の検証
       if (!data || typeof data !== 'object') {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(`Invalid message document: ${doc.id}`);
-        }
         return; // このメッセージをスキップ
       }
 
@@ -249,7 +191,20 @@ async function _getChatHistory(userId: string): Promise<ChatHistory | null> {
     if (process.env.NODE_ENV === 'development') {
       console.error('Error fetching chat history:', error);
     }
-    throw new Error('チャット履歴の取得に失敗しました');
+
+    if (error instanceof Error) {
+      // ErrorTypeのエラーメッセージはそのまま返す
+      if (['rateLimit', 'dbError', 'networkError', 'authError', 'aiServiceError', 'aiResponseError', 'general'].includes(error.message)) {
+        throw error;
+      }
+
+      // server.tsからの認証エラーをErrorTypeに変換
+      if (error.message.includes('認証が必要です') || error.message.includes('認証エラー') || error.message.includes('セッションが期限切れ')) {
+        throw new Error('authError');
+      }
+    }
+
+    throw new Error('dbError');
   }
 }
 
@@ -268,7 +223,7 @@ export const addMessage = requireAuth(async (userId: string, message: ChatMessag
       if (process.env.NODE_ENV === 'development') {
         console.error('Invalid message object provided to addMessage');
       }
-      throw new Error('無効なメッセージデータです');
+      throw new Error('general');
     }
 
     // 新設計: 各メッセージを個別ドキュメントとして保存
@@ -286,11 +241,19 @@ export const addMessage = requireAuth(async (userId: string, message: ChatMessag
       console.error('Error adding message:', error);
     }
 
-    if (error instanceof Error && error.message.includes('無効なメッセージデータです')) {
-      throw error;
+    if (error instanceof Error) {
+      // ErrorTypeのエラーメッセージはそのまま返す
+      if (['rateLimit', 'dbError', 'networkError', 'authError', 'aiServiceError', 'aiResponseError', 'general'].includes(error.message)) {
+        throw error;
+      }
+
+      // server.tsからの認証エラーをErrorTypeに変換
+      if (error.message.includes('認証が必要です') || error.message.includes('認証エラー') || error.message.includes('セッションが期限切れ')) {
+        throw new Error('authError');
+      }
     }
 
-    throw new Error('メッセージの追加に失敗しました');
+    throw new Error('dbError');
   }
 });
 
@@ -302,7 +265,15 @@ export const isGameStarted = requireAuth(async (userId: string): Promise<boolean
     if (process.env.NODE_ENV === 'development') {
       console.error('Error checking game state:', error);
     }
-    // エラーの場合は false を返して、ゲームが開始されていない状態として扱う
+
+    if (error instanceof Error) {
+      // ErrorTypeのエラーメッセージはそのまま返す
+      if (['rateLimit', 'dbError', 'networkError', 'authError', 'aiServiceError', 'aiResponseError', 'general'].includes(error.message)) {
+        throw error;
+      }
+    }
+
+    // 一般的なエラーはfalseを返す（ゲーム状態確認の場合）
     return false;
   }
 });
@@ -322,15 +293,11 @@ export const generateAIResponse = requireAuth(async (
   contactType?: string
 ): Promise<string> => {
   try {
-    // レート制限チェック
-    const rateLimitCheck = checkRateLimit(userId, contactType);
-    if (!rateLimitCheck.allowed) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Rate limit exceeded for user ${userId}`);
-      }
-      // ゲームテーマに沿ったメッセージを返す（AIコールなし）
-      return rateLimitCheck.rateLimitMessage!;
+    if (userInput == "jsonErrorTest" && process.env.NODE_ENV === 'development') {
+      throw new Error('AI応答の形式が無効です');
     }
+    // レート制限チェック
+    checkRateLimit(userId);
 
     // 入力の検証とサニタイズ
     if (!userInput || typeof userInput !== 'string') {
@@ -349,9 +316,6 @@ export const generateAIResponse = requireAuth(async (
     // APIキーの確認（サーバーサイドでのみアクセス）
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('GEMINI_API_KEY is not configured');
-      }
       throw new Error('AI サービスが利用できません');
     }
 
@@ -412,18 +376,29 @@ export const generateAIResponse = requireAuth(async (
     }
 
     if (error instanceof Error) {
-      if (error.message.includes('無効な入力です') ||
-          error.message.includes('AI サービスが利用できません') ||
-          error.message.includes('AI応答の形式が無効です')) {
+      if (error.message.includes('無効な入力です')) {
+        throw new Error('general');
+      }
+      if (error.message.includes('AI サービスが利用できません')) {
+        throw new Error('aiServiceError');
+      }
+      if (error.message.includes('AI応答の形式が無効です')) {
+        throw new Error('aiResponseError');
+      }
+
+      // ErrorTypeのエラーメッセージはそのまま返す
+      if (['rateLimit', 'dbError', 'networkError', 'authError', 'aiServiceError', 'aiResponseError', 'general'].includes(error.message)) {
         throw error;
+      }
+
+      // server.tsからの認証エラーをErrorTypeに変換
+      if (error.message.includes('認証が必要です') || error.message.includes('認証エラー') || error.message.includes('セッションが期限切れ')) {
+        throw new Error('authError');
       }
     }
 
-    // 連絡先タイプに応じたエラーメッセージを生成
-    const messageType = getErrorMessageType(contactType);
-    const messages = ERROR_MESSAGES[messageType].general;
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    throw new Error(randomMessage);
+    // 一般的なエラーはgeneralタイプとして返す
+    throw new Error('general');
   }
 });
 
@@ -439,9 +414,6 @@ export const addMessagesBatch = requireAuth(async (userId: string, messages: Cha
 
     // 入力データの検証
     if (!Array.isArray(messages) || messages.length === 0) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Invalid messages array provided to addMessagesBatch');
-      }
       throw new Error('無効なメッセージデータです');
     }
 
@@ -461,9 +433,6 @@ export const addMessagesBatch = requireAuth(async (userId: string, messages: Cha
       // 各メッセージを個別ドキュメントとして追加
       for (const message of batchMessages) {
         if (!message || typeof message !== 'object') {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('Skipping invalid message in batch:', message);
-          }
           continue;
         }
 
@@ -490,10 +459,20 @@ export const addMessagesBatch = requireAuth(async (userId: string, messages: Cha
 
     if (error instanceof Error) {
       if (error.message.includes('無効なメッセージデータです')) {
+        throw new Error('general');
+      }
+
+      // ErrorTypeのエラーメッセージはそのまま返す
+      if (['rateLimit', 'dbError', 'networkError', 'authError', 'aiServiceError', 'aiResponseError', 'general'].includes(error.message)) {
         throw error;
+      }
+
+      // server.tsからの認証エラーをErrorTypeに変換
+      if (error.message.includes('認証が必要です') || error.message.includes('認証エラー') || error.message.includes('セッションが期限切れ')) {
+        throw new Error('authError');
       }
     }
 
-    throw new Error('バッチメッセージの追加に失敗しました');
+    throw new Error('dbError');
   }
 });

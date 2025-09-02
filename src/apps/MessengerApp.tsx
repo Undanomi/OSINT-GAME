@@ -10,7 +10,7 @@ import { appNotifications } from '@/utils/notifications';
 import { getChatHistory, addMessage, ChatMessage, generateAIResponse } from '@/actions/messenger';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useMessengerContacts } from '@/hooks/useMessengerContacts';
-import { MessengerContactDocument } from '@/types/messenger';
+import { MessengerContactDocument, ErrorType, selectErrorMessage } from '@/types/messenger';
 
 // セキュアなID生成関数
 function generateSecureId(): string {
@@ -342,11 +342,8 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       });
 
     } catch (error) {
-      // エラーハンドリング：統一されたエラー処理
-      console.error("Message handling failed:", error);
-
-      // ユーザーメッセージがDB保存に失敗した場合はUIからも削除
-      if (error instanceof Error && error.message.includes('メッセージの追加に失敗')) {
+      // DB保存失敗エラーの場合はUIからユーザーメッセージを削除してロールバック
+      if (error instanceof Error && error.message === 'dbError') {
         // UIからユーザーメッセージを削除してロールバック
         setMessages(prev => ({
           ...prev,
@@ -357,10 +354,21 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         return;
       }
 
-      // AI応答エラーの場合は連絡先固有のエラーメッセージを表示
-      const errorText = error instanceof Error
-        ? error.message  // 連絡先タイプに応じたエラーメッセージ
-        : 'エラーが発生しました。';
+      // ErrorTypeに基づいてクライアント側でエラーメッセージを選択
+      let errorText: string;
+
+      if (error instanceof Error) {
+        const errorType = error.message as ErrorType;
+        // ErrorTypeかどうかチェック
+        if (['rateLimit', 'dbError', 'networkError', 'authError', 'aiServiceError', 'aiResponseError', 'general'].includes(errorType)) {
+          errorText = selectErrorMessage(errorType, selectedContact.type);
+        } else {
+          // ErrorTypeでない場合はgeneralとして扱う
+          errorText = selectErrorMessage('general', selectedContact.type);
+        }
+      } else {
+        errorText = selectErrorMessage('general', selectedContact.type);
+      }
 
       const errorMessageId = generateSecureId();
       const errorMessage: Message = {

@@ -33,7 +33,7 @@ export async function initializeMessengerIntroduction(
   options: MessengerInitializationOptions = {}
 ): Promise<boolean> {
   const {
-    delay = 3000,
+    delay = 1000,
     sendNotification = true,
     notificationDuration = 5000
   } = options;
