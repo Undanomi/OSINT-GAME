@@ -43,7 +43,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   }, [user]);
 
   const handleSendMessage = useCallback(async () => {
-    if (!inputText.trim() || !selectedContact || !user) return;
+    if (!inputText.trim() || !selectedContact || !user || inputText.trim().length > 500) return;
 
     const currentInput = inputText;
     const messageId = generateSecureId();
@@ -164,9 +164,10 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
                 placeholder="メッセージを入力..."
                 className="flex-1 p-3 border rounded-lg"
                 value={inputText}
-                onChange={e => setInputText(e.target.value)}
+                onChange={e => setInputText(e.target.value.substring(0, 500))}
                 onKeyDown={handleKeyDown}
                 disabled={!selectedContact}
+                maxLength={500}
               />
               <button onClick={handleSendMessage} disabled={!inputText.trim() || !selectedContact} className="bg-blue-500 text-white p-3 rounded-lg disabled:bg-blue-300">
                 <Send size={20} />

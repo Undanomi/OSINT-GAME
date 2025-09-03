@@ -47,7 +47,7 @@ const MAX_AI_RETRY_ATTEMPTS = 3; // JSONパースエラーの場合の最大リ�
  */
 export const getContacts = requireAuth(async (userId: string): Promise<MessengerContact[]> => {
   try {
-    const contactsRef = collection(db, 'users', userId, 'messeges');
+    const contactsRef = collection(db, 'users', userId, 'messages');
     const snapshot = await getDocs(query(contactsRef, orderBy('name', 'asc')));
 
     if (snapshot.empty) return [];
@@ -70,7 +70,7 @@ export const getContacts = requireAuth(async (userId: string): Promise<Messenger
  */
 export const addContact = requireAuth(async (userId: string, contact: Omit<MessengerContact, 'id'>, contactId: string): Promise<void> => {
   try {
-    const contactRef = doc(db, 'users', userId, 'messeges', contactId);
+    const contactRef = doc(db, 'users', userId, 'messages', contactId);
     await setDoc(contactRef, contact);
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
@@ -91,7 +91,7 @@ export const getMessages = requireAuth(async (
   try {
     if (!contactId) return { messages: [], hasMore: false };
 
-    const historyRef = collection(db, 'users', userId, 'messeges', contactId, 'history');
+    const historyRef = collection(db, 'users', userId, 'messages', contactId, 'history');
     let q = query(historyRef, orderBy('timestamp', 'desc'), limit(MESSAGES_PER_PAGE + 1));
 
     if (cursorTimestamp) {
@@ -123,7 +123,7 @@ export const getMessages = requireAuth(async (
  */
 export const addMessage = requireAuth(async (userId: string, contactId: string, message: ChatMessage): Promise<void> => {
   try {
-    const messageRef = doc(db, 'users', userId, 'messeges', contactId, 'history', message.id);
+    const messageRef = doc(db, 'users', userId, 'messages', contactId, 'history', message.id);
     await setDoc(messageRef, {
       sender: message.sender,
       text: message.text,

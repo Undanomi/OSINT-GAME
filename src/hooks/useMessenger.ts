@@ -6,7 +6,7 @@ import { getContacts, getMessages } from '@/actions/messenger';
 import { MessengerContact, UIMessage, convertFirestoreToUIMessage } from '@/types/messenger';
 
 const CACHE_PREFIX = 'messenger_cache_';
-const CACHE_EXPIRATION = 60 * 60 * 1000 * 24; // キャッシュの有効期限: 1時間
+const CACHE_EXPIRATION = 60 * 60 * 1000 * 24; // キャッシュの有効期限: 24時間
 const CACHE_FRESHNESS_THRESHOLD = 5 * 60 * 1000; // キャッシュの鮮度閾値: 5分
 
 
@@ -132,10 +132,10 @@ export const useMessenger = () => {
     const oldestMessage = messages[0];
 
     try {
-      const timestampISO = oldestMessage.timestamp instanceof Date 
+      const timestampISO = oldestMessage.timestamp instanceof Date
         ? oldestMessage.timestamp.toISOString()
         : new Date(oldestMessage.timestamp).toISOString();
-        
+
       const { messages: newMessages, hasMore: newHasMore } = await getMessages(
         selectedContact.id,
         timestampISO
