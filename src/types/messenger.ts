@@ -9,6 +9,23 @@ export interface MessengerContact {
 }
 
 /**
+ * ユーザーごとのNPC応答レート制限管理
+ */
+export interface RateLimitInfo {
+  count: number;
+  resetTime: number;
+}
+
+/**
+ * ローカルキャッシュデータの型定義
+ */
+export interface CachedMessages {
+  messages: UIMessage[];
+  hasMore: boolean;
+  timestamp: number;
+}
+
+/**
  * チャットメッセージを表すインターフェース（Firestore用）
  * path: users/{userId}/messengers/{contactId}/history/{messageId}
  */

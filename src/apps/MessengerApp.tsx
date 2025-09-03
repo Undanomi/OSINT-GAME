@@ -8,7 +8,6 @@ import { addMessage, generateAIResponse } from '@/actions/messenger';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useMessenger } from '@/hooks/useMessenger';
 import { UIMessage, ErrorType, selectErrorMessage } from '@/types/messenger';
-import { initializeMessengerIntroduction } from '@/services/messengerInitialization';
 
 function generateSecureId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
@@ -35,12 +34,6 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
-
-  useEffect(() => {
-    if (user) {
-      initializeMessengerIntroduction();
-    }
-  }, [user]);
 
   const handleSendMessage = useCallback(async () => {
     if (!inputText.trim() || !selectedContact || !user || inputText.trim().length > 500) return;

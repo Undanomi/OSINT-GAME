@@ -3,19 +3,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { getContacts, getMessages } from '@/actions/messenger';
-import { MessengerContact, UIMessage, convertFirestoreToUIMessage } from '@/types/messenger';
+import { MessengerContact, UIMessage, convertFirestoreToUIMessage, CachedMessages } from '@/types/messenger';
+import {
+  CACHE_PREFIX,
+  CACHE_EXPIRATION,
+  CACHE_FRESHNESS_THRESHOLD,
+} from '@/lib/messenger/constants';
 
-const CACHE_PREFIX = 'messenger_cache_';
-const CACHE_EXPIRATION = 60 * 60 * 1000 * 24; // キャッシュの有効期限: 24時間
-const CACHE_FRESHNESS_THRESHOLD = 5 * 60 * 1000; // キャッシュの鮮度閾値: 5分
-
-
-// キャッシュデータの型定義
-interface CachedMessages {
-  messages: UIMessage[];
-  hasMore: boolean;
-  timestamp: number;
-}
 
 /**
  * localStorageからキャッシュされたメッセージを取得するヘルパー関数

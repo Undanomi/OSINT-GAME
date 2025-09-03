@@ -15,32 +15,18 @@ import {
 import { requireAuth } from '@/lib/auth/server';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
 import { getMessengerAIPrompt, MESSENGER_AI_PROMPTS } from '@/prompts/messengerAIPrompts';
-import type { MessengerContact, ChatMessage } from '@/types/messenger';
+import type { MessengerContact, ChatMessage, RateLimitInfo } from '@/types/messenger';
+import {
+  MESSAGES_PER_PAGE,
+  RATE_LIMIT_PER_MINUTE,
+  RATE_LIMIT_WINDOW_MS,
+  MAX_CONVERSATION_HISTORY_LENGTH,
+  MAX_CONVERSATION_HISTORY_SIZE,
+  MAX_AI_RETRY_ATTEMPTS,
+} from '@/lib/messenger/constants';
 
-const MESSAGES_PER_PAGE = 20;
-
-/**
- * ユーザーごとのレート制限管理
- */
-interface RateLimitInfo {
-  count: number;
-  resetTime: number;
-}
 
 const userRateLimit = new Map<string, RateLimitInfo>();
-const RATE_LIMIT_PER_MINUTE = 10; // 1分間に10回まで
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1分間
-
-/**
- * AI会話履歴の制限設定
- */
-const MAX_CONVERSATION_HISTORY_LENGTH = 20; // 最大20件の会話履歴
-const MAX_CONVERSATION_HISTORY_SIZE = 50000; // 最大50KB（文字数換算）
-
-/**
- * AI応答リトライ設定
- */
-const MAX_AI_RETRY_ATTEMPTS = 3; // JSONパースエラーの場合の最大リトライ回数
 
 /**
  * ユーザーの全てのメッセンジャー連絡先を取得する
@@ -284,7 +270,7 @@ export const generateAIResponse = requireAuth(async (
     // リトライロジック付きでAI応答を取得
     let responseObject;
     let retryCount = 0;
-    
+
     while (retryCount < MAX_AI_RETRY_ATTEMPTS) {
       try {
         const result = await chat.sendMessage(promptForModel);
@@ -298,11 +284,11 @@ export const generateAIResponse = requireAuth(async (
         if (process.env.NODE_ENV === 'development') {
           console.error(`JSON parsing failed (attempt ${retryCount}/${MAX_AI_RETRY_ATTEMPTS}):`, jsonError);
         }
-        
+
         if (retryCount >= MAX_AI_RETRY_ATTEMPTS) {
           throw new Error('AI応答の形式が無効です');
         }
-        
+
         // リトライする前に少し待機
         await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
       }
