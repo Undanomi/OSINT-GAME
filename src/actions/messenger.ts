@@ -38,6 +38,11 @@ const MAX_CONVERSATION_HISTORY_LENGTH = 20; // 最大20件の会話履歴
 const MAX_CONVERSATION_HISTORY_SIZE = 50000; // 最大50KB（文字数換算）
 
 /**
+ * AI応答リトライ設定
+ */
+const MAX_AI_RETRY_ATTEMPTS = 3; // JSONパースエラーの場合の最大リトライ回数
+
+/**
  * ユーザーの全てのメッセンジャー連絡先を取得する
  */
 export const getContacts = requireAuth(async (userId: string): Promise<MessengerContact[]> => {
@@ -276,18 +281,31 @@ export const generateAIResponse = requireAuth(async (
       },
     });
 
-    const result = await chat.sendMessage(promptForModel);
-    const responseText = result.response.text();
-
-    // JSON応答のパースと検証
+    // リトライロジック付きでAI応答を取得
     let responseObject;
-    try {
-      responseObject = JSON.parse(responseText);
-    } catch (jsonError) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('JSON parsing failed:', jsonError);
+    let retryCount = 0;
+    
+    while (retryCount < MAX_AI_RETRY_ATTEMPTS) {
+      try {
+        const result = await chat.sendMessage(promptForModel);
+        const responseText = result.response.text();
+
+        // JSON応答のパースと検証
+        responseObject = JSON.parse(responseText);
+        break; // 成功した場合はループを抜ける
+      } catch (jsonError) {
+        retryCount++;
+        if (process.env.NODE_ENV === 'development') {
+          console.error(`JSON parsing failed (attempt ${retryCount}/${MAX_AI_RETRY_ATTEMPTS}):`, jsonError);
+        }
+        
+        if (retryCount >= MAX_AI_RETRY_ATTEMPTS) {
+          throw new Error('AI応答の形式が無効です');
+        }
+        
+        // リトライする前に少し待機
+        await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
       }
-      throw new Error('AI応答の形式が無効です');
     }
 
     const { responseText: aiText } = responseObject;
