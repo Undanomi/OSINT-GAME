@@ -108,8 +108,8 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
       const cacheTimestamp = localStorage.getItem('osint-game-cache-timestamp');
       
       let searchResults;
-      
-      if (cachedData && cacheTimestamp) {
+
+      if (cachedData?.length == 0 && cacheTimestamp) {
         const timestamp = parseInt(cacheTimestamp);
         const now = Date.now();
         const cacheExpiry = 60 * 60 * 1000;
