@@ -79,7 +79,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       const cachedData = localStorage.getItem('osint-game-search-cache');
       const cacheTimestamp = localStorage.getItem('osint-game-cache-timestamp');
 
-      if (cachedData && cacheTimestamp) {
+      if (typeof cachedData === 'string' && cachedData.length > 0 && cacheTimestamp) {
         const timestamp = parseInt(cacheTimestamp);
         const now = Date.now();
         // キャッシュの有効期限

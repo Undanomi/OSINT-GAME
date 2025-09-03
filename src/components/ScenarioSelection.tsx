@@ -109,7 +109,7 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
       
       let searchResults;
 
-      if (cachedData?.length == 0 && cacheTimestamp) {
+      if (typeof cachedData === 'string' && cachedData.length > 0 && cacheTimestamp) {
         const timestamp = parseInt(cacheTimestamp);
         const now = Date.now();
         const cacheExpiry = 60 * 60 * 1000;
