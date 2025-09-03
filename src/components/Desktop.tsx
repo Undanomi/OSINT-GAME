@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useWindowStore } from '@/store/windowStore';
 import { useAppStore, AppMetadata } from '@/store/appStore';
 import { initializeAppRegistry } from '@/config/appRegistry';
+import { initializeMessengerIntroduction } from '@/services/messengerInitialization';
 import { Package, Settings, RefreshCw, Info } from 'lucide-react';
 
 /**
@@ -209,6 +210,27 @@ export const Desktop: React.FC = () => {
       setInitialized(true);
     }
   }, [mounted, initialized]);
+
+  /**
+   * メッセンジャーのクライアントサイド初期化処理
+   * デスクトップが表示されたらメッセンジャーのイントロダクションをクライアントサイドで実行
+   */
+  useEffect(() => {
+    if (initialized) {
+      // デスクトップ初期化完了後、メッセンジャーの初期化を実行
+      initializeMessengerIntroduction()
+        .then((wasInitialized) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Messenger initialization result:', wasInitialized ? 'initialized' : 'already initialized');
+          }
+        })
+        .catch((error) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Messenger initialization failed:', error);
+          }
+        });
+    }
+  }, [initialized]);
 
   /**
    * デスクトップに表示するアプリケーションのリスト生成と並べ替え
