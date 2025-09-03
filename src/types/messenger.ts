@@ -1,10 +1,35 @@
 /**
  * メッセンジャーアプリの連絡先ドキュメント構造
+ * path: users/{userId}/messengers/{contactId}
  */
-export interface MessengerContactDocument {
+export interface MessengerContact {
   id: string;
   name: string;
-  type: string;
+  type: ContactType;
+}
+
+/**
+ * チャットメッセージを表すインターフェース（Firestore用）
+ * path: users/{userId}/messengers/{contactId}/history/{messageId}
+ */
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'npc';
+  text: string;
+  timestamp: Date;
+}
+
+/**
+ * チャットメッセージを表すインターフェース（UI用）
+ */
+export interface UIMessage {
+  id: string;
+  sender: 'me' | 'other';
+  text: string;
+  /** 表示用のフォーマット済み時間文字列 (例: "17:05") */
+  time: string;
+  /** 無限スクロールやソート処理に使うためのDateオブジェクト */
+  timestamp: Date;
 }
 
 /**
@@ -20,7 +45,7 @@ export type ContactType = 'darkOrganization' | 'default';
 /**
  * デフォルトのメッセンジャー連絡先データ
  */
-export const defaultMessengerContacts: MessengerContactDocument[] = [
+export const defaultMessengerContacts: MessengerContact[] = [
   {
     id: 'dark_organization',
     name: '闇の組織',
@@ -121,25 +146,33 @@ export const ERROR_MESSAGES = {
 };
 
 /**
- * 連絡先タイプからエラーメッセージタイプを取得
+ * 連絡先タイプからエラーメッセージ用のタイプを取得する
  */
-export function getErrorMessageType(contactType?: string): ContactType {
-  switch (contactType) {
-    case 'darkOrganization':
-      return 'darkOrganization';
-    default:
-      return 'default';
-  }
+export function getErrorMessageType(contactType?: ContactType): keyof typeof ERROR_MESSAGES {
+  return contactType === 'darkOrganization' ? 'darkOrganization' : 'default';
 }
 
 /**
- * エラータイプと連絡先タイプに基づいてランダムなエラーメッセージを選択
+ * エラータイプと連絡先タイプに基づいてランダムなエラーメッセージを選択する
  */
 export function selectErrorMessage(
   errorType: ErrorType,
-  contactType?: string
+  contactType?: ContactType
 ): string {
   const messageType = getErrorMessageType(contactType);
   const messages = ERROR_MESSAGES[messageType][errorType];
   return messages[Math.floor(Math.random() * messages.length)];
+}
+
+/**
+ * FirestoreのChatMessageをUI用のUIMessageに変換する
+ */
+export function convertFirestoreToUIMessage(message: ChatMessage): UIMessage {
+  return {
+    id: message.id,
+    sender: message.sender === 'user' ? 'me' : 'other',
+    text: message.text,
+    time: message.timestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+    timestamp: message.timestamp
+  };
 }

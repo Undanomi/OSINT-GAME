@@ -9,12 +9,15 @@ import {
   query,
   orderBy,
   limit,
+  startAfter,
   Timestamp,
-  writeBatch
 } from 'firebase/firestore';
 import { requireAuth } from '@/lib/auth/server';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
 import { getMessengerAIPrompt, MESSENGER_AI_PROMPTS } from '@/prompts/messengerAIPrompts';
+import type { MessengerContact, ChatMessage } from '@/types/messenger';
+
+const MESSAGES_PER_PAGE = 20;
 
 /**
  * ユーザーごとのレート制限管理
@@ -34,6 +37,100 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1分間
 const MAX_CONVERSATION_HISTORY_LENGTH = 20; // 最大20件の会話履歴
 const MAX_CONVERSATION_HISTORY_SIZE = 50000; // 最大50KB（文字数換算）
 
+/**
+ * ユーザーの全てのメッセンジャー連絡先を取得する
+ */
+export const getContacts = requireAuth(async (userId: string): Promise<MessengerContact[]> => {
+  try {
+    const contactsRef = collection(db, 'users', userId, 'messeges');
+    const snapshot = await getDocs(query(contactsRef, orderBy('name', 'asc')));
+
+    if (snapshot.empty) return [];
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      name: doc.data().name || '',
+      type: doc.data().type || 'default',
+    }));
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching contacts:', error);
+    }
+    throw new Error('連絡先の取得に失敗しました');
+  }
+});
+
+/**
+ * 新しいメッセンジャー連絡先を追加する
+ */
+export const addContact = requireAuth(async (userId: string, contact: Omit<MessengerContact, 'id'>, contactId: string): Promise<void> => {
+  try {
+    const contactRef = doc(db, 'users', userId, 'messeges', contactId);
+    await setDoc(contactRef, contact);
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+        console.error('Error adding contact:', error);
+    }
+    throw new Error('連絡先の追加に失敗しました');
+  }
+});
+
+/**
+ * 特定の連絡先とのメッセージ履歴をページネーション付きで取得する
+ */
+export const getMessages = requireAuth(async (
+  userId: string,
+  contactId: string,
+  cursorTimestamp?: string
+): Promise<{ messages: ChatMessage[], hasMore: boolean }> => {
+  try {
+    if (!contactId) return { messages: [], hasMore: false };
+
+    const historyRef = collection(db, 'users', userId, 'messeges', contactId, 'history');
+    let q = query(historyRef, orderBy('timestamp', 'desc'), limit(MESSAGES_PER_PAGE + 1));
+
+    if (cursorTimestamp) {
+      q = query(q, startAfter(Timestamp.fromDate(new Date(cursorTimestamp))));
+    }
+
+    const snapshot = await getDocs(q);
+    const messages: ChatMessage[] = snapshot.docs.map(doc => ({
+      id: doc.id,
+      sender: doc.data().sender,
+      text: doc.data().text,
+      timestamp: doc.data().timestamp.toDate(),
+    }));
+
+    const hasMore = messages.length > MESSAGES_PER_PAGE;
+    if (hasMore) messages.pop();
+
+    return { messages: messages.reverse(), hasMore };
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+        console.error(`Error fetching messages for contact ${contactId}:`, error);
+    }
+    throw new Error('dbError');
+  }
+});
+
+/**
+ * メッセージをFirestoreに追加する
+ */
+export const addMessage = requireAuth(async (userId: string, contactId: string, message: ChatMessage): Promise<void> => {
+  try {
+    const messageRef = doc(db, 'users', userId, 'messeges', contactId, 'history', message.id);
+    await setDoc(messageRef, {
+      sender: message.sender,
+      text: message.text,
+      timestamp: Timestamp.fromDate(message.timestamp),
+    });
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+        console.error('Error adding message:', error);
+    }
+    throw new Error('dbError');
+  }
+});
 
 /**
  * レート制限チェック関数
@@ -114,170 +211,6 @@ function optimizeConversationHistory(history: Content[]): Content[] {
   return optimizedHistory;
 }
 
-export interface ChatMessage {
-  id: string;
-  sender: 'user' | 'npc';
-  npcId?: string;
-  text: string;
-  timestamp: Date;
-}
-
-export interface ChatHistory {
-  messages: ChatMessage[];
-  lastUpdated: Date;
-  gameStarted: boolean;
-}
-
-export interface MessageDocument {
-  id: string;
-  sender: 'user' | 'npc';
-  npcId?: string;
-  text: string;
-  timestamp: Date;
-  userId: string;
-}
-
-/**
- * 内部用: userIdを直接受け取ってチャット履歴を取得
- */
-async function _getChatHistory(userId: string): Promise<ChatHistory | null> {
-  try {
-    // 新しい設計: users/{userId}/messages コレクションからメッセージを取得
-    const messagesRef = collection(db, 'users', userId, 'messages');
-    const q = query(
-      messagesRef,
-      orderBy('timestamp', 'asc'), // 時系列順
-      limit(1000) // 最新1000件まで（パフォーマンス考慮）
-    );
-
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      return null; // メッセージが存在しない
-    }
-
-    const messages: ChatMessage[] = [];
-    let lastUpdated = new Date(0); // 最古の日時で初期化
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-
-      // データ構造の検証
-      if (!data || typeof data !== 'object') {
-        return; // このメッセージをスキップ
-      }
-
-      const message: ChatMessage = {
-        id: doc.id,
-        sender: data.sender || 'npc',
-        text: data.text || '',
-        timestamp: data.timestamp?.toDate() || new Date()
-      };
-
-      messages.push(message);
-
-      // 最新の更新日時を追跡
-      if (message.timestamp > lastUpdated) {
-        lastUpdated = message.timestamp;
-      }
-    });
-
-    return {
-      messages,
-      lastUpdated,
-      gameStarted: messages.length > 0 // メッセージがあればゲーム開始済み
-    };
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error fetching chat history:', error);
-    }
-
-    if (error instanceof Error) {
-      // ErrorTypeのエラーメッセージはそのまま返す
-      if (['rateLimit', 'dbError', 'networkError', 'authError', 'aiServiceError', 'aiResponseError', 'general'].includes(error.message)) {
-        throw error;
-      }
-
-      // server.tsからの認証エラーをErrorTypeに変換
-      if (error.message.includes('認証が必要です') || error.message.includes('認証エラー') || error.message.includes('セッションが期限切れ')) {
-        throw new Error('authError');
-      }
-    }
-
-    throw new Error('dbError');
-  }
-}
-
-/**
- * 外部用: 認証付きでチャット履歴を取得
- */
-export const getChatHistory = requireAuth(async (userId: string): Promise<ChatHistory | null> => {
-  return _getChatHistory(userId);
-});
-
-
-export const addMessage = requireAuth(async (userId: string, message: ChatMessage): Promise<void> => {
-  try {
-    // メッセージデータの検証
-    if (!message || typeof message !== 'object') {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Invalid message object provided to addMessage');
-      }
-      throw new Error('general');
-    }
-
-    // 新設計: 各メッセージを個別ドキュメントとして保存
-    const messageRef = doc(db, 'users', userId, 'messages', message.id);
-
-    await setDoc(messageRef, {
-      sender: message.sender || 'npc',
-      npcId: message.npcId || null,
-      text: typeof message.text === 'string' ? message.text.substring(0, 1000) : '',
-      timestamp: message.timestamp ? Timestamp.fromDate(message.timestamp) : Timestamp.fromDate(new Date()),
-      userId
-    });
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error adding message:', error);
-    }
-
-    if (error instanceof Error) {
-      // ErrorTypeのエラーメッセージはそのまま返す
-      if (['rateLimit', 'dbError', 'networkError', 'authError', 'aiServiceError', 'aiResponseError', 'general'].includes(error.message)) {
-        throw error;
-      }
-
-      // server.tsからの認証エラーをErrorTypeに変換
-      if (error.message.includes('認証が必要です') || error.message.includes('認証エラー') || error.message.includes('セッションが期限切れ')) {
-        throw new Error('authError');
-      }
-    }
-
-    throw new Error('dbError');
-  }
-});
-
-export const isGameStarted = requireAuth(async (userId: string): Promise<boolean> => {
-  try {
-    const history = await _getChatHistory(userId);
-    return history ? history.gameStarted : false;
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error checking game state:', error);
-    }
-
-    if (error instanceof Error) {
-      // ErrorTypeのエラーメッセージはそのまま返す
-      if (['rateLimit', 'dbError', 'networkError', 'authError', 'aiServiceError', 'aiResponseError', 'general'].includes(error.message)) {
-        throw error;
-      }
-    }
-
-    // 一般的なエラーはfalseを返す（ゲーム状態確認の場合）
-    return false;
-  }
-});
-
 /**
  * サーバーサイドでAI応答を生成する
  * APIキーをクライアントに露出せず、セキュアにAI応答を取得
@@ -305,11 +238,6 @@ export const generateAIResponse = requireAuth(async (
     }
 
     const sanitizedInput = userInput
-      .replace(/[<>]/g, '') // HTMLタグ除去
-      .replace(/"/g, '\\"')   // ダブルクォートをエスケープ
-      .replace(/\\/g, '\\\\') // バックスラッシュをエスケープ
-      .replace(/\n/g, ' ')    // 改行を空白に変換
-      .replace(/\r/g, '')     // キャリッジリターンを除去
       .trim()
       .substring(0, 500);     // 最大500文字に制限
 
@@ -403,80 +331,5 @@ export const generateAIResponse = requireAuth(async (
 
     // 一般的なエラーはgeneralタイプとして返す
     throw new Error('general');
-  }
-});
-
-/**
- * 複数のメッセージを効率的にバッチ処理で追加する
- * 大量のメッセージを一度に処理する場合にパフォーマンスが向上する
- *
- * @param messages 追加するメッセージの配列
- * @returns Promise<void>
- */
-export const addMessagesBatch = requireAuth(async (userId: string, messages: ChatMessage[]): Promise<void> => {
-  try {
-
-    // 入力データの検証
-    if (!Array.isArray(messages) || messages.length === 0) {
-      throw new Error('無効なメッセージデータです');
-    }
-
-    // バッチサイズの制限（Firestoreの制限に基づく）
-    const BATCH_SIZE = 500;
-    const batches = [];
-
-    for (let i = 0; i < messages.length; i += BATCH_SIZE) {
-      const batchMessages = messages.slice(i, i + BATCH_SIZE);
-      batches.push(batchMessages);
-    }
-
-    // 各バッチを順次処理（新設計: 各メッセージは個別ドキュメント）
-    for (const batchMessages of batches) {
-      const batch = writeBatch(db);
-
-      // 各メッセージを個別ドキュメントとして追加
-      for (const message of batchMessages) {
-        if (!message || typeof message !== 'object') {
-          continue;
-        }
-
-        const messageRef = doc(db, 'users', userId, 'messages', message.id);
-
-        // 個別ドキュメントなので競合状態なし
-        batch.set(messageRef, {
-          sender: message.sender || 'npc',
-          npcId: message.npcId || null,
-          text: typeof message.text === 'string' ? message.text.substring(0, 1000) : '',
-          timestamp: message.timestamp ? Timestamp.fromDate(message.timestamp) : Timestamp.fromDate(new Date()),
-          userId
-        });
-      }
-
-      // バッチを実行
-      await batch.commit();
-    }
-
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error in batch adding messages:', error);
-    }
-
-    if (error instanceof Error) {
-      if (error.message.includes('無効なメッセージデータです')) {
-        throw new Error('general');
-      }
-
-      // ErrorTypeのエラーメッセージはそのまま返す
-      if (['rateLimit', 'dbError', 'networkError', 'authError', 'aiServiceError', 'aiResponseError', 'general'].includes(error.message)) {
-        throw error;
-      }
-
-      // server.tsからの認証エラーをErrorTypeに変換
-      if (error.message.includes('認証が必要です') || error.message.includes('認証エラー') || error.message.includes('セッションが期限切れ')) {
-        throw new Error('authError');
-      }
-    }
-
-    throw new Error('dbError');
   }
 });

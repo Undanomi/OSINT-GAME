@@ -218,11 +218,7 @@ export const Desktop: React.FC = () => {
   useEffect(() => {
     if (initialized) {
       // デスクトップ初期化完了後、メッセンジャーの初期化を実行
-      initializeMessengerIntroduction({
-        delay: 3000, // 3秒後にイントロダクションメッセージを送信
-        sendNotification: true,
-        notificationDuration: 5000
-      })
+      initializeMessengerIntroduction()
         .then((wasInitialized) => {
           if (process.env.NODE_ENV === 'development') {
             console.log('Messenger initialization result:', wasInitialized ? 'initialized' : 'already initialized');
