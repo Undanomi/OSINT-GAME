@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Play, FileText, Users, Building2, Globe } from 'lucide-react';
+import { getSearchResults } from '@/actions/searchResults';
 
 interface Scenario {
   id: string;
@@ -86,8 +87,10 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
   const [isLoading, setIsLoading] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [comingSoonScenario, setComingSoonScenario] = useState<string>('');
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleScenarioClick = (scenario: Scenario) => {
+  const handleScenarioClick = async (scenario: Scenario) => {
     if (!scenario.isImplemented) {
       setComingSoonScenario(scenario.title);
       setShowComingSoon(true);
@@ -99,10 +102,67 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
 
     setIsLoading(true);
 
-    // アニメーション効果のための遅延
-    setTimeout(() => {
-      onScenarioSelect(scenario.id);
-    }, 1500);
+    try {
+      // 既存のキャッシュをチェック
+      const cachedData = localStorage.getItem('osint-game-search-cache');
+      const cacheTimestamp = localStorage.getItem('osint-game-cache-timestamp');
+      
+      let searchResults;
+      
+      if (cachedData && cacheTimestamp) {
+        const timestamp = parseInt(cacheTimestamp);
+        const now = Date.now();
+        const cacheExpiry = 60 * 60 * 1000;
+        
+        if (now - timestamp < cacheExpiry) {
+          // 有効なキャッシュが存在する場合、期限を更新してキャッシュを使用
+          localStorage.setItem('osint-game-cache-timestamp', Date.now().toString());
+          searchResults = JSON.parse(cachedData);
+          console.log('既存のキャッシュの期限を更新しました:', searchResults.length + '件');
+        } else {
+          // 期限切れのキャッシュを削除して新しく取得
+          localStorage.removeItem('osint-game-search-cache');
+          localStorage.removeItem('osint-game-cache-timestamp');
+          searchResults = await getSearchResults();
+          localStorage.setItem('osint-game-search-cache', JSON.stringify(searchResults));
+          localStorage.setItem('osint-game-cache-timestamp', Date.now().toString());
+          console.log('期限切れキャッシュを削除し、新しい検索結果をキャッシュしました:', searchResults.length + '件');
+        }
+      } else {
+        // キャッシュが存在しない場合、新しく取得
+        searchResults = await getSearchResults();
+        localStorage.setItem('osint-game-search-cache', JSON.stringify(searchResults));
+        localStorage.setItem('osint-game-cache-timestamp', Date.now().toString());
+        console.log('検索結果をローカルストレージにキャッシュしました:', searchResults.length + '件');
+      }
+
+      // データが取得できているかチェック
+      if (!searchResults || searchResults.length === 0) {
+        throw new Error('ゲームの読み込みに失敗しました');
+      }
+
+      console.log(localStorage);
+
+      // アニメーション効果のための遅延
+      setTimeout(() => {
+        onScenarioSelect(scenario.id);
+      }, 1000);
+    } catch (error) {
+      console.error('キャッシュの保存に失敗しました:', error);
+      setIsLoading(false);
+      
+      // エラーメッセージを表示
+      const errorMsg = error instanceof Error 
+        ? error.message 
+        : 'ゲームの読み込みに失敗しました。';
+      setErrorMessage(errorMsg);
+      setShowError(true);
+
+      // エラーメッセージを非表示
+      setTimeout(() => {
+        setShowError(false);
+      }, 5000);
+    }
   };
 
   if (isLoading) {
@@ -136,6 +196,27 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
             <p className="text-gray-300 text-sm">
               他のシナリオをお試しください。
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* エラーモーダル */}
+      {showError && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-red-900/30 backdrop-blur-md rounded-xl p-8 max-w-md mx-4 text-center border border-red-500/30">
+            <h3 className="text-2xl font-bold text-white mb-4">エラー</h3>
+            <p className="text-red-300 mb-4">
+              {errorMessage}
+            </p>
+            <p className="text-gray-300 text-sm">
+              インターネット接続を確認し、しばらくしてからお試しください。
+            </p>
+            <button
+              onClick={() => setShowError(false)}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            >
+              閉じる
+            </button>
           </div>
         </div>
       )}

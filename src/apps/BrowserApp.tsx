@@ -3,7 +3,7 @@ import { BaseApp } from '@/components/BaseApp';
 import { AppProps } from '@/types/app';
 import { Search, ArrowLeft, ArrowRight, RotateCcw, Home, ExternalLink } from 'lucide-react';
 import { UnifiedSearchResult } from '@/types/search';
-import { getFirebaseDocuments, filterFirebaseResults, SearchResult} from '@/actions/searchResults';
+import { filterSearchResults, SearchResult } from '@/actions/searchResults';
 
 // 各ページコンポーネントのインポート
 import { GenericPage } from './pages/GenericPage';
@@ -27,8 +27,6 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [searchQuery, setSearchQuery] = useState('');
   // 検索結果の状態管理
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  // 検索中かどうかの状態管理
-  const [isSearching, setIsSearching] = useState(false);
   // URLバー入力の状態管理
   const [urlInput, setUrlInput] = useState('');
   
@@ -47,6 +45,8 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [historyIndex, setHistoryIndex] = useState(0);
   // ページリロード機能のためのkey管理
   const [reloadKey, setReloadKey] = useState(0);
+  // 現在表示中の動的コンポーネント
+  const [currentDynamicComponent, setCurrentDynamicComponent] = useState<React.ReactElement | null>(null);
 
   // 現在表示中のビューを取得
   const currentView = history[historyIndex];
@@ -58,6 +58,11 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * @param viewIdentifier - ナビゲート先のURLまたはビュー識別子
    */
   const navigateTo = (viewIdentifier: string) => {
+    // 同じページへの遷移の場合は何もしない
+    if (currentView === viewIdentifier) {
+      return;
+    }
+
     // 現在位置から後を切り捨て新しい履歴を作成
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(viewIdentifier);
@@ -67,8 +72,40 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   };
 
   /**
+   * ローカルストレージからキャッシュを読み込む関数
+   */
+  const loadCacheFromLocalStorage = useCallback((): UnifiedSearchResult[] => {
+    try {
+      const cachedData = localStorage.getItem('osint-game-search-cache');
+      const cacheTimestamp = localStorage.getItem('osint-game-cache-timestamp');
+
+      if (cachedData && cacheTimestamp) {
+        const timestamp = parseInt(cacheTimestamp);
+        const now = Date.now();
+        // キャッシュの有効期限
+        const cacheExpiry = 60 * 60 * 1000;
+
+        if (now - timestamp < cacheExpiry) {
+          const parsedCache = JSON.parse(cachedData) as UnifiedSearchResult[];
+          console.log('ローカルストレージからキャッシュを読み込みました:', parsedCache.length + '件');
+          return parsedCache;
+        } else {
+          // 期限切れのキャッシュを削除
+          localStorage.removeItem('osint-game-search-cache');
+          localStorage.removeItem('osint-game-cache-timestamp');
+          console.log('期限切れのキャッシュを削除しました');
+        }
+      }
+    } catch (error) {
+      console.error('ローカルストレージからの読み込みに失敗:', error);
+    }
+
+    return [];
+  }, []);
+
+  /**
    * 検索処理を実行する関数
-   * 初回検索時のみFirebaseからデータを取得し、その後は部分一致で検索
+   * ローカルストレージのキャッシュを使用
    * キーワードマッチングとページネーション機能を実装
    */
   const performSearch = async () => {
@@ -80,27 +117,31 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       return; // 空の検索クエリは無視
     }
 
-    setIsSearching(true); // 検索中状態を表示
     setCurrentPage(1); // 検索時はページを1に戻す
 
     try {
-      // 初回検索時のみFirebaseからデータを取得
+      let cacheToUse = firebaseCache;
+      // キャッシュが読み込まれていない場合
       if (!isCacheLoaded) {
-        console.log('Loading Firebase search results...');
-        const firebaseResults = await getFirebaseDocuments();
-        console.log('Loaded Firebase results:', firebaseResults.length);
-        setFirebaseCache(firebaseResults);
-        setIsCacheLoaded(true);
+        // ローカルストレージから読み込みを試行
+        const localCache = loadCacheFromLocalStorage();
         
-        // 取得したデータで検索を実行
-        performSearchOnCache(firebaseResults, searchQuery);
-      } else {
-        // キャッシュが既にある場合はそれを使用
-        performSearchOnCache(firebaseCache, searchQuery);
+        if (localCache.length > 0) {
+          // ローカルストレージのキャッシュが利用可能
+          setFirebaseCache(localCache);
+          setIsCacheLoaded(true);
+          cacheToUse = localCache;
+        } else {
+          // ローカルストレージにキャッシュがない場合はエラー
+          console.error('キャッシュが見つかりません。シナリオを再選択してください。');
+          return;
+        }
       }
+      
+      // キャッシュを使って検索を実行
+      performSearchOnCache(cacheToUse, searchQuery);
     } catch (error) {
-      console.error('Failed to load Firebase data:', error);
-      setIsSearching(false);
+      console.error('Failed to perform search:', error);
     }
   };
 
@@ -109,17 +150,15 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    */
   const performSearchOnCache = async (cache: UnifiedSearchResult[], query: string) => {
     try {
-      const filteredResults = await filterFirebaseResults(cache, query);
-      
+      const filteredResults = await filterSearchResults(cache, query);
+
       console.log('検索結果:', filteredResults);
       console.log('検索結果数:', filteredResults.length);
       
       setSearchResults(filteredResults);
-      setIsSearching(false);
       navigateTo(VIEW_SEARCH_RESULTS); // 検索結果ページに遷移
     } catch (error) {
       console.error('Failed to filter results:', error);
-      setIsSearching(false);
     }
   };
 
@@ -199,15 +238,82 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
       }
+
+      // 現在のURLと同じ場合は何もしない
+      const currentUrl = getDisplayUrl();
+      if (url === currentUrl) {
+        return;
+      }
+
       navigateTo(url);
-      setUrlInput(''); // 入力をクリア
+      setUrlInput('');
     }
   };
+
+  /**
+   * キャッシュから動的にページコンポーネントを取得する関数
+   * ローカルストレージとメモリキャッシュのみを使用（Firebaseからの取得は行わない）
+   */
+  const getDynamicPageComponent = useCallback(async (url: string): Promise<React.ReactElement | null> => {
+    // 1. メモリキャッシュから探す
+    const cachedResult = firebaseCache.find(item => item.url === url);
+    if (cachedResult) {
+      const ComponentFactory = dynamicPageComponentMap[cachedResult.template];
+      return ComponentFactory ? ComponentFactory(cachedResult.id, cachedResult) : null;
+    }
+
+    // 2. ローカルストレージから探す（メモリキャッシュが空の場合）
+    if (!isCacheLoaded) {
+      const localCache = loadCacheFromLocalStorage();
+      if (localCache.length > 0) {
+        setFirebaseCache(localCache);
+        setIsCacheLoaded(true);
+        
+        const localCachedResult = localCache.find(item => item.url === url);
+        if (localCachedResult) {
+          const ComponentFactory = dynamicPageComponentMap[localCachedResult.template];
+          return ComponentFactory ? ComponentFactory(localCachedResult.id, localCachedResult) : null;
+        }
+      }
+    }
+
+    // 3. キャッシュにない場合は null を返す
+    console.warn('ページデータがキャッシュに見つかりません:', url);
+    return null;
+  }, [firebaseCache, isCacheLoaded, loadCacheFromLocalStorage]);
 
   // URLが変更されたときにURLバーを更新
   useEffect(() => {
     setUrlInput(getDisplayUrl());
   }, [getDisplayUrl]);
+
+  // 現在のビューが変更されたときのページ取得
+  useEffect(() => {
+    const loadDynamicComponent = async () => {
+      // ホームページや検索結果ページの場合は何もしない
+      if (currentView === VIEW_HOME || currentView === VIEW_SEARCH_RESULTS) {
+        setCurrentDynamicComponent(null);
+        return;
+      }
+
+      // 静的ページチェック
+      if (staticPages[currentView]) {
+        setCurrentDynamicComponent(null);
+        return;
+      }
+
+      // 動的ページの取得を試行
+      try {
+        const component = await getDynamicPageComponent(currentView);
+        setCurrentDynamicComponent(component);
+      } catch (error) {
+        console.error('Failed to load dynamic component:', error);
+        setCurrentDynamicComponent(null);
+      }
+    };
+
+    loadDynamicComponent();
+  }, [currentView, firebaseCache, getDynamicPageComponent]);
 
   /**
    * 検索結果のタイプに応じたアイコンを返す関数
@@ -301,9 +407,9 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         <button
           className="px-4 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
           onClick={performSearch}
-          disabled={isSearching || !searchQuery.trim()}
+          disabled={!searchQuery.trim()}
         >
-          {isSearching ? '検索中...' : '検索'}
+          検索
         </button>
       </div>
     </div>
@@ -311,22 +417,6 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   // ステータスバーのテキスト
   const statusBar = `準備完了`;
-
-  /**
-   * Firebaseキャッシュから動的にページコンポーネントを取得する関数
-   */
-  const getDynamicPageComponent = (url: string): React.ReactElement | null => {
-    // Firebaseキャッシュから該当するURLを探す
-    const firebaseResult = firebaseCache.find(item => item.url === url);
-    if (firebaseResult) {
-      // テンプレートに基づいてコンポーネントを動的生成
-      // キャッシュされたデータをプロップスとして渡す
-      const ComponentFactory = dynamicPageComponentMap[firebaseResult.template];
-      return ComponentFactory ? ComponentFactory(firebaseResult.id, firebaseResult) : null;
-    }
-
-    return null;
-  };
 
   /**
    * 現在のビューに応じてコンテンツをレンダリングする関数
@@ -422,15 +512,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
             </div>
           )}
           
-          {isSearching ? (
-            // 検索中のローディング表示
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center space-y-3">
-                <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
-                <p className="text-gray-600">検索中...</p>
-              </div>
-            </div>
-          ) : searchResults.length === 0 ? (
+          {searchResults.length === 0 ? (
             // 検索結果なしの場合
             <div className="text-center py-12">
               <p className="text-gray-600">検索結果が見つかりませんでした</p>
@@ -515,8 +597,6 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     }
 
     // 3. カスタムページまたはエラーページの表示（動的対応）
-    const dynamicComponent = getDynamicPageComponent(currentView);
-    
     // URLの妥当性をチェック
     const isValidUrl = (url: string) => {
       try {
@@ -528,17 +608,22 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         return false;
       }
     };
-    
+
     // 動的コンポーネントが見つかった場合はそれを表示
-    if (dynamicComponent) {
-      return dynamicComponent;
+    if (currentDynamicComponent) {
+      return currentDynamicComponent;
     }
-    
+
+    // 静的ページが存在する場合はそれを表示
+    if (staticPages[currentView]) {
+      return staticPages[currentView];
+    }
+
     // URLが無効な場合はエラーページを表示
     if (!isValidUrl(currentView)) {
       return <ErrorPage url={currentView} />;
     }
-    
+
     // それ以外はジェネリックページを表示
     return <GenericPage url={currentView} />;
   };

@@ -21,9 +21,9 @@ export interface SearchResult {
 }
 
 /**
- * Firebaseのsearch_resultsコレクションからデータを取得するServer Action
+ * Firebaseのsearch_resultsコレクションからデータを取得する
  */
-export const getFirebaseDocuments = async (): Promise<UnifiedSearchResult[]> => {
+export const getSearchResults = async (): Promise<UnifiedSearchResult[]> => {
 	const searchResultsRef = collection(db, 'search_results');
 	const querySnapshot = await getDocs(searchResultsRef);
 	const firebaseResults: UnifiedSearchResult[] = [];
@@ -38,12 +38,12 @@ export const getFirebaseDocuments = async (): Promise<UnifiedSearchResult[]> => 
 };
 
 /**
- * キャッシュされたデータに対して部分一致検索を実行するServer Action
+ * キャッシュされたsearch_resultsに対して部分一致検索を実行する
  * @param cache - 検索対象のUnifiedSearchResultの配列
  * @param query - 検索クエリ
  * @returns Promise<SearchResult[]> - フィルタリングされた検索結果
  */
-export const filterFirebaseResults = async (
+export const filterSearchResults = async (
   cache: UnifiedSearchResult[], 
   query: string
 ): Promise<SearchResult[]> => {
