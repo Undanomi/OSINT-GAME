@@ -474,13 +474,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     // URLの妥当性をチェック
     const isValidUrl = (url: string) => {
       try {
-        const urlObj = new URL(url);
-
-        // gogglesドメインの場合は常に有効とみなす
-        if (urlObj.hostname === 'www.goggles.com' || urlObj.hostname === 'goggles.com') {
-          return true;
-        }
-
+        new URL(url);
         // Firebaseキャッシュに存在するか、静的ページに存在するかチェック
         const exists = firebaseCache.some(item => item.url === url) || !!staticPages[url];
         return exists;
