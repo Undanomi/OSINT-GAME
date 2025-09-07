@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BaseApp } from '@/components/BaseApp';
 import { AppProps } from '@/types/app';
-import { Search, ArrowLeft, ArrowRight, RotateCcw, Home, ExternalLink } from 'lucide-react';
+import { Search, ArrowLeft, ArrowRight, RotateCcw, Home } from 'lucide-react';
 import { UnifiedSearchResult } from '@/types/search';
 import { filterSearchResults, SearchResult } from '@/actions/searchResults';
 
 // 各ページコンポーネントのインポート
 import { GenericPage } from './pages/GenericPage';
 import { ErrorPage } from './pages/ErrorPage';
+import { GogglesHomePage } from './pages/GogglesHomePage';
+import { GogglesSearchResultsPage } from './pages/GogglesSearchResultsPage';
 import { staticPages, dynamicPageComponentMap } from './pages/config/PageMapping';
 
 // ブラウザの表示状態を識別するための定数
@@ -58,14 +60,49 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * @param viewIdentifier - ナビゲート先のURLまたはビュー識別子
    */
   const navigateTo = (viewIdentifier: string) => {
+    let targetView = viewIdentifier;
+
+    // gogglesのURLの処理
+    try {
+      const urlObj = new URL(viewIdentifier);
+      if (
+        urlObj.hostname === 'www.goggles.com'
+        || urlObj.hostname === 'goggles.com'
+        || urlObj.hostname === 'goggles'
+      ) {
+        // メインページの場合はホーム画面にリダイレクト
+        if (urlObj.pathname === '/' || urlObj.pathname === '') {
+          targetView = VIEW_HOME;
+        }
+        // 検索URLの場合は検索結果画面にリダイレクト
+        else if (urlObj.pathname === '/search') {
+          const searchParam = urlObj.searchParams.get('q');
+          if (searchParam) {
+            // 検索クエリをセットして検索を実行
+            setSearchQuery(searchParam);
+            setTimeout(() => {
+              // URLから取得したクエリで検索を実行
+              performSearchOnCache(
+                firebaseCache.length > 0 ? firebaseCache
+                : loadCacheFromLocalStorage(), searchParam
+              );
+            }, 0);
+          }
+          targetView = VIEW_SEARCH_RESULTS;
+        }
+      }
+    } catch {
+      // URL解析に失敗した場合は元のviewIdentifierを使用
+    }
+
     // 同じページへの遷移の場合は何もしない
-    if (currentView === viewIdentifier) {
+    if (currentView === targetView) {
       return;
     }
 
     // 現在位置から後を切り捨て新しい履歴を作成
     const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(viewIdentifier);
+    newHistory.push(targetView);
 
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
@@ -137,7 +174,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           return;
         }
       }
-      
+
       // キャッシュを使って検索を実行
       performSearchOnCache(cacheToUse, searchQuery);
     } catch (error) {
@@ -315,23 +352,6 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     loadDynamicComponent();
   }, [currentView, firebaseCache, getDynamicPageComponent]);
 
-  /**
-   * 検索結果のタイプに応じたアイコンを返す関数
-   * 各タイプのページを視覚的に区別するための絵文字
-   * 
-   * @param type - 検索結果アイテムのタイプ
-   * @returns string - 対応する絵文字
-   */
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'corporate': return '🏢'; // 企業サイト
-      case 'social': return '👤';     // ソーシャルメディア
-      case 'news': return '📰';        // ニュース記事
-      case 'personal': return '🌐';   // 個人サイト
-      case 'directory': return '📋';  // ディレクトリ
-      default: return '🔍';           // デフォルト（検索）
-    }
-  };
 
   /**
    * ブラウザのツールバーコンポーネント
@@ -428,171 +448,25 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     // 1. ホーム画面
     if (currentView === VIEW_HOME) {
       return (
-        <div className="h-full flex flex-col items-center justify-center bg-white px-4">
-          {/* ロゴ */}
-          <div className="text-center mb-8">
-            <h1 className="text-6xl font-light text-gray-700 mb-2">
-              <span className="text-purple-600">G</span>
-              <span className="text-orange-500">o</span>
-              <span className="text-cyan-500">g</span>
-              <span className="text-pink-500">g</span>
-              <span className="text-indigo-500">l</span>
-              <span className="text-emerald-500">e</span>
-              <span className="text-amber-500">s</span>
-            </h1>
-          </div>
-
-          {/* 検索バー */}
-          <div className="w-full max-w-2xl">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyUp={handleKeyPress}
-                className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-full shadow-sm hover:shadow-md focus:shadow-md focus:border-blue-400 focus:outline-none transition-all duration-200"
-                placeholder="検索"
-                autoFocus
-              />
-              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-3">
-                <Search size={20} className="text-gray-400 cursor-pointer hover:text-gray-600" onClick={() => performSearch()} />
-              </div>
-            </div>
-
-            {/* 検索ボタン */}
-            <div className="flex justify-center mt-8 space-x-4">
-              <button
-                onClick={performSearch}
-                disabled={!searchQuery.trim()}
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded hover:shadow-sm hover:bg-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Goggles検索
-              </button>
-              <button
-                onClick={() => {
-                  // NOTE: ランダムな検索クエリを設定
-                  const randomQueries = ['Facelook', 'Rankedon', 'Kilogram', 'Z'];
-                  const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
-                  setSearchQuery(randomQuery);
-                }}
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded hover:shadow-sm hover:bg-gray-200 transition-all duration-200"
-              >
-                You&apos;re Feeling Happy?
-              </button>
-            </div>
-          </div>
-
-          {/* フッター情報 */}
-          <div className="absolute bottom-8 text-center">
-            <p className="text-sm text-gray-500">
-              Goggles - あなたの情報検索パートナー
-            </p>
-          </div>
-        </div>
+        <GogglesHomePage
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          onSearch={performSearch}
+          onKeyPress={handleKeyPress}
+        />
       );
     }
 
     // 2. 検索結果画面
     if (currentView === VIEW_SEARCH_RESULTS) {
-      // ページネーションの計算
-      const totalResults = searchResults.length;
-      const totalPages = Math.ceil(totalResults / itemsPerPage);
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      const currentResults = searchResults.slice(startIndex, endIndex);
-      
       return (
-        <div className="p-4">
-          {/* 検索結果の統計情報 */}
-          {totalResults > 0 && (
-            <div className="mb-4 pb-3 border-b">
-              <p className="text-sm text-gray-600">
-                約 {totalResults} 件の結果 (0.3秒) - ページ {currentPage} / {totalPages}
-              </p>
-            </div>
-          )}
-          
-          {searchResults.length === 0 ? (
-            // 検索結果なしの場合
-            <div className="text-center py-12">
-              <p className="text-gray-600">検索結果が見つかりませんでした</p>
-              <p className="text-sm text-gray-500 mt-2">別のキーワードで試してみてください</p>
-            </div>
-          ) : (
-            <>
-              {/* 検索結果一覧の表示 */}
-              <div className="space-y-6">
-                {currentResults.map((result) => (
-                  <div key={result.id} className="border-b pb-4">
-                    <div className="flex items-start space-x-3">
-                      {/* サイトタイプアイコン */}
-                      <span className="text-lg">{getTypeIcon(result.type)}</span>
-                      <div className="flex-1">
-                        {/* タイトルとリンク */}
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3
-                            className="text-lg text-blue-600 hover:underline cursor-pointer font-medium"
-                            onClick={() => handleResultClick(result.url)}
-                          >
-                            {result.title}
-                          </h3>
-                          <ExternalLink size={14} className="text-gray-400" />
-                        </div>
-                        {/* URL表示 */}
-                        <p className="text-green-700 text-sm mb-2">{result.url}</p>
-                        {/* 説明文 */}
-                        <p className="text-gray-700 text-sm leading-relaxed mb-3">
-                          {result.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* ページネーション */}
-              {totalPages > 1 && (
-                <div className="flex justify-center items-center space-x-2 mt-8 pt-4 border-t">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    前へ
-                  </button>
-                  
-                  {/* ページ番号 */}
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const pageNum = Math.max(1, currentPage - 2) + i;
-                    if (pageNum > totalPages) return null;
-                    
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`px-3 py-1 text-sm border rounded ${
-                          currentPage === pageNum 
-                            ? 'bg-blue-600 text-white' 
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  
-                  <button
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    次へ
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        <GogglesSearchResultsPage
+          searchResults={searchResults}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+          onResultClick={handleResultClick}
+          onPageChange={setCurrentPage}
+        />
       );
     }
 
