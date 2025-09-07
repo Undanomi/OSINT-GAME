@@ -4,8 +4,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
-import { FacelookUser, FacelookContent } from '@/types/facelook';
+import { FacelookUser } from '@/types/facelook';
 import { UnifiedSearchResult } from '@/types/search';
+import { validateFacelookContent, convertFacelookContentToUser } from '@/actions/facelookValidation';
 import { 
   Search, Home, Menu, 
   MessageCircle, Bell, ChevronDown, ThumbsUp, MessageSquare, 
@@ -46,29 +47,10 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
             throw new Error('Invalid template');
         }
         
-        // contentをFacelookContentとして扱う
-        const facelookContent = searchResult.content as unknown as FacelookContent;
-        
-        // FacelookUser形式に変換（userIdはドキュメントIDを使用）
-        const data: FacelookUser = {
-          userId: documentId, // ドキュメントIDをuserIdとして使用
-          name: facelookContent.name,
-          profileImage: facelookContent.profileImage,
-          coverImage: facelookContent.coverImage,
-          job: facelookContent.job,
-          company: facelookContent.company,
-          location: facelookContent.location,
-          hometown: facelookContent.hometown,
-          education: facelookContent.education,
-          relationshipStatus: facelookContent.relationshipStatus,
-          bio: facelookContent.bio,
-          friendsCount: facelookContent.friendsCount,
-          joined: facelookContent.joined,
-          website: facelookContent.website,
-          posts: facelookContent.posts, // IDは不要（インデックスをkeyに使用）
-          friends: facelookContent.friends, // IDは不要（インデックスをkeyに使用）
-          photos: facelookContent.photos
-        };
+        // contentをバリデーション
+        const facelookContent = await validateFacelookContent(searchResult.content);
+        // FacelookContentからFacelookUserに変換
+        const data = await convertFacelookContentToUser(facelookContent, documentId);
         console.log('Raw data from Firestore:', data);
         
         // gs:// URLをHTTPS URLに変換

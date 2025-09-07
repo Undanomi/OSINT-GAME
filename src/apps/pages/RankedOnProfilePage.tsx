@@ -6,6 +6,7 @@ import { ref, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
 import { RankedOnUser } from '@/types/rankedon';
 import { UnifiedSearchResult } from '@/types/search';
+import { validateRankedOnContent, convertRankedOnContentToUser } from '@/actions/rankedOnValidation';
 import { 
   Search, Bell, MessageSquare, Home, Users, Briefcase, Grid3x3,
   Plus, Camera, Edit2, MoreHorizontal, ThumbsUp, MessageCircle,
@@ -43,35 +44,10 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
           throw new Error('Invalid template');
         }
         
-        const rankedOnContent = searchResult.content as unknown as RankedOnUser;
-          
-          
-          const data: RankedOnUser = {
-            userId: documentId,
-            name: rankedOnContent.name,
-            profileImage: rankedOnContent.profileImage,
-            backgroundImage: rankedOnContent.backgroundImage,
-            headline: rankedOnContent.headline,
-            currentPosition: rankedOnContent.currentPosition,
-            currentCompany: rankedOnContent.currentCompany,
-            location: rankedOnContent.location,
-            industry: rankedOnContent.industry,
-            summary: rankedOnContent.summary,
-            connectionsCount: rankedOnContent.connectionsCount,
-            profileViews: rankedOnContent.profileViews,
-            searchAppearances: rankedOnContent.searchAppearances,
-            experience: rankedOnContent.experience || [],
-            education: rankedOnContent.education || [],
-            skills: rankedOnContent.skills || [],
-            certifications: rankedOnContent.certifications,
-            posts: rankedOnContent.posts || [],
-            recommendations: rankedOnContent.recommendations,
-            languages: rankedOnContent.languages,
-            email: rankedOnContent.email,
-            phone: rankedOnContent.phone,
-            website: rankedOnContent.website,
-            rankedonUrl: rankedOnContent.rankedonUrl
-          };
+        // contentをバリデーション
+        const rankedOnContent = await validateRankedOnContent(searchResult.content);
+        // RankedOnContentをRankedOnUserに変換
+        const data = await convertRankedOnContentToUser(rankedOnContent, documentId);
           
           // Storage URLの変換
           if (data.profileImage?.startsWith('gs://')) {
