@@ -4,7 +4,11 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { getContacts, getMessages } from '@/actions/messenger';
 import { MessengerContact, UIMessage, convertFirestoreToUIMessage, CachedMessages } from '@/types/messenger';
-import { LOCAL_STORAGE_KEYS, MESSENGER_CACHE_CONFIG } from '@/types/localStorage';
+import {
+  CACHE_PREFIX,
+  CACHE_EXPIRATION,
+  CACHE_FRESHNESS_THRESHOLD,
+} from '@/lib/messenger/constants';
 
 
 /**
@@ -12,13 +16,13 @@ import { LOCAL_STORAGE_KEYS, MESSENGER_CACHE_CONFIG } from '@/types/localStorage
  */
 const getCachedData = (userId: string, contactId: string): CachedMessages | null => {
   try {
-    const key = `${LOCAL_STORAGE_KEYS.MESSENGER_CACHE_PREFIX}${userId}_${contactId}`;
+    const key = `${CACHE_PREFIX}${userId}_${contactId}`;
     const cached = localStorage.getItem(key);
     if (!cached) return null;
 
     const data: CachedMessages = JSON.parse(cached);
     // 有効期限切れをチェック
-    if (Date.now() > data.timestamp + MESSENGER_CACHE_CONFIG.EXPIRATION) {
+    if (Date.now() > data.timestamp + CACHE_EXPIRATION) {
       localStorage.removeItem(key);
       return null;
     }
@@ -38,7 +42,7 @@ const getCachedData = (userId: string, contactId: string): CachedMessages | null
  */
 const setCachedData = (userId: string, contactId: string, messages: UIMessage[], hasMore: boolean) => {
   try {
-    const key = `${LOCAL_STORAGE_KEYS.MESSENGER_CACHE_PREFIX}${userId}_${contactId}`;
+    const key = `${CACHE_PREFIX}${userId}_${contactId}`;
     const data: CachedMessages = { messages, hasMore, timestamp: Date.now() };
     localStorage.setItem(key, JSON.stringify(data));
   } catch (error) {
@@ -84,7 +88,7 @@ export const useMessenger = () => {
     const cached = getCachedData(user.uid, contactId);
 
     // 2. キャッシュが「新鮮」であれば、それを表示して処理を終了
-    if (cached && Date.now() < cached.timestamp + MESSENGER_CACHE_CONFIG.FRESHNESS_THRESHOLD) {
+    if (cached && Date.now() < cached.timestamp + CACHE_FRESHNESS_THRESHOLD) {
       setMessages(cached.messages);
       setHasMore(cached.hasMore);
       setMessagesLoading(false);
