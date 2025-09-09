@@ -4,6 +4,8 @@ import { AppProps } from '@/types/app';
 import { Search, ArrowLeft, ArrowRight, RotateCcw, Home } from 'lucide-react';
 import { UnifiedSearchResult } from '@/types/search';
 import { filterSearchResults, SearchResult } from '@/actions/searchResults';
+import { LocalStorageManager } from '@/utils/localStorage';
+import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
 
 // 各ページコンポーネントのインポート
 import { GenericPage } from './pages/GenericPage';
@@ -113,23 +115,23 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    */
   const loadCacheFromLocalStorage = useCallback((): UnifiedSearchResult[] => {
     try {
-      const cachedData = localStorage.getItem('osint-game-search-cache');
-      const cacheTimestamp = localStorage.getItem('osint-game-cache-timestamp');
+      const cachedData = LocalStorageManager.get(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
+      const cacheTimestamp = LocalStorageManager.get(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
 
-      if (typeof cachedData === 'string' && cachedData != '[]' && cacheTimestamp) {
+      if (cachedData && JSON.stringify(cachedData) !== '[]' && cacheTimestamp) {
         const timestamp = parseInt(cacheTimestamp);
         const now = Date.now();
         // キャッシュの有効期限
         const cacheExpiry = 60 * 60 * 1000;
 
         if (now - timestamp < cacheExpiry) {
-          const parsedCache = JSON.parse(cachedData) as UnifiedSearchResult[];
-          console.log('ローカルストレージからキャッシュを読み込みました:', parsedCache.length + '件');
-          return parsedCache;
+          const results = cachedData as UnifiedSearchResult[];
+          console.log('ローカルストレージからキャッシュを読み込みました:', results.length + '件');
+          return results;
         } else {
           // 期限切れのキャッシュを削除
-          localStorage.removeItem('osint-game-search-cache');
-          localStorage.removeItem('osint-game-cache-timestamp');
+          LocalStorageManager.remove(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
+          LocalStorageManager.remove(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
           console.log('期限切れのキャッシュを削除しました');
         }
       }
