@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Play, FileText, Users, Building2, Globe } from 'lucide-react';
 import { getSearchResults } from '@/actions/searchResults';
-import { LocalStorageManager } from '@/utils/localStorage';
 import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
 
 interface Scenario {
@@ -106,37 +105,40 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
 
     try {
       // 既存のキャッシュをチェック
-      const cachedData = LocalStorageManager.get(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
-      const cacheTimestamp = LocalStorageManager.get(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
+      const cachedData = localStorage.getItem(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
+      const cacheTimestamp = localStorage.getItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
       
       let searchResults;
 
-      if (cachedData && JSON.stringify(cachedData) !== '[]' && cacheTimestamp) {
+      if (typeof cachedData === 'string' && cachedData != '[]' && cacheTimestamp) {
         const timestamp = parseInt(cacheTimestamp);
         const now = Date.now();
         const cacheExpiry = 60 * 60 * 1000;
         
         if (now - timestamp < cacheExpiry) {
           // 有効なキャッシュが存在する場合、期限を更新してキャッシュを使用
-          LocalStorageManager.set(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
-          searchResults = cachedData;
+          localStorage.setItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
+          searchResults = JSON.parse(cachedData);
+          console.log('既存のキャッシュの期限を更新しました:', searchResults.length + '件');
         } else {
           // 期限切れのキャッシュを削除して新しく取得
-          LocalStorageManager.remove(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
-          LocalStorageManager.remove(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
           searchResults = await getSearchResults();
-          LocalStorageManager.set(LOCAL_STORAGE_KEYS.SEARCH_CACHE, searchResults);
-          LocalStorageManager.set(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
+          localStorage.setItem(LOCAL_STORAGE_KEYS.SEARCH_CACHE, JSON.stringify(searchResults));
+          localStorage.setItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
+          console.log('期限切れキャッシュを削除し、新しい検索結果をキャッシュしました:', searchResults.length + '件');
         }
       } else {
         // キャッシュが存在しない場合、新しく取得
         searchResults = await getSearchResults();
-        LocalStorageManager.set(LOCAL_STORAGE_KEYS.SEARCH_CACHE, searchResults);
-        LocalStorageManager.set(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
+        localStorage.setItem(LOCAL_STORAGE_KEYS.SEARCH_CACHE, JSON.stringify(searchResults));
+        localStorage.setItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
+        console.log('検索結果をローカルストレージにキャッシュしました:', searchResults.length + '件');
       }
 
       // データが取得できているかチェック
-      if (!searchResults || (searchResults as unknown[]).length === 0) {
+      if (!searchResults || searchResults.length === 0) {
         throw new Error('ゲームの読み込みに失敗しました');
       }
 

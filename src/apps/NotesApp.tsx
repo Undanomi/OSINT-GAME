@@ -8,8 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusIcon, TrashIcon, SearchIcon, CloudIcon, CloudOffIcon } from 'lucide-react';
 import { useAuthContext } from '@/providers/AuthProvider';
-import { LocalStorageManager } from '@/utils/localStorage';
-import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
 import {
   getNotesList,
   getNote,
@@ -19,6 +17,7 @@ import {
 } from '@/actions/notes';
 import { isEmptyNote } from '@/lib/notes/validation';
 import { NOTES_LIMITS, NOTES_ERRORS } from '@/lib/notes/constants';
+import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
 
 interface Note {
   id: string;
@@ -59,11 +58,12 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
   useEffect(() => {
     if (!user) {
       // ユーザーがログインしていない場合はローカルストレージから読み込み
-      const savedNotes = LocalStorageManager.get(LOCAL_STORAGE_KEYS.NOTES);
-      const savedStatus = LocalStorageManager.get(LOCAL_STORAGE_KEYS.NOTES_STATUS);
+      const savedNotes = localStorage.getItem(LOCAL_STORAGE_KEYS.NOTES);
+      const savedStatus = localStorage.getItem(LOCAL_STORAGE_KEYS.NOTES_STATUS);
       
       if (savedNotes) {
-        setNotes((savedNotes as Note[]).map((note: Note) => ({
+        const parsedNotes = JSON.parse(savedNotes);
+        setNotes(parsedNotes.map((note: Note) => ({
           ...note,
           createdAt: new Date(note.createdAt),
           updatedAt: new Date(note.updatedAt)
@@ -72,7 +72,7 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
       
       // 同期状態を復元（オフライン時の参考情報）
       if (savedStatus) {
-        const status = savedStatus as { pendingCount: number };
+        const status = JSON.parse(savedStatus);
         if (status.pendingCount > 0) {
           setSyncError(`${status.pendingCount}件の未同期の変更があります`);
         }
@@ -92,9 +92,10 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
         }
         setSyncError('メモの取得に失敗しました');
         // エラー時はローカルストレージから読み込み
-        const savedNotes = LocalStorageManager.get(LOCAL_STORAGE_KEYS.NOTES);
+        const savedNotes = localStorage.getItem(LOCAL_STORAGE_KEYS.NOTES);
         if (savedNotes) {
-          setNotes((savedNotes as Note[]).map((note: Note) => ({
+          const parsedNotes = JSON.parse(savedNotes);
+          setNotes(parsedNotes.map((note: Note) => ({
             ...note,
             createdAt: new Date(note.createdAt),
             updatedAt: new Date(note.updatedAt)
@@ -113,8 +114,8 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
         pendingCount: pendingUpdatesRef.current.size,
         isSyncing
       };
-      LocalStorageManager.set(LOCAL_STORAGE_KEYS.NOTES, notes);
-      LocalStorageManager.set(LOCAL_STORAGE_KEYS.NOTES_STATUS, syncStatus);
+      localStorage.setItem(LOCAL_STORAGE_KEYS.NOTES, JSON.stringify(notes));
+      localStorage.setItem(LOCAL_STORAGE_KEYS.NOTES_STATUS, JSON.stringify(syncStatus));
     }
   }, [notes, isSyncing]);
 

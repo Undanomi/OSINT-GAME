@@ -4,7 +4,6 @@ import { AppProps } from '@/types/app';
 import { Search, ArrowLeft, ArrowRight, RotateCcw, Home } from 'lucide-react';
 import { UnifiedSearchResult } from '@/types/search';
 import { filterSearchResults, SearchResult } from '@/actions/searchResults';
-import { LocalStorageManager } from '@/utils/localStorage';
 import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
 
 // 各ページコンポーネントのインポート
@@ -115,23 +114,23 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    */
   const loadCacheFromLocalStorage = useCallback((): UnifiedSearchResult[] => {
     try {
-      const cachedData = LocalStorageManager.get(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
-      const cacheTimestamp = LocalStorageManager.get(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
+      const cachedData = localStorage.getItem(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
+      const cacheTimestamp = localStorage.getItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
 
-      if (cachedData && JSON.stringify(cachedData) !== '[]' && cacheTimestamp) {
+      if (typeof cachedData === 'string' && cachedData != '[]' && cacheTimestamp) {
         const timestamp = parseInt(cacheTimestamp);
         const now = Date.now();
         // キャッシュの有効期限
         const cacheExpiry = 60 * 60 * 1000;
 
         if (now - timestamp < cacheExpiry) {
-          const results = cachedData as UnifiedSearchResult[];
-          console.log('ローカルストレージからキャッシュを読み込みました:', results.length + '件');
-          return results;
+          const parsedCache = JSON.parse(cachedData) as UnifiedSearchResult[];
+          console.log('ローカルストレージからキャッシュを読み込みました:', parsedCache.length + '件');
+          return parsedCache;
         } else {
           // 期限切れのキャッシュを削除
-          LocalStorageManager.remove(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
-          LocalStorageManager.remove(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
           console.log('期限切れのキャッシュを削除しました');
         }
       }
