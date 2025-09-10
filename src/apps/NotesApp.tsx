@@ -17,6 +17,7 @@ import {
 } from '@/actions/notes';
 import { isEmptyNote } from '@/lib/notes/validation';
 import { NOTES_LIMITS, NOTES_ERRORS } from '@/lib/notes/constants';
+import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
 
 interface Note {
   id: string;
@@ -57,8 +58,8 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
   useEffect(() => {
     if (!user) {
       // ユーザーがログインしていない場合はローカルストレージから読み込み
-      const savedNotes = localStorage.getItem('osint-game-notes');
-      const savedStatus = localStorage.getItem('osint-game-notes-status');
+      const savedNotes = localStorage.getItem(LOCAL_STORAGE_KEYS.NOTES);
+      const savedStatus = localStorage.getItem(LOCAL_STORAGE_KEYS.NOTES_STATUS);
       
       if (savedNotes) {
         const parsedNotes = JSON.parse(savedNotes);
@@ -91,7 +92,7 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
         }
         setSyncError('メモの取得に失敗しました');
         // エラー時はローカルストレージから読み込み
-        const savedNotes = localStorage.getItem('osint-game-notes');
+        const savedNotes = localStorage.getItem(LOCAL_STORAGE_KEYS.NOTES);
         if (savedNotes) {
           const parsedNotes = JSON.parse(savedNotes);
           setNotes(parsedNotes.map((note: Note) => ({
@@ -113,8 +114,8 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
         pendingCount: pendingUpdatesRef.current.size,
         isSyncing
       };
-      localStorage.setItem('osint-game-notes', JSON.stringify(notes));
-      localStorage.setItem('osint-game-notes-status', JSON.stringify(syncStatus));
+      localStorage.setItem(LOCAL_STORAGE_KEYS.NOTES, JSON.stringify(notes));
+      localStorage.setItem(LOCAL_STORAGE_KEYS.NOTES_STATUS, JSON.stringify(syncStatus));
     }
   }, [notes, isSyncing]);
 
