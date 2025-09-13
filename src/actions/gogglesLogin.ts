@@ -93,8 +93,8 @@ export async function validatePasswordResetData(data: PasswordResetData): Promis
   }
 
   // 入力値チェック
-  const correctEmail = 'user@example.com';
-  const correctBirthday = '1990-01-01';
+  const correctEmail = 'yuki.nitta.1998@goggles.com';
+  const correctBirthday = '1998-04-10';
 
   if (data.email === correctEmail && data.birthday === correctBirthday) {
     return {
