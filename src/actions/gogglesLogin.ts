@@ -141,22 +141,24 @@ export async function validateSecretQuestion(questionData: SecretQuestionAnswer)
   }
 
   // 秘密の質問の答え
-  const correctAnswers: Record<number, string> = {
-    1: '野球部',
-    2: 'ポチ',
-    3: 'コンビニ'
+  const correctAnswers: Record<number, string[]> = {
+    1: ['ワンダーフォーゲル部'],
+    2: ['こむぎ'],
+    3: ['テリーズカフェ調布駅前店', '調布駅前店']
   };
 
-  const correctAnswer = correctAnswers[questionData.questionId];
-  if (!correctAnswer) {
+  const correctAnswerList = correctAnswers[questionData.questionId];
+  if (!correctAnswerList) {
     return {
       success: false,
       error: '無効な質問です。'
     };
   }
 
-  // 回答の照合（大文字小文字は区別しない）
-  if (questionData.answer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
+  // 回答の照合（大文字小文字・スペースは区別しない）
+  const normalize = (str: string) => str.replace(/\s+/g, '').toLowerCase();
+  const userAnswer = normalize(questionData.answer);
+  if (correctAnswerList.some(ans => userAnswer === normalize(ans))) {
     if (questionData.questionId < 3) {
       return {
         success: true,
