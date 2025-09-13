@@ -15,17 +15,17 @@ export const GogglesMailPasswordQuestionsPage: React.FC<MailPageProps> = ({ onPh
     { 
       id: 1, 
       text: '高校時代は何部でしたか？',
-      correctAnswer: '野球部'
+      correctAnswer: 'ワンダーフォーゲル部'
     },
     { 
       id: 2, 
       text: '初めて飼ったペットの名前は？',
-      correctAnswer: 'ポチ'
+      correctAnswer: 'こむぎ'
     },
     { 
       id: 3, 
       text: '初めてのアルバイト先の店舗名は？',
-      correctAnswer: 'コンビニ'
+      correctAnswer: 'テリーズカフェ 調布駅前店'
     }
   ];
 
