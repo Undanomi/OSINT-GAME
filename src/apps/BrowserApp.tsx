@@ -454,6 +454,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           onSearchQueryChange={setSearchQuery}
           onSearch={performSearch}
           onKeyPress={handleKeyPress}
+          onNavigate={navigateTo}
         />
       );
     }
@@ -491,7 +492,8 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
     // 静的ページが存在する場合はそれを表示
     if (staticPages[currentView]) {
-      return staticPages[currentView];
+      const page = staticPages[currentView];
+      return typeof page === 'function' ? page(currentView) : page;
     }
 
     // URLが無効な場合はエラーページを表示

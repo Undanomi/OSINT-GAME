@@ -1,11 +1,14 @@
 import React from 'react';
 import { Search } from 'lucide-react';
+import { GogglesMailIcon } from '@/components/ui/GogglesMailIcon';
+import { useGogglesMailAuthStore } from '@/store/gogglesAuthStore';
 
 interface GogglesHomePageProps {
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   onSearch: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
+  onNavigate: (url: string) => void;
 }
 
 export const GogglesHomePage: React.FC<GogglesHomePageProps> = ({
@@ -13,7 +16,9 @@ export const GogglesHomePage: React.FC<GogglesHomePageProps> = ({
   onSearchQueryChange,
   onSearch,
   onKeyPress,
+  onNavigate,
 }) => {
+  const { isGogglesMailLoggedIn } = useGogglesMailAuthStore();
   const handleRandomQuery = () => {
     const randomQueries = ['Facelook', 'Rankedon', 'Kilogram', 'Z'];
     const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
@@ -72,6 +77,25 @@ export const GogglesHomePage: React.FC<GogglesHomePageProps> = ({
             You&apos;re Feeling Happy?
           </button>
         </div>
+      </div>
+
+      <div className="absolute top-4 right-4">
+        <a 
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            console.log(isGogglesMailLoggedIn);
+            const targetUrl = isGogglesMailLoggedIn 
+              ? 'https://mail.goggles.com'
+              : 'https://mail.goggles.com/login';
+            
+            onNavigate(targetUrl);
+          }}
+          className="text-gray-800 hover:text-gray-600 flex items-center space-x-2"
+        >
+          <GogglesMailIcon size={20} />
+          <span>Goggles Mail</span>
+        </a>
       </div>
 
       {/* フッター情報 */}

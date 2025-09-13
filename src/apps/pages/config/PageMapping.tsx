@@ -1,15 +1,17 @@
 import React from 'react';
-import { AbcCorpPage } from '../AbcCorpPage';
 import { FacelookProfilePage } from '../FacelookProfilePage';
 import { RankedOnProfilePage } from '../RankedOnProfilePage';
+import { GogglesMail } from '../goggles-mail/GogglesMailPage';
 import { UnifiedSearchResult } from '@/types/search';
 
 /**
  * 静的ページのマッピング
  * NOTE: Firebase に保保存されないページの表示用
  */
-export const staticPages: { [key: string]: React.ReactElement } = {
-  'https://abc-corp.co.jp': <AbcCorpPage />,
+export const staticPages: { [key: string]: React.ReactElement | ((currentUrl: string) => React.ReactElement) } = {
+  // Goggles Mail - メインページとログインページのみ
+  'https://mail.goggles.com': (currentUrl) => <GogglesMail initialUrl={currentUrl} />,
+  'https://mail.goggles.com/login': (currentUrl) => <GogglesMail initialUrl={currentUrl} />,
 };
 
 /**
