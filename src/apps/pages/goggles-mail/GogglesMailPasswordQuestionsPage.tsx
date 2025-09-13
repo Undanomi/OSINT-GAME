@@ -12,21 +12,9 @@ export const GogglesMailPasswordQuestionsPage: React.FC<MailPageProps> = ({ onPh
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const questions = [
-    { 
-      id: 1, 
-      text: '高校時代は何部でしたか？',
-      correctAnswer: 'ワンダーフォーゲル部'
-    },
-    { 
-      id: 2, 
-      text: '初めて飼ったペットの名前は？',
-      correctAnswer: 'こむぎ'
-    },
-    { 
-      id: 3, 
-      text: '初めてのアルバイト先の店舗名は？',
-      correctAnswer: 'テリーズカフェ 調布駅前店'
-    }
+    { id: 1, text: '高校時代の部活動は？' },
+    { id: 2, text: '初めて飼ったペットの名前は？' },
+    { id: 3, text: 'よく行くカフェの名前は？' }
   ];
 
   const currentQuestionData = questions.find(q => q.id === currentQuestion);
