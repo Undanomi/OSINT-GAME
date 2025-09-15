@@ -46,8 +46,8 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [history, setHistory] = useState<string[]>([VIEW_HOME]);
   // 履歴内の現在位置を管理
   const [historyIndex, setHistoryIndex] = useState(0);
-  // ページリロード機能のためのkey管理
-  const [reloadKey, setReloadKey] = useState(0);
+  // リロードUI表示フラグ
+  const [showFakeReload, setShowFakeReload] = useState(false);
   // 現在表示中の動的コンポーネント
   const [currentDynamicComponent, setCurrentDynamicComponent] = useState<React.ReactElement | null>(null);
 
@@ -240,10 +240,13 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   /**
    * ページリロード処理
-   * Reactのkey属性を変更してコンポーネントを再レンダリング
+   * 実際のリロードは行わず、リロードUIを表示
    */
   const handleReload = () => {
-    setReloadKey(prev => prev + 1);
+    setShowFakeReload(true);
+    setTimeout(() => {
+      setShowFakeReload(false);
+    }, 500);
   };
 
   /**
@@ -525,7 +528,15 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   return (
     <BaseApp windowId={windowId} isActive={isActive} toolbar={toolbar} statusBar={statusBar}>
-      <div key={reloadKey} className="h-full bg-white overflow-auto relative">
+      <div className="h-full bg-white overflow-auto relative">
+        {showFakeReload && (
+          <div className="absolute inset-0 bg-white z-50 flex items-center justify-center">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <span className="text-gray-600">読み込み中...</span>
+            </div>
+          </div>
+        )}
         {renderContent()}
       </div>
     </BaseApp>
