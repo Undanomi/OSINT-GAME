@@ -31,7 +31,6 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   } = useMessenger();
 
   const [inputText, setInputText] = useState('');
-  const [isComposing, setIsComposing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
@@ -98,22 +97,10 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   }, [inputText, selectedContact, user, addMessageToState, removeMessageFromState]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (isComposing) {
-      return;
-    }
-
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.keyCode === 13 && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
-  };
-
-  const handleCompositionStart = () => {
-    setIsComposing(true);
-  };
-
-  const handleCompositionEnd = () => {
-    setIsComposing(false);
   };
 
   const handleScroll = (e: UIEvent<HTMLDivElement>) => {
@@ -172,8 +159,6 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
                 value={inputText}
                 onChange={e => setInputText(e.target.value.substring(0, 500))}
                 onKeyDown={handleKeyDown}
-                onCompositionStart={handleCompositionStart}
-                onCompositionEnd={handleCompositionEnd}
                 disabled={!selectedContact}
                 maxLength={500}
               />

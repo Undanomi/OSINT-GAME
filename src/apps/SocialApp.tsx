@@ -449,7 +449,6 @@ const DMChatPage = ({
   onLoadMore: () => void;
 }) => {
   const [inputText, setInputText] = useState('');
-  const [isComposing, setIsComposing] = useState(false);
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
 
@@ -467,22 +466,10 @@ const DMChatPage = ({
   }, [inputText, onSendMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (isComposing) {
-      return;
-    }
-
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.keyCode === 13 && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
-  };
-
-  const handleCompositionStart = () => {
-    setIsComposing(true);
-  };
-
-  const handleCompositionEnd = () => {
-    setIsComposing(false);
   };
 
   const handleScroll = (e: UIEvent<HTMLDivElement>) => {
@@ -554,8 +541,6 @@ const DMChatPage = ({
             value={inputText}
             onChange={(e) => setInputText(e.target.value.substring(0, MAX_MESSAGE_LENGTH))}
             onKeyDown={handleKeyDown}
-            onCompositionStart={handleCompositionStart}
-            onCompositionEnd={handleCompositionEnd}
             maxLength={MAX_MESSAGE_LENGTH}
           />
           <button
