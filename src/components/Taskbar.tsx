@@ -24,11 +24,11 @@ export const Taskbar: React.FC = React.memo(() => {
   const { getAppById } = useAppStore();
 
   /**
-   * 開いているウィンドウのみをフィルタリング
+   * 開いていて非表示でないウィンドウのみをフィルタリング
    * useMemoでパフォーマンス最適化（windowsが変更された時のみ再計算）
    */
   const openWindows = useMemo(() => {
-    return windows.filter(w => w.isOpen);
+    return windows.filter(w => w.isOpen && !w.isHidden);
   }, [windows]);
 
   /**

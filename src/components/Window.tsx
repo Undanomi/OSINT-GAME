@@ -138,6 +138,19 @@ export const Window: React.FC<WindowProps> = React.memo(({ windowId }) => {
     return null;
   }
 
+  // 非表示状態の場合はアプリのみをレンダリング（ウィンドウUIは非表示）
+  if (targetWindow.isHidden) {
+    return (
+      <div style={{ display: 'none' }}>
+        <AppRenderer
+          appType={targetWindow.appType}
+          windowId={targetWindow.id}
+          isActive={false}
+        />
+      </div>
+    );
+  }
+
   return (
     <Rnd
       size={{

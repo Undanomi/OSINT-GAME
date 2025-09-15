@@ -22,3 +22,13 @@ export const MAX_AI_RETRY_ATTEMPTS = 3;
 export const CACHE_PREFIX = LOCAL_STORAGE_KEYS.MESSENGER_CACHE_PREFIX;
 export const CACHE_EXPIRATION = 60 * 60 * 1000 * 24; // 24時間
 export const CACHE_FRESHNESS_THRESHOLD = 5 * 60 * 1000; // 5分
+
+// プロンプト関連の型定義
+export interface IntroductionMessage {
+  text: string;
+  fallbackText: string;
+}
+
+export interface SystemPrompt {
+  prompt: string;
+}

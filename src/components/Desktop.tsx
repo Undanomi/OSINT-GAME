@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useWindowStore } from '@/store/windowStore';
 import { useAppStore, AppMetadata } from '@/store/appStore';
 import { initializeAppRegistry } from '@/config/appRegistry';
-import { initializeMessengerIntroduction } from '@/services/messengerInitialization';
 import { Package, Settings, RefreshCw, Info } from 'lucide-react';
 
 /**
@@ -173,6 +172,8 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onOpenAppStore
 export const Desktop: React.FC = () => {
   // ウィンドウストアからウィンドウ開く機能を取得
   const openWindow = useWindowStore(state => state.openWindow);
+  const showWindow = useWindowStore(state => state.showWindow);
+  const getWindowById = useWindowStore(state => state.getWindowById);
   // アプリストアから各種機能とデータを取得
   const { updateUsage } = useAppStore();
   const installedApps = useAppStore(state => state.installedApps);
@@ -182,6 +183,8 @@ export const Desktop: React.FC = () => {
   const [initialized, setInitialized] = useState(false);
   // コンポーネントのマウント状態フラグ
   const [mounted, setMounted] = useState(false);
+  // 自動起動処理の実行済みフラグ
+  const autoLaunchExecuted = useRef(false);
 
   /**
    * コンポーネントマウント状態の管理
@@ -212,25 +215,51 @@ export const Desktop: React.FC = () => {
   }, [mounted, initialized]);
 
   /**
-   * メッセンジャーのクライアントサイド初期化処理
-   * デスクトップが表示されたらメッセンジャーのイントロダクションをクライアントサイドで実行
+   * アプリの自動起動処理
+   * SocialAppとMessengerAppを非表示状態で自動起動する
    */
-  useEffect(() => {
-    if (initialized) {
-      // デスクトップ初期化完了後、メッセンジャーの初期化を実行
-      initializeMessengerIntroduction()
-        .then((wasInitialized) => {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Messenger initialization result:', wasInitialized ? 'initialized' : 'already initialized');
-          }
-        })
-        .catch((error) => {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('Messenger initialization failed:', error);
-          }
+  const autoLaunchApps = useCallback(() => {
+    if (initialized && !autoLaunchExecuted.current) {
+      console.log('Auto-launching apps...');
+      autoLaunchExecuted.current = true;
+
+      // SocialAppとMessengerAppを非表示状態で自動起動
+      const socialApp = installedApps.find(app => app.id === 'social');
+      const messengerApp = installedApps.find(app => app.id === 'messenger');
+
+      console.log('Found apps:', { socialApp: !!socialApp, messengerApp: !!messengerApp });
+
+      if (socialApp) {
+        console.log('Launching SocialApp in hidden mode');
+        updateUsage(socialApp.id);
+        openWindow({
+          id: socialApp.id,
+          title: socialApp.name,
+          appType: socialApp.id,
+          defaultWidth: socialApp.defaultWidth,
+          defaultHeight: socialApp.defaultHeight,
+          isHidden: true,
         });
+      }
+
+      if (messengerApp) {
+        console.log('Launching MessengerApp in hidden mode');
+        updateUsage(messengerApp.id);
+        openWindow({
+          id: messengerApp.id,
+          title: messengerApp.name,
+          appType: messengerApp.id,
+          defaultWidth: messengerApp.defaultWidth,
+          defaultHeight: messengerApp.defaultHeight,
+          isHidden: true,
+        });
+      }
     }
-  }, [initialized]);
+  }, [initialized, installedApps, openWindow, updateUsage]);
+
+  useEffect(() => {
+    autoLaunchApps();
+  }, [autoLaunchApps]);
 
   /**
    * デスクトップに表示するアプリケーションのリスト生成と並べ替え
@@ -243,7 +272,7 @@ export const Desktop: React.FC = () => {
 
   /**
    * アプリケーションアイコンクリック時の処理
-   * アプリの使用統計を更新し、新しいウィンドウを開く
+   * 既に非表示状態で起動している場合は表示、そうでなければ新しいウィンドウを開く
    *
    * @param app - 起動するアプリケーションのメタデータ
    */
@@ -251,14 +280,22 @@ export const Desktop: React.FC = () => {
     // アプリの使用回数を増加（統計データ更新）
     updateUsage(app.id);
 
-    // ウィンドウマネージャーに新しいウィンドウを作成依頼
-    openWindow({
-      id: app.id,
-      title: app.name,
-      appType: app.id,
-      defaultWidth: app.defaultWidth,
-      defaultHeight: app.defaultHeight,
-    });
+    // 既存のウィンドウを確認
+    const existingWindow = getWindowById(app.id);
+
+    if (existingWindow && existingWindow.isOpen && existingWindow.isHidden) {
+      // 非表示状態で起動している場合は表示する
+      showWindow(app.id);
+    } else {
+      // 新しいウィンドウを作成依頼
+      openWindow({
+        id: app.id,
+        title: app.name,
+        appType: app.id,
+        defaultWidth: app.defaultWidth,
+        defaultHeight: app.defaultHeight,
+      });
+    }
   };
 
   /**

@@ -4,13 +4,96 @@ import React, { useState, useRef, useEffect, useCallback, UIEvent } from 'react'
 import { AppProps } from '@/types/app';
 import { BaseApp } from '@/components/BaseApp';
 import { Send } from 'lucide-react';
-import { addMessage, generateAIResponse } from '@/actions/messenger';
+import { addMessage, generateAIResponse, getContacts, addContact, getIntroductionMessageFromFirestore } from '@/actions/messenger';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useMessenger } from '@/hooks/useMessenger';
-import { UIMessage, ErrorType, selectErrorMessage } from '@/types/messenger';
+import { UIMessage, ErrorType, selectErrorMessage, defaultMessengerContacts, ChatMessage } from '@/types/messenger';
+import { appNotifications } from '@/utils/notifications';
 
 function generateSecureId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+}
+
+async function initializeUserContacts(): Promise<void> {
+  try {
+    for (const contact of defaultMessengerContacts) {
+      const { id, ...contactData } = contact;
+      await addContact(contactData, id);
+    }
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error initializing user contacts:', error);
+    }
+    throw error;
+  }
+}
+
+async function sendIntroductionMessage(): Promise<void> {
+  try {
+    const introData = await getIntroductionMessageFromFirestore('darkOrganization');
+    const introText = introData?.text || 'ようこそ。あなたが我々に興味を持ってくれたことを知っています。まずは簡単な質問から始めましょうか。何か知りたいことはありますか？';
+    const contactId = 'dark_organization';
+
+    const introMessage: ChatMessage = {
+      id: `intro-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      sender: 'npc',
+      text: introText,
+      timestamp: new Date(),
+    };
+
+    await addMessage(contactId, introMessage);
+
+    const previewText = introText.length > 50 ? `${introText.substring(0, 50)}...` : introText;
+    appNotifications.fromApp(
+      'messenger',
+      '闇の組織からの新着メッセージ',
+      previewText,
+      'info',
+      5000
+    );
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in sendIntroductionMessage:', error);
+    }
+    throw error;
+  }
+}
+
+// グローバルな初期化フラグ
+let globalInitializationPromise: Promise<boolean> | null = null;
+
+async function initializeMessengerIntroduction(): Promise<boolean> {
+  // 既に初期化処理が実行中または完了している場合は、その結果を返す
+  if (globalInitializationPromise) {
+    return globalInitializationPromise;
+  }
+
+  // 初期化処理を開始
+  globalInitializationPromise = (async () => {
+    try {
+      const contacts = await getContacts();
+      if (contacts.length > 0) {
+        return false; // 既に初期化済み
+      }
+
+      console.log('Starting messenger initialization...');
+
+      // 1. デフォルト連絡先をDBに追加
+      await initializeUserContacts();
+
+      // 2. 少し遅れてからイントロメッセージを送信
+      setTimeout(sendIntroductionMessage, 2000);
+
+      return true;
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Messenger initialization failed:', error);
+      }
+      return false;
+    }
+  })();
+
+  return globalInitializationPromise;
 }
 
 export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
@@ -34,6 +117,26 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
+  const initializationExecuted = useRef(false);
+
+  // メッセンジャーの初期化処理
+  useEffect(() => {
+    if (!initializationExecuted.current) {
+      initializationExecuted.current = true;
+
+      initializeMessengerIntroduction()
+        .then((wasInitialized) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Messenger initialization result:', wasInitialized ? 'initialized' : 'already initialized');
+          }
+        })
+        .catch((error) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Messenger initialization failed:', error);
+          }
+        });
+    }
+  }, []);
 
   const handleSendMessage = useCallback(async () => {
     if (!inputText.trim() || !selectedContact || !user || inputText.trim().length > 500) return;

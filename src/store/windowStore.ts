@@ -8,6 +8,7 @@ export interface WindowState {
   title: string;
   isOpen: boolean;
   isMinimized: boolean;
+  isHidden: boolean;
   x: number;
   y: number;
   width: number;
@@ -29,7 +30,10 @@ interface WindowStore {
     appType: string;
     defaultWidth?: number;
     defaultHeight?: number;
+    isHidden?: boolean;
   }) => void;
+  showWindow: (id: string) => void;
+  hideWindow: (id: string) => void;
   closeWindow: (id: string) => void;
   minimizeWindow: (id: string) => void;
   restoreWindow: (id: string) => void;  // 新しく追加
@@ -51,18 +55,20 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   // ウィンドウを開く
   openWindow: (appConfig) => {
     const existingWindow = get().windows.find(w => w.id === appConfig.id);
-    if (existingWindow && existingWindow.isOpen) {
+    if (existingWindow && existingWindow.isOpen && !existingWindow.isHidden) {
       // 既に開いているウィンドウの場合は、最小化解除とフォーカスのみ
       get().focusWindowOnInteraction(appConfig.id);
       return;
     }
 
     const newZIndex = get().maxZIndex + 1;
+    const isHidden = appConfig.isHidden || false;
     const newWindow: WindowState = {
       id: appConfig.id,
       title: appConfig.title,
       isOpen: true,
       isMinimized: false,
+      isHidden: isHidden,
       x: 100 + Math.random() * 200,
       y: 100 + Math.random() * 100,
       width: appConfig.defaultWidth || 800,
@@ -76,7 +82,30 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
         ? state.windows.map(w => w.id === appConfig.id ? newWindow : w)
         : [...state.windows, newWindow],
       maxZIndex: newZIndex,
-      activeWindowId: appConfig.id, // 新しく開いたウィンドウを即座にアクティブに
+      activeWindowId: isHidden ? state.activeWindowId : appConfig.id, // 非表示の場合はアクティブにしない
+    }));
+  },
+
+  // ウィンドウを表示する
+  showWindow: (id) => {
+    const targetWindow = get().windows.find(w => w.id === id);
+    if (!targetWindow || !targetWindow.isHidden) return;
+
+    get().focusWindowOnInteraction(id);
+    set(state => ({
+      windows: state.windows.map(w =>
+        w.id === id ? { ...w, isHidden: false } : w
+      ),
+    }));
+  },
+
+  // ウィンドウを非表示にする
+  hideWindow: (id) => {
+    set(state => ({
+      windows: state.windows.map(w =>
+        w.id === id ? { ...w, isHidden: true } : w
+      ),
+      activeWindowId: state.activeWindowId === id ? null : state.activeWindowId,
     }));
   },
 
