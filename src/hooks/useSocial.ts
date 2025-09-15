@@ -40,6 +40,7 @@ import {
   SOCIAL_CACHE_FRESHNESS_THRESHOLD,
   SOCIAL_POSTS_PER_PAGE,
   SOCIAL_MESSAGES_PER_PAGE,
+  MAX_SOCIAL_CONVERSATION_HISTORY_LENGTH,
 } from '@/lib/social/constants';
 
 /**
@@ -726,8 +727,14 @@ export const useSocial = (
         timestamp: userMessage.timestamp,
       });
 
-      // AI応答を生成
-      const aiText = await generateSocialAIResponse(text, [], selectedContact.id);
+      // AI応答を生成（過去の履歴を含める、最新N件に制限）
+      const recentMessages = messages.slice(-MAX_SOCIAL_CONVERSATION_HISTORY_LENGTH);
+      const chatHistory = recentMessages.map(msg => ({
+        role: msg.sender === 'me' ? 'user' as const : 'model' as const,
+        parts: [{ text: msg.text }]
+      }));
+
+      const aiText = await generateSocialAIResponse(text, chatHistory, selectedContact.id);
 
       const aiMessageId = generateSecureId();
       const aiMessage: UISocialDMMessage = {
@@ -762,7 +769,7 @@ export const useSocial = (
       };
       addMessageToState(errorMessage);
     }
-  }, [user, activeAccount, selectedContact, hasMoreMessages]);
+  }, [user, activeAccount, selectedContact, hasMoreMessages, messages]);
 
   // 初期データ読み込み
   useEffect(() => {
