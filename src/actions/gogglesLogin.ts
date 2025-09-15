@@ -142,9 +142,9 @@ export async function validateSecretQuestion(questionData: SecretQuestionAnswer)
 
   // 秘密の質問の答え
   const correctAnswers: Record<number, string[]> = {
-    1: ['ワンダーフォーゲル部'],
+    1: ['ワンダーフォーゲル部', 'ワンダーフォーゲル'],
     2: ['こむぎ'],
-    3: ['テリーズカフェ調布駅前店', '調布駅前店']
+    3: ['テリーズカフェ調布駅前店']
   };
 
   const correctAnswerList = correctAnswers[questionData.questionId];

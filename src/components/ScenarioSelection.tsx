@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { Play, FileText, Users, Building2, Globe } from 'lucide-react';
-import { getSearchResults } from '@/actions/searchResults';
-import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
+import { loadSearchResults } from '@/lib/cache/searchResultsCache';
+import { loadGogglesMailData } from '@/lib/cache/gogglesMailCache';
 
 interface Scenario {
   id: string;
@@ -104,58 +104,36 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
     setIsLoading(true);
 
     try {
-      // 既存のキャッシュをチェック
-      const cachedData = localStorage.getItem(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
-      const cacheTimestamp = localStorage.getItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
-      
-      let searchResults;
-
-      if (typeof cachedData === 'string' && cachedData != '[]' && cacheTimestamp) {
-        const timestamp = parseInt(cacheTimestamp);
-        const now = Date.now();
-        const cacheExpiry = 60 * 60 * 1000;
-        
-        if (now - timestamp < cacheExpiry) {
-          // 有効なキャッシュが存在する場合、期限を更新してキャッシュを使用
-          localStorage.setItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
-          searchResults = JSON.parse(cachedData);
-          console.log('既存のキャッシュの期限を更新しました:', searchResults.length + '件');
-        } else {
-          // 期限切れのキャッシュを削除して新しく取得
-          localStorage.removeItem(LOCAL_STORAGE_KEYS.SEARCH_CACHE);
-          localStorage.removeItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP);
-          searchResults = await getSearchResults();
-          localStorage.setItem(LOCAL_STORAGE_KEYS.SEARCH_CACHE, JSON.stringify(searchResults));
-          localStorage.setItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
-          console.log('期限切れキャッシュを削除し、新しい検索結果をキャッシュしました:', searchResults.length + '件');
-        }
-      } else {
-        // キャッシュが存在しない場合、新しく取得
-        searchResults = await getSearchResults();
-        localStorage.setItem(LOCAL_STORAGE_KEYS.SEARCH_CACHE, JSON.stringify(searchResults));
-        localStorage.setItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
-        console.log('検索結果をローカルストレージにキャッシュしました:', searchResults.length + '件');
-      }
+      // 検索結果とメールデータを取得
+      const [searchResults, emailData] = await Promise.all([
+        loadSearchResults(),
+        loadGogglesMailData()
+      ]);
 
       // データが取得できているかチェック
       if (!searchResults || searchResults.length === 0) {
-        throw new Error('ゲームの読み込みに失敗しました');
+        console.error('検索結果の取得に失敗しました');
+        throw new Error;
       }
-
-      console.log(localStorage);
+      if (!emailData || emailData.length === 0) {
+        console.error('メールデータの取得に失敗しました');
+        throw new Error;
+      }
+      console.log('シナリオデータの取得完了:', {
+        searchResults: searchResults.length + '件',
+        emailData: emailData.length + '件'
+      });
 
       // アニメーション効果のための遅延
       setTimeout(() => {
         onScenarioSelect(scenario.id);
       }, 1000);
-    } catch (error) {
-      console.error('キャッシュの保存に失敗しました:', error);
+    } catch {
+      console.error('キャッシュの保存に失敗しました:');
       setIsLoading(false);
       
       // エラーメッセージを表示
-      const errorMsg = error instanceof Error 
-        ? error.message 
-        : 'ゲームの読み込みに失敗しました。';
+      const errorMsg = 'ゲームの読み込みに失敗しました。';
       setErrorMessage(errorMsg);
       setShowError(true);
 
