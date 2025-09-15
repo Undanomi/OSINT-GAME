@@ -1,6 +1,7 @@
 import React from 'react';
 import { FacelookProfilePage } from '../FacelookProfilePage';
 import { RankedOnProfilePage } from '../RankedOnProfilePage';
+import { YuhiShinbunPage } from '../YuhiShinbunPage';
 import { GogglesMail } from '../goggles-mail/GogglesMailPage';
 import { PlaybackMachinePage } from '../PlaybackMachinePage';
 import { UnifiedSearchResult } from '@/types/search';
@@ -28,4 +29,6 @@ export const dynamicPageComponentMap: Record<string, (documentId: string, initia
     <FacelookProfilePage documentId={documentId} initialData={initialData} />,
   'RankedOnProfilePage': (documentId, initialData) => 
     <RankedOnProfilePage documentId={documentId} initialData={initialData} />,
+  'YuhiShinbunPage': (documentId, initialData) => 
+    <YuhiShinbunPage documentId={documentId} initialData={initialData} />,
 };
