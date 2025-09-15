@@ -5,6 +5,7 @@ import {
   doc,
   setDoc,
   getDocs,
+  getDoc,
   collection,
   query,
   orderBy,
@@ -14,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { requireAuth } from '@/lib/auth/server';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
-import { getMessengerAIPrompt, MESSENGER_AI_PROMPTS } from '@/prompts/messengerAIPrompts';
+// prompts以下は廃止予定のため削除
 import type { MessengerContact, ChatMessage, RateLimitInfo } from '@/types/messenger';
 import {
   MESSAGES_PER_PAGE,
@@ -23,6 +24,8 @@ import {
   MAX_CONVERSATION_HISTORY_LENGTH,
   MAX_CONVERSATION_HISTORY_SIZE,
   MAX_AI_RETRY_ATTEMPTS,
+  IntroductionMessage,
+  SystemPrompt,
 } from '@/lib/messenger/constants';
 
 
@@ -242,13 +245,17 @@ export const generateAIResponse = requireAuth(async (
     const genAI = new GoogleGenerativeAI(apiKey);
 
     // AI モデルの設定
-    const npcType = (contactType && contactType in MESSENGER_AI_PROMPTS)
-      ? contactType as keyof typeof MESSENGER_AI_PROMPTS
-      : 'darkOrganization';
+    const npcType = contactType || 'darkOrganization';
+
+    // Firestoreからシステムプロンプトを取得
+    const systemPromptData = await getSystemPromptFromFirestore(npcType);
+    if (!systemPromptData) {
+      throw new Error('aiServiceError');
+    }
 
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash-lite",
-      systemInstruction: getMessengerAIPrompt(npcType),
+      systemInstruction: systemPromptData.prompt,
     });
 
     // 会話履歴の最適化（メモリ使用量制御）
@@ -337,3 +344,48 @@ export const generateAIResponse = requireAuth(async (
     throw new Error('general');
   }
 });
+
+/**
+ * 指定されたNPCのイントロダクションメッセージを取得
+ */
+export async function getIntroductionMessageFromFirestore(npcType: string): Promise<IntroductionMessage | null> {
+  try {
+    const docRef = doc(db, 'messenger', npcType, 'config', 'introductionMessage');
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        text: data.text,
+        fallbackText: data.fallbackText,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting introduction message:', error);
+    throw error;
+  }
+}
+
+/**
+ * 指定されたNPCのシステムプロンプトを取得
+ */
+export async function getSystemPromptFromFirestore(npcType: string): Promise<SystemPrompt | null> {
+  try {
+    const docRef = doc(db, 'messenger', npcType, 'config', 'systemPrompts');
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        prompt: data.prompt,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting system prompt:', error);
+    throw error;
+  }
+}
