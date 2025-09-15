@@ -389,10 +389,17 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
                   key={note.id}
                   onClick={async () => {
                     // 現在選択中のメモが空の「新しいメモ」（まだ保存されていない）なら削除
-                    if (selectedNote && !selectedNote.userId && selectedNote.title === '新しいメモ' && selectedNote.content === '') {
+                    // ただし、クリックしたメモが現在選択中のメモと同じ場合は削除しない
+                    if (selectedNote && 
+                        selectedNote.id !== note.id && 
+                        !selectedNote.userId && 
+                        selectedNote.title === '新しいメモ' && 
+                        selectedNote.content === '') {
                       // ローカルから削除（Firestoreには保存されていないので削除不要）
                       setNotes(prev => prev.filter(n => n.id !== selectedNote.id));
                       noteCacheRef.current.delete(selectedNote.id);
+                      // selectedNoteをnullにリセットして、削除されたメモの入力画面が残らないようにする
+                      setSelectedNote(null);
                     }
                     
                     // キャッシュから取得を試みる
