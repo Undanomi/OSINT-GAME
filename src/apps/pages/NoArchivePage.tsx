@@ -42,11 +42,6 @@ export const NoArchivePage: React.FC<NoArchivePageProps> = ({ url }) => {
             </div>
           </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-400">
-              アーカイブされたページの一覧は、ブラウザアプリで検索してください
-            </p>
-          </div>
         </div>
       </div>
     </div>
