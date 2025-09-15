@@ -296,13 +296,20 @@ export const Desktop: React.FC = () => {
     >
       {/* アプリケーションアイコン配置エリア */}
       <div className="absolute top-8 left-8">
-        <div className="grid grid-cols-1 gap-4">
-          {displayedApps.map((app: AppMetadata) => (
-            <DesktopIcon
+        <div className="grid grid-cols-5 gap-4">
+          {displayedApps.map((app: AppMetadata, index: number) => (
+            <div
               key={app.id}
-              app={app}
-              onClick={() => handleAppClick(app)}
-            />
+              style={{
+                gridColumn: Math.floor(index / 5) + 1,
+                gridRow: (index % 5) + 1
+              }}
+            >
+              <DesktopIcon
+                app={app}
+                onClick={() => handleAppClick(app)}
+              />
+            </div>
           ))}
         </div>
       </div>
