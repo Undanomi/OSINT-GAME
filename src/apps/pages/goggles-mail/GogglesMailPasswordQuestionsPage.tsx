@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { validateSecretQuestion } from '@/actions/gogglesLogin';
 import { MailPageProps } from './GogglesMailPage';
+import { Info } from 'lucide-react';
 
 
 export const GogglesMailPasswordQuestionsPage: React.FC<MailPageProps> = ({ onPhaseNavigate }) => {
@@ -14,7 +15,7 @@ export const GogglesMailPasswordQuestionsPage: React.FC<MailPageProps> = ({ onPh
   const questions = [
     { id: 1, text: '高校時代の部活動は？' },
     { id: 2, text: '初めて飼ったペットの名前は？' },
-    { id: 3, text: 'よく行くカフェの名前は？' }
+    { id: 3, text: '初めてのアルバイト先は？', hint: 'チェーン名だけでなく、店舗名まで入力' }
   ];
 
   const currentQuestionData = questions.find(q => q.id === currentQuestion);
@@ -100,6 +101,20 @@ export const GogglesMailPasswordQuestionsPage: React.FC<MailPageProps> = ({ onPh
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
               {error}
+            </div>
+          )}
+
+          {/** ヒント表示 */}
+          {currentQuestionData?.hint && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-md">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <Info className="h-5 w-5 text-blue-400" />
+                </div>
+                <div className="ml-2">
+                  <div className="text-sm">{currentQuestionData.hint}</div>
+                </div>
+              </div>
             </div>
           )}
 

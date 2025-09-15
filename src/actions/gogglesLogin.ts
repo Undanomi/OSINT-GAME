@@ -144,7 +144,7 @@ export async function validateSecretQuestion(questionData: SecretQuestionAnswer)
   const correctAnswers: Record<number, string[]> = {
     1: ['ワンダーフォーゲル部'],
     2: ['こむぎ'],
-    3: ['テリーズカフェ調布駅前店', '調布駅前店']
+    3: ['テリーズカフェ調布駅前店']
   };
 
   const correctAnswerList = correctAnswers[questionData.questionId];
