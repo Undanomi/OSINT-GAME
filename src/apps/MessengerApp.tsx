@@ -97,7 +97,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   }, [inputText, selectedContact, user, addMessageToState, removeMessageFromState]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.keyCode === 13 && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }

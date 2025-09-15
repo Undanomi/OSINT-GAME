@@ -466,7 +466,7 @@ const DMChatPage = ({
   }, [inputText, onSendMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.keyCode === 13 && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
