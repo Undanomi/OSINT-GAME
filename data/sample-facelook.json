@@ -43,6 +43,18 @@
           "shares": 15
         }
       ],
+      "friends": [
+        {
+          "name": "サンプル 花子",
+          "profileImage": "https://picsum.photos/40/40?random=110",
+          "mutualFriends": 12
+        },
+        {
+          "name": "ダミー 次郎",
+          "profileImage": "https://picsum.photos/40/40?random=111",
+          "mutualFriends": 8
+        }
+      ],
       "photos": [
         "https://picsum.photos/200/200?random=200",
         "https://picsum.photos/200/200?random=200",
@@ -55,7 +67,9 @@
         "https://picsum.photos/200/200?random=200"
       ]
     },
-    "keywords": ["テスト太郎", "facelook", "テスト株式会社", "テストエンジニア", "テスト大学"]
+    "keywords": ["テスト太郎", "facelook", "テスト株式会社", "テストエンジニア", "テスト大学"],
+    "domainStatus": "expired",
+    "archivedDate": "2024-03-15"
   },
   {
     "id": "facelook_test_hanako",
@@ -94,12 +108,26 @@
           "shares": 6
         }
       ],
+      "friends": [
+        {
+          "name": "テスト 太郎",
+          "profileImage": "https://picsum.photos/40/40?random=210",
+          "mutualFriends": 15
+        },
+        {
+          "name": "サンプル 三郎",
+          "profileImage": "https://picsum.photos/40/40?random=211",
+          "mutualFriends": 7
+        }
+      ],
       "photos": [
         "https://picsum.photos/200/200?random=200",
         "https://picsum.photos/200/200?random=200",
         "https://picsum.photos/200/200?random=200"
       ]
     },
-    "keywords": ["テスト花子", "facelook", "サンプルスタジオ", "テストデザイナー", "ダミー美術大学"]
+    "keywords": ["テスト花子", "facelook", "サンプルスタジオ", "テストデザイナー", "ダミー美術大学"],
+    "domainStatus": "active",
+    "archivedDate": "2024-05-20"
   }
 ]

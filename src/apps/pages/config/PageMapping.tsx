@@ -2,16 +2,21 @@ import React from 'react';
 import { FacelookProfilePage } from '../FacelookProfilePage';
 import { RankedOnProfilePage } from '../RankedOnProfilePage';
 import { GogglesMail } from '../goggles-mail/GogglesMailPage';
+import { PlaybackMachinePage } from '../PlaybackMachinePage';
 import { UnifiedSearchResult } from '@/types/search';
 
 /**
  * 静的ページのマッピング
  * NOTE: Firebase に保保存されないページの表示用
  */
-export const staticPages: { [key: string]: React.ReactElement | ((currentUrl: string) => React.ReactElement) } = {
+export const staticPages: { [key: string]: React.ReactElement | ((currentUrl: string, onNavigate?: (url: string) => void) => React.ReactElement) } = {
   // Goggles Mail - メインページとログインページのみ
   'https://mail.goggles.com': (currentUrl) => <GogglesMail initialUrl={currentUrl} />,
   'https://mail.goggles.com/login': (currentUrl) => <GogglesMail initialUrl={currentUrl} />,
+
+  // Playback Machine - アーカイブビューア
+  'https://playback.archive': (currentUrl, onNavigate) => <PlaybackMachinePage url={currentUrl} onNavigate={onNavigate} />,
+  'https://playback.archive/': (currentUrl, onNavigate) => <PlaybackMachinePage url={currentUrl} onNavigate={onNavigate} />,
 };
 
 /**
