@@ -220,6 +220,7 @@ export interface TimelineParams {
  */
 export interface DMHistoryParams {
   userId: string;
+  accountId: string;
   contactId: string;
   limit?: number;
   cursor?: string;

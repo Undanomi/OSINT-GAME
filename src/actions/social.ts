@@ -458,11 +458,11 @@ export async function getSocialNPC(npcId: string): Promise<SocialNPC | null> {
 
 
 /**
- * DM連絡先一覧を取得
+ * DM連絡先一覧を取得（アカウントごと）
  */
-export async function getSocialContacts(userId: string): Promise<SocialContact[]> {
+export async function getSocialContacts(userId: string, accountId: string): Promise<SocialContact[]> {
   try {
-    const contactsRef = collection(db, 'users', userId, 'socialContacts');
+    const contactsRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'Contacts');
     const snapshot = await getDocs(contactsRef);
 
     return snapshot.docs.map(doc => ({
@@ -480,10 +480,11 @@ export async function getSocialContacts(userId: string): Promise<SocialContact[]
  */
 export async function addSocialContact(
   userId: string,
+  accountId: string,
   contact: SocialContact
 ): Promise<void> {
   try {
-    const contactsRef = collection(db, 'users', userId, 'socialContacts');
+    const contactsRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'Contacts');
     const contactRef = doc(contactsRef, contact.id);
 
     // setDocを使用してドキュメントIDを指定して作成または更新
@@ -503,9 +504,9 @@ export async function addSocialContact(
  */
 export async function getSocialMessages(params: DMHistoryParams): Promise<PaginatedResult<SocialDMMessage>> {
   try {
-    const { userId, contactId, limit: pageLimit = SOCIAL_MESSAGES_PER_PAGE, cursor } = params;
-    
-    const messagesRef = collection(db, 'users', userId, 'socialContacts', contactId, 'history');
+    const { userId, accountId, contactId, limit: pageLimit = SOCIAL_MESSAGES_PER_PAGE, cursor } = params;
+
+    const messagesRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'Contacts', contactId, 'history');
     let messagesQuery = query(
       messagesRef,
       orderBy('timestamp', 'desc'),
@@ -547,11 +548,12 @@ export async function getSocialMessages(params: DMHistoryParams): Promise<Pagina
  */
 export async function addSocialMessage(
   userId: string,
+  accountId: string,
   contactId: string,
   message: Omit<SocialDMMessage, 'id'>
 ): Promise<SocialDMMessage> {
   try {
-    const messagesRef = collection(db, 'users', userId, 'socialContacts', contactId, 'history');
+    const messagesRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'Contacts', contactId, 'history');
     const docRef = await addDoc(messagesRef, {
       ...message,
       timestamp: Timestamp.fromDate(message.timestamp),
