@@ -95,15 +95,6 @@ export const PlaybackMachinePage: React.FC<PlaybackMachinePageProps> = ({ url, o
   };
 
   /**
-   * ブラウザに戻る
-   */
-  const handleBackToBrowser = () => {
-    if (onNavigate) {
-      onNavigate('https://www.goggles.com');
-    }
-  };
-
-  /**
    * ホームに戻る
    */
   const handleBackToHome = () => {
@@ -226,20 +217,12 @@ export const PlaybackMachinePage: React.FC<PlaybackMachinePageProps> = ({ url, o
     <div className="h-full flex flex-col bg-gradient-to-b from-gray-900 to-gray-800 text-white">
       {/* ヘッダー */}
       <div className="px-6 py-4 border-b border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Clock size={32} className="text-yellow-400" />
-            <div>
-              <h1 className="text-2xl font-bold">Playback Machine</h1>
-              <p className="text-sm text-gray-400">インターネットアーカイブ</p>
-            </div>
+        <div className="flex items-center space-x-3">
+          <Clock size={32} className="text-yellow-400" />
+          <div>
+            <h1 className="text-2xl font-bold">Playback Machine</h1>
+            <p className="text-sm text-gray-400">インターネットアーカイブ</p>
           </div>
-          <button
-            onClick={handleBackToBrowser}
-            className="text-sm text-gray-400 hover:text-white"
-          >
-            ブラウザに戻る
-          </button>
         </div>
       </div>
 
