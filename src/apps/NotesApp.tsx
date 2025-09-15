@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusIcon, TrashIcon, SearchIcon, CloudIcon, CloudOffIcon } from 'lucide-react';
 import { useAuthContext } from '@/providers/AuthProvider';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   getNotesList,
   getNote,
@@ -384,10 +385,20 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
                 メモがありません
               </div>
             ) : (
-              filteredNotes.map(note => (
-                <div
-                  key={note.id}
-                  onClick={async () => {
+              <AnimatePresence mode="popLayout">
+                {filteredNotes.map(note => (
+                  <motion.div
+                    key={note.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, x: 100 }}
+                    transition={{ 
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 25
+                    }}
+                    onClick={async () => {
                     // 現在選択中のメモが空の「新しいメモ」（まだ保存されていない）なら削除
                     // ただし、クリックしたメモが現在選択中のメモと同じ場合は削除しない
                     if (selectedNote && 
@@ -450,8 +461,9 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
                   <div className="text-xs text-gray-400 mt-2">
                     {formatDate(note.updatedAt)}
                   </div>
-                </div>
-              ))
+                </motion.div>
+                ))}
+              </AnimatePresence>
             )}
           </div>
         </div>
