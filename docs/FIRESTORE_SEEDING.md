@@ -96,6 +96,8 @@ npm run seed:skip data/sample.json
   "url": "https://facelook.com/test.user",
   "description": "テストエンジニア at テスト株式会社",
   "template": "FacelookProfilePage",
+  "domainStatus": "active",
+  "archivedDate": "2024-03-15",
   "content": {
     "name": "テスト太郎",
     "profileImage": "https://example.com/profile.jpg",
@@ -118,12 +120,16 @@ npm run seed:skip data/sample.json
     "id": "facelook_test_taro",
     "title": "テスト太郎 - Facelookプロフィール",
     "template": "FacelookProfilePage",
+    "domainStatus": "expired",
+    "archivedDate": "2024-03-15",
     ...
   },
   {
     "id": "facelook_test_hanako",
     "title": "テスト花子 - Facelookプロフィール",
     "template": "FacelookProfilePage",
+    "domainStatus": "active",
+    "archivedDate": "2024-05-20",
     ...
   }
 ]
@@ -131,7 +137,7 @@ npm run seed:skip data/sample.json
 
 ## データ構造の詳細
 
-### 必須フィールド
+### フィールド説明
 
 - `id`: ドキュメントID（一意である必要があります）
 - `title`: 検索結果に表示されるタイトル
@@ -139,6 +145,9 @@ npm run seed:skip data/sample.json
 - `description`: 検索結果に表示される説明文
 - `template`: 使用するReactコンポーネント名（アイコン判定にも使用）
 - `content`: ページ固有のコンテンツ（templateによって異なる）
+- `keywords`: 検索用キーワードの配列
+- `domainStatus`: "active" | "expired" - ドメインの状態（expiredの場合、検索結果に表示されない）
+- `archivedDate`: "YYYY-MM-DD" - アーカイブ日付（Playback Machineで使用）
 
 ### Facelook用のcontent構造（1ページ完結型）
 
@@ -167,14 +176,14 @@ npm run seed:skip data/sample.json
       "image": "画像URL（オプション）"
     }
   ],
-  "friends": [
+  "friends": [  // 必須（空配列でも可）
     {
       "name": "サンプル花子",
       "profileImage": "プロフィール画像URL",
       "mutualFriends": 10
     }
   ],
-  "photos": ["写真URL1", "写真URL2"]
+  "photos": ["写真URL1", "写真URL2"]  // 必須（空配列でも可）
 }
 ```
 
@@ -213,6 +222,19 @@ npm run seed:skip data/sample.json
     friend_001.jpg
     photo_001.jpg
 ```
+
+## 重要な注意事項
+
+### domainStatusの設定
+- `"active"`: ブラウザの検索結果に表示され、直接アクセス可能
+- `"expired"`: ブラウザの検索結果に表示されず、直接URLを入力してもエラーページが表示される
+- Playback MachineからはdomainStatusに関係なくすべてのページにアクセス可能
+
+### Facelookテンプレート使用時の必須配列フィールド
+FacelookProfilePageテンプレートを使用する場合、以下の配列フィールドが必須です：
+- `posts`: 投稿の配列（空配列 `[]` でも可）
+- `friends`: 友達の配列（空配列 `[]` でも可）
+- `photos`: 写真URLの配列（空配列 `[]` でも可）
 
 ## 実行例
 

@@ -16,6 +16,9 @@
   "url": "https://facelook.com/test.taro",
   "description": "テストエンジニア at テスト株式会社. テスト大学卒。",
   "template": "FacelookProfilePage",  // 使用するReactコンポーネント名（アイコン判定にも使用）
+  "domainStatus": "active",  // "active" | "expired" - ドメインの状態
+  "archivedDate": "2024-03-15",  // アーカイブ日付（YYYY-MM-DD形式）
+
   "content": {  // ページ固有のデータ（template毎に異なる）
     // Facelookの場合の例
     "name": "テスト 太郎",
@@ -105,6 +108,8 @@ Firebase Consoleから手動でデータを追加する場合：
    - `url` (string): https://facelook.com/test.taro
    - `description` (string): テストエンジニア at テスト株式会社
    - `template` (string): FacelookProfilePage
+   - `domainStatus` (string): active または expired
+   - `archivedDate` (string): 2024-03-15（YYYY-MM-DD形式）
    - `content` (map): 上記の構造に従ってデータを入力
    - `keywords` (array): 検索用キーワードを配列で入力
 
@@ -149,3 +154,44 @@ Storage URLの形式：
    - documentIdを使用してFirestoreからデータを取得
    - templateフィールドで適切なコンポーネントを判定
    - contentフィールドからページ固有のデータを展開
+
+## Playback Machine機能
+
+### 概要
+Playback Machineは、アーカイブされたウェブページを閲覧できるウェブアプリケーションです。
+ドメインが失効したサイトや、過去のスナップショットを表示できます。
+実際のWayback Machineのようなインターフェースを提供し、ブラウザ内で動作します。
+
+### 動作仕様
+
+1. **BrowserAppでの表示**
+   - `domainStatus: "active"` → 通常表示
+   - `domainStatus: "expired"` → 検索結果に表示されない、URLを直接入力した場合は通常のエラーページ表示
+
+2. **検索機能**
+   - `domainStatus: "expired"` のサイトは検索結果から除外される
+   - キーワード「playback」「archive」「アーカイブ」等でPlayback Machineが検索結果に表示される
+
+3. **Playback Machineでの表示**
+   - すべてのページを表示可能（domainStatusに関係なく）
+   - 各ページの`archivedDate`を使用してアーカイブ日を表示
+
+4. **URL形式**
+   - Playback Machineホーム: `https://playback.archive/`
+   - アーカイブページ: `https://playback.archive/web/20240315/https://facelook.com/test.taro`
+   - 日付形式: YYYYMMDD（archivedDateフィールドから変換）
+   - 日付部分は`archivedDate`フィールドから取得
+
+### OSINTゲームでの活用シナリオ
+
+1. **調査の流れ**
+   - プレイヤーがブラウザで人物やサイトを検索
+   - 一部のサイトは`domainStatus: "expired"`で検索結果に表示されない
+   - 調査を進める中で、Playback Machineの存在に気づく
+   - Playback Machineを使用して、失効したドメインのアーカイブページにアクセス
+   - 隠された情報を発見し、調査を完了する
+
+2. **実装のポイント**
+   - 現実的なブラウザ体験を提供（expired = 検索できない、エラーページ表示）
+   - Playback Machineは別途検索して発見する必要がある
+   - アーカイブされた日付によって、異なる情報が見られる可能性（将来の拡張）

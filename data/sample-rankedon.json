@@ -158,7 +158,9 @@
       "website": "https://test-taro-tech-blog.example.com",
       "rankedonUrl": "https://test-rankedon.com/on/test-taro-dummy"
     },
-    "keywords": ["テスト太郎", "rankedon", "テスト株式会社", "テストエンジニア", "架空プロフィール"]
+    "keywords": ["テスト太郎", "rankedon", "テスト株式会社", "テストエンジニア", "架空プロフィール"],
+    "domainStatus": "active",
+    "archivedDate": "2024-04-10"
   },
   {
     "id": "rankedon_test_hanako",
@@ -276,7 +278,9 @@
       "website": "https://test-hanako-portfolio.example.com",
       "rankedonUrl": "https://test-rankedon.com/on/test-hanako-dummy"
     },
-    "keywords": ["テスト花子", "rankedon", "サンプルイノベーション", "テストプロダクトマネージャー", "架空プロフィール"]
+    "keywords": ["テスト花子", "rankedon", "サンプルイノベーション", "テストプロダクトマネージャー", "架空プロフィール"],
+    "domainStatus": "expired",
+    "archivedDate": "2024-02-28"
   },
   {
     "id": "rankedon_dummy_jiro",
@@ -345,6 +349,8 @@
       "email": "dummy.jiro@test-analytics.example.com",
       "rankedonUrl": "https://test-rankedon.com/on/dummy-jiro-test"
     },
-    "keywords": ["ダミー次郎", "rankedon", "ダミーアナリティクス", "テストデータサイエンティスト", "架空プロフィール"]
+    "keywords": ["ダミー次郎", "rankedon", "ダミーアナリティクス", "テストデータサイエンティスト", "架空プロフィール"],
+    "domainStatus": "active",
+    "archivedDate": "2024-06-01"
   }
 ]

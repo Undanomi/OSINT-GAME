@@ -485,6 +485,18 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       }
     };
 
+    // ドメイン失効チェック
+    const checkDomainExpired = () => {
+      const cache = firebaseCache.length > 0 ? firebaseCache : loadCacheFromLocalStorage();
+      const pageData = cache.find(item => item.url === currentView);
+      return pageData?.domainStatus === 'expired';
+    };
+
+    // ドメイン失効ページの表示（通常のエラーページを使用）
+    if (checkDomainExpired()) {
+      return <ErrorPage url={currentView} />;
+    }
+
     // 動的コンポーネントが見つかった場合はそれを表示
     if (currentDynamicComponent) {
       return currentDynamicComponent;
@@ -493,7 +505,13 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     // 静的ページが存在する場合はそれを表示
     if (staticPages[currentView]) {
       const page = staticPages[currentView];
-      return typeof page === 'function' ? page(currentView) : page;
+      return typeof page === 'function' ? page(currentView, navigateTo) : page;
+    }
+
+    // Playback Machine URLの処理
+    if (currentView.includes('playback.archive')) {
+      const page = staticPages['https://playback.archive'];
+      return typeof page === 'function' ? page(currentView, navigateTo) : page;
     }
 
     // URLが無効な場合はエラーページを表示

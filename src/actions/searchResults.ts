@@ -44,28 +44,50 @@ export const getSearchResults = async (): Promise<UnifiedSearchResult[]> => {
  * @returns Promise<SearchResult[]> - フィルタリングされた検索結果
  */
 export const filterSearchResults = async (
-  cache: UnifiedSearchResult[], 
+  cache: UnifiedSearchResult[],
   query: string
 ): Promise<SearchResult[]> => {
   const queryLower = query.toLowerCase();
-  
-  // キャッシュから部分一致で検索
+
+  // Playback Machine関連の検索キーワード
+  const playbackKeywords = ['playback', 'archive', 'アーカイブ', 'wayback', '過去', 'キャッシュ', 'cache'];
+  const isPlaybackSearch = playbackKeywords.some(keyword => queryLower.includes(keyword));
+
+  // Playback Machineを検索結果に追加
+  const staticResults: SearchResult[] = [];
+  if (isPlaybackSearch) {
+    staticResults.push({
+      id: 'playback-machine-static',
+      title: 'Playback Machine - インターネットアーカイブ',
+      url: 'https://playback.archive',
+      description: '過去にアーカイブされたウェブページを閲覧できます。削除されたページや失効したドメインのサイトも表示可能です。',
+      type: 'directory' as const,
+    });
+  }
+
+  // キャッシュから部分一致で検索（expired状態のドメインは除外）
   const filteredItems = cache.filter(item => {
     console.log('Filtering item:', item);
-    
+
+    // expired状態のドメインは検索結果から除外
+    if (item.domainStatus === 'expired') {
+      console.log('Skipping expired domain:', item.url);
+      return false;
+    }
+
     // キーワードでの部分一致
     const matchesKeywords = item.keywords?.some(keyword => {
       const match = keyword.toLowerCase().includes(queryLower);
       console.log(`Keyword "${keyword}" includes "${query}":`, match);
       return match;
     });
-    
+
     // タイトルでの部分一致
     const matchesTitle = item.title.toLowerCase().includes(queryLower);
-    
+
     // 説明文での部分一致
     const matchesDescription = item.description.toLowerCase().includes(queryLower);
-    
+
     console.log('Matches - keywords:', matchesKeywords, 'title:', matchesTitle, 'description:', matchesDescription);
     return matchesKeywords || matchesTitle || matchesDescription;
   });
@@ -75,10 +97,13 @@ export const filterSearchResults = async (
     filteredItems.map(item => convertFirebaseResult(item))
   );
 
-  console.log('検索結果:', filteredResults);
-  console.log('検索結果数:', filteredResults.length);
-  
-  return filteredResults;
+  // 静的な結果とFirebaseの結果を結合
+  const allResults = [...staticResults, ...filteredResults];
+
+  console.log('検索結果:', allResults);
+  console.log('検索結果数:', allResults.length);
+
+  return allResults;
 };
 
 /**
