@@ -15,6 +15,9 @@ export const LOCAL_STORAGE_KEYS = {
   // Goggles Mail関連
   GOGGLES_MAIL_CACHE: 'goggles_mail_cache',
   GOGGLES_MAIL_CACHE_TIMESTAMP: 'goggles_mail_cache_timestamp',
+
+  // SNS関連
+  SOCIAL_CACHE_PREFIX: 'social_cache_',
 } as const;
 
 // キャッシュの有効期限
