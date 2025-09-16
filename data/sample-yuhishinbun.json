@@ -6,10 +6,10 @@
     "description": "新技術導入に関する重要な発表が行われました。業界に大きな影響を与える可能性があります。",
     "template": "YuhiShinbunPage",
     "domainStatus": "active",
-    "archivedDate": "2024-09-15",
+    "archivedDate": "2025-09-15",
     "content": {
       "title": "新技術導入による業界変革：専門家が語る未来への展望",
-      "date": "2024年9月15日",
+      "date": "2025年9月15日",
       "author": "夕日新聞編集部",
       "image": "https://picsum.photos/800/450?random=301",
       "caption": "最新技術を活用した新しいシステムの開発現場",
@@ -46,10 +46,10 @@
     "description": "第3四半期の経済動向について詳細分析。主要企業の業績と市場予測をお伝えします。",
     "template": "YuhiShinbunPage",
     "domainStatus": "active",
-    "archivedDate": "2024-09-12",
+    "archivedDate": "2025-09-12",
     "content": {
       "title": "第3四半期業績レポート：主要企業の成長戦略と市場予測",
-      "date": "2024年9月12日",
+      "date": "2025年9月12日",
       "author": "夕日新聞編集部",
       "image": "https://picsum.photos/800/450?random=321",
       "caption": "東京証券取引所での取引の様子",
@@ -86,10 +86,10 @@
     "description": "地域コミュニティの活性化に向けた新しい取り組みについて、現場からレポートします。",
     "template": "YuhiShinbunPage",
     "domainStatus": "active",
-    "archivedDate": "2024-08-28",
+    "archivedDate": "2025-08-28",
     "content": {
       "title": "地域再生プロジェクト：住民主導の新しいコミュニティづくり",
-      "date": "2024年8月28日",
+      "date": "2025年8月28日",
       "author": "夕日新聞編集部記者 山口翔平",
       "image": "https://picsum.photos/800/450?random=341",
       "caption": "地域住民が集まって開催された町づくり会議の様子",
@@ -117,6 +117,6 @@
         }
       ]
     },
-    "keywords": ["夕日新聞", "地域再生", "コミュニティ", "地方創生", "移住", "高齢化", "社会問題"]
+    "keywords": ["夕日新聞", "地域再生", "コミュニティ", "地方創生", "移住", "高齢化", "社会問題", "山口"]
   }
 ]

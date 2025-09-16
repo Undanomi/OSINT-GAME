@@ -404,7 +404,7 @@ export const YuhiShinbunPage: React.FC<YuhiShinbunPageProps> = ({ documentId, in
                 <span className="text-gray-300 hover:text-white transition-colors whitespace-nowrap cursor-pointer">免責事項</span>
               </div>
               <div className="text-sm text-gray-400 whitespace-nowrap">
-                © 2024 夕日新聞. All rights reserved.
+                © 2025 夕日新聞. All rights reserved.
               </div>
             </div>
           </div>
