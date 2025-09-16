@@ -528,16 +528,18 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   return (
     <BaseApp windowId={windowId} isActive={isActive} toolbar={toolbar} statusBar={statusBar}>
-      <div className="h-full bg-white overflow-auto relative">
+      <div className="relative h-full bg-white overflow-hidden">
+        <div className="h-full overflow-auto">
+          {renderContent()}
+        </div>
         {showFakeReload && (
-          <div className="absolute inset-0 bg-white z-50 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-100 z-100">
             <div className="flex items-center space-x-2">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
               <span className="text-gray-600">読み込み中...</span>
             </div>
           </div>
         )}
-        {renderContent()}
       </div>
     </BaseApp>
   );
