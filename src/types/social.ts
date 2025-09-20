@@ -43,12 +43,16 @@ export interface SocialNPC {
   canDM: boolean;
   systemPrompt: string; // DM用のシステムプロンプト
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
  * SNS投稿情報（Firestore用）
- * ユーザー投稿: users/{userId}/socialPosts/{postId}
+ * ユーザー投稿: users/{userId}/socialAccounts/{accountId}/posts/{postId}
  * NPC投稿: socialNPCs/{npcId}/posts/{postId}
+ * 統合タイムライン: users/{userId}/socialTimeline/{postId}
+ * NPC統合投稿: socialNPCPosts/{postId}
  */
 export interface SocialPost {
   id: string;
@@ -59,6 +63,8 @@ export interface SocialPost {
   likes: number;
   comments: number;
   shares: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -180,6 +186,74 @@ export interface CachedSocialNPCProfile {
   timestamp: number;
 }
 
+/**
+ * ページング対応の投稿リクエストパラメータ
+ */
+export interface PostsRequestParams {
+  userId?: string;
+  accountId?: string;
+  npcId?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+/**
+ * キャッシュされたアカウント投稿データ
+ */
+export interface CachedAccountPosts {
+  userId: string;
+  accountId: string;
+  posts: UISocialPost[];
+  hasMore: boolean;
+  timestamp: number;
+}
+
+/**
+ * キャッシュされたNPC投稿データ
+ */
+export interface CachedNPCPosts {
+  npcId: string;
+  posts: UISocialPost[];
+  hasMore: boolean;
+  timestamp: number;
+}
+
+/**
+ * ソーシャルストア（ローカルキャッシュ）の型定義
+ */
+export interface SocialStore {
+  timeline: {
+    [userId: string]: {
+      posts: UISocialPost[];
+      hasMore: boolean;
+      timestamp: number;
+    };
+  };
+  accountPosts: {
+    [userId: string]: {
+      [accountId: string]: CachedAccountPosts;
+    };
+  };
+  npcPosts: {
+    [npcId: string]: CachedNPCPosts;
+  };
+  accounts: {
+    [userId: string]: CachedSocialAccounts;
+  };
+  npcs: CachedSocialNPCs | null;
+  socialNPCPosts: {
+    posts: UISocialPost[];
+    hasMore: boolean;
+    timestamp: number;
+  } | null;
+  contacts: {
+    [key: string]: CachedSocialContacts; // key format: `${userId}_${accountId}`
+  };
+  messages: {
+    [key: string]: CachedSocialMessages; // key format: `${userId}_${accountId}_${contactId}`
+  };
+}
+
 
 /**
  * アカウント管理用のコンテキスト型
@@ -229,7 +303,7 @@ export interface DMHistoryParams {
 /**
  * SNSアプリで表示可能なビューの種類
  */
-export type SocialView = 'home' | 'search' | 'new-post' | 'dm' | 'dm-chat' | 'profile' | 'my-profile' | 'npc-profile' | 'more' | 'edit-profile' | 'account-switcher' | 'create-account';
+export type SocialView = 'home' | 'search' | 'new-post' | 'dm' | 'dm-chat' | 'profile' | 'my-profile' | 'npc-profile' | 'inactive-user-profile' | 'more' | 'edit-profile' | 'account-switcher' | 'create-account';
 
 /**
  * 連絡先タイプの列挙

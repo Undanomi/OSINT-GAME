@@ -1,0 +1,47 @@
+[
+  {
+    "id": "detective_01",
+    "name": "探偵 ケン",
+    "avatar": "K",
+    "bio": "情報収集と分析が得意な探偵です。真実を追求することに情熱を注いでいます。",
+    "location": "インベスティゲート・シティ",
+    "company": "フリーランス",
+    "position": "プライベート・インベスティゲーター",
+    "education": "クリムゾン大学 法学部",
+    "birthday": "1990-05-15",
+    "isActive": true,
+    "followersCount": 150,
+    "followingCount": 200,
+    "canDM": true
+  },
+  {
+    "id": "analyst_02",
+    "name": "アナリスト サラ",
+    "avatar": "S",
+    "bio": "データ分析とパターン認識のスペシャリスト。複雑な情報を整理するのが好きです。",
+    "location": "データベース・タウン",
+    "company": "インフォマティクス・ソリューションズ",
+    "position": "シニアアナリスト",
+    "education": "テクノロジー・アカデミー 情報学科",
+    "birthday": "1988-11-23",
+    "isActive": false,
+    "followersCount": 98,
+    "followingCount": 175,
+    "canDM": true
+  },
+  {
+    "id": "researcher_03",
+    "name": "リサーチャー マイク",
+    "avatar": "M",
+    "bio": "オープンソース調査のエキスパート。インターネットの海から真実を見つけ出します。",
+    "location": "ウェブサーチ・ディストリクト",
+    "company": "グローバル・インテリジェンス・グループ",
+    "position": "OSINTスペシャリスト",
+    "education": "ディジタル・ユニバーシティ サイバー学部",
+    "birthday": "1992-08-07",
+    "isActive": false,
+    "followersCount": 67,
+    "followingCount": 134,
+    "canDM": true
+  }
+]

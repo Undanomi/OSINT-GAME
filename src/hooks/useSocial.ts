@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAuthContext } from '@/providers/AuthProvider';
+import { useSocialStore } from '@/stores/socialStore';
 import {
   getTimeline,
   createSocialPost,
-  initializeUserTimeline,
   getSocialContacts,
   addSocialContact,
   getSocialMessages,
@@ -17,250 +17,23 @@ import {
   updateSocialAccount
 } from '@/actions/social';
 import {
-  UISocialPost,
   SocialPost,
   SocialContact,
   UISocialDMMessage,
+  UISocialPost,
   SocialNPC,
   SocialAccount,
   SocialErrorType,
-  CachedSocialPosts,
-  CachedSocialMessages,
-  CachedSocialNPCs,
-  CachedSocialContacts,
-  CachedSocialAccounts,
-  CachedSocialNPCProfile,
   convertToUISocialPost,
   convertToUISocialDMMessage,
   getSocialErrorMessage
 } from '@/types/social';
 import {
-  SOCIAL_CACHE_PREFIX,
-  SOCIAL_CACHE_EXPIRATION,
-  SOCIAL_CACHE_FRESHNESS_THRESHOLD,
   SOCIAL_POSTS_PER_PAGE,
   SOCIAL_MESSAGES_PER_PAGE,
   MAX_SOCIAL_CONVERSATION_HISTORY_LENGTH,
 } from '@/lib/social/constants';
 
-/**
- * localStorageからキャッシュされた投稿データを取得
- */
-const getCachedPosts = (userId: string): CachedSocialPosts | null => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}posts_${userId}`;
-    const cached = localStorage.getItem(key);
-    if (!cached) return null;
-
-    const data: CachedSocialPosts = JSON.parse(cached);
-    // 有効期限切れをチェック
-    if (Date.now() > data.timestamp + SOCIAL_CACHE_EXPIRATION) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    // timestampを文字列からDateオブジェクトに復元
-    data.posts = data.posts.map(post => ({
-      ...post,
-      timestamp: new Date(post.timestamp)
-    }));
-    return data;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * localStorageに投稿データをキャッシュ
- */
-const setCachedPosts = (userId: string, posts: UISocialPost[], hasMore: boolean) => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}posts_${userId}`;
-    const data: CachedSocialPosts = { posts, hasMore, timestamp: Date.now() };
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.warn('Failed to cache social posts:', error);
-  }
-};
-
-/**
- * localStorageからキャッシュされたメッセージを取得
- */
-const getCachedMessages = (userId: string, accountId: string, contactId: string): CachedSocialMessages | null => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}messages_${userId}_${accountId}_${contactId}`;
-    const cached = localStorage.getItem(key);
-    if (!cached) return null;
-
-    const data: CachedSocialMessages = JSON.parse(cached);
-    // 有効期限切れをチェック
-    if (Date.now() > data.timestamp + SOCIAL_CACHE_EXPIRATION) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    // timestampを文字列からDateオブジェクトに復元
-    data.messages = data.messages.map(msg => ({
-      ...msg,
-      timestamp: new Date(msg.timestamp)
-    }));
-    return data;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * localStorageにメッセージをキャッシュ
- */
-const setCachedMessages = (userId: string, accountId: string, contactId: string, messages: UISocialDMMessage[], hasMore: boolean) => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}messages_${userId}_${accountId}_${contactId}`;
-    const data: CachedSocialMessages = { messages, hasMore, timestamp: Date.now() };
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.warn('Failed to cache social messages:', error);
-  }
-};
-
-/**
- * localStorageからキャッシュされたNPCデータを取得
- */
-const getCachedNPCs = (): CachedSocialNPCs | null => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}npcs`;
-    const cached = localStorage.getItem(key);
-    if (!cached) return null;
-
-    const data: CachedSocialNPCs = JSON.parse(cached);
-    // 有効期限切れをチェック
-    if (Date.now() > data.timestamp + SOCIAL_CACHE_EXPIRATION) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * localStorageにNPCデータをキャッシュ
- */
-const setCachedNPCs = (npcs: SocialNPC[]) => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}npcs`;
-    const data: CachedSocialNPCs = { npcs, timestamp: Date.now() };
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.warn('Failed to cache social NPCs:', error);
-  }
-};
-
-/**
- * localStorageからキャッシュされた連絡先リストを取得
- */
-const getCachedContacts = (userId: string, accountId: string): CachedSocialContacts | null => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}contacts_${userId}_${accountId}`;
-    const cached = localStorage.getItem(key);
-    if (!cached) return null;
-
-    const data: CachedSocialContacts = JSON.parse(cached);
-    // 有効期限切れをチェック
-    if (Date.now() > data.timestamp + SOCIAL_CACHE_EXPIRATION) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * localStorageに連絡先リストをキャッシュ
- */
-const setCachedContacts = (userId: string, accountId: string, contacts: SocialContact[]) => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}contacts_${userId}_${accountId}`;
-    const data: CachedSocialContacts = { contacts, timestamp: Date.now() };
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.warn('Failed to cache social contacts:', error);
-  }
-};
-
-/**
- * localStorageからキャッシュされたアカウントリストを取得
- */
-const getCachedAccounts = (userId: string): CachedSocialAccounts | null => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}accounts_${userId}`;
-    const cached = localStorage.getItem(key);
-    if (!cached) return null;
-
-    const data: CachedSocialAccounts = JSON.parse(cached);
-    // 有効期限切れをチェック
-    if (Date.now() > data.timestamp + SOCIAL_CACHE_EXPIRATION) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    // timestampを文字列からDateオブジェクトに復元
-    data.accounts = data.accounts.map(account => ({
-      ...account,
-      createdAt: new Date(account.createdAt)
-    }));
-    return data;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * localStorageにアカウントリストをキャッシュ
- */
-const setCachedAccounts = (userId: string, accounts: SocialAccount[]) => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}accounts_${userId}`;
-    const data: CachedSocialAccounts = { accounts, timestamp: Date.now() };
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.warn('Failed to cache social accounts:', error);
-  }
-};
-
-/**
- * localStorageからキャッシュされた個別NPCプロフィールを取得
- */
-const getCachedNPCProfile = (npcId: string): CachedSocialNPCProfile | null => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}npc_profile_${npcId}`;
-    const cached = localStorage.getItem(key);
-    if (!cached) return null;
-
-    const data: CachedSocialNPCProfile = JSON.parse(cached);
-    // 有効期限切れをチェック
-    if (Date.now() > data.timestamp + SOCIAL_CACHE_EXPIRATION) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * localStorageに個別NPCプロフィールをキャッシュ
- */
-const setCachedNPCProfile = (npc: SocialNPC) => {
-  try {
-    const key = `${SOCIAL_CACHE_PREFIX}npc_profile_${npc.id}`;
-    const data: CachedSocialNPCProfile = { npc, timestamp: Date.now() };
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.warn('Failed to cache NPC profile:', error);
-  }
-};
 
 /**
  * セキュアなID生成
@@ -269,45 +42,54 @@ function generateSecureId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 }
 
-/**
- * キャッシュ機能をエクスポートして他のコンポーネントで使用可能にする
- */
-export {
-  getCachedAccounts,
-  setCachedAccounts,
-  getCachedContacts,
-  setCachedContacts,
-  getCachedNPCProfile,
-  setCachedNPCProfile
-};
 
 /**
  * SNSアプリのデータ管理とキャッシュ機能を提供するカスタムフック
  */
 export const useSocial = (
   activeAccount: SocialAccount | null = null,
-  allAccounts: SocialAccount[] = []
+  allAccounts: SocialAccount[] = [],
+  updateAccount?: (accountId: string, updates: Partial<SocialAccount>) => Promise<void>
 ) => {
   const { user } = useAuthContext();
+  const store = useSocialStore();
 
-  // タイムライン関連
-  const [posts, setPosts] = useState<UISocialPost[]>([]);
+  // ローディング状態
   const [postsLoading, setPostsLoading] = useState(false);
   const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false);
-  const [hasMorePosts, setHasMorePosts] = useState(true);
-
-  // DM関連
-  const [contacts, setContacts] = useState<SocialContact[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);
-  const [selectedContact, setSelectedContact] = useState<SocialContact | null>(null);
-  const [messages, setMessages] = useState<UISocialDMMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-
-  // NPC関連
-  const [npcs, setNpcs] = useState<SocialNPC[]>([]);
   const [npcsLoading, setNpcsLoading] = useState(true);
+
+  // UI状態
+  const [selectedContact, setSelectedContact] = useState<SocialContact | null>(null);
+
+
+  // ストアからデータを取得（useMemoで最適化）
+  const posts = useMemo(() => {
+    return user ? store.timeline[user.uid]?.posts || [] : [];
+  }, [user, store.timeline]);
+
+  const hasMorePosts = useMemo(() => {
+    return user ? store.timeline[user.uid]?.hasMore ?? true : true;
+  }, [user, store.timeline]);
+
+  const npcs = useMemo(() => {
+    return store.npcs?.npcs || [];
+  }, [store.npcs]);
+  const contacts = useMemo(() => {
+    return user && activeAccount ? store.contacts[`${user.uid}_${activeAccount.id}`]?.contacts || [] : [];
+  }, [user, activeAccount, store.contacts]);
+
+  const messages = useMemo(() => {
+    return user && activeAccount && selectedContact
+      ? store.messages[`${user.uid}_${activeAccount.id}_${selectedContact.id}`]?.messages || []
+      : [];
+  }, [user, activeAccount, selectedContact, store.messages]);
+  const hasMoreMessages = user && activeAccount && selectedContact
+    ? store.messages[`${user.uid}_${activeAccount.id}_${selectedContact.id}`]?.hasMore ?? true
+    : true;
 
 
   // エラー状態
@@ -349,18 +131,15 @@ export const useSocial = (
       setNpcsLoading(true);
       setError(null);
 
-      // キャッシュから読み込み
-      const cached = getCachedNPCs();
-      if (cached && Date.now() < cached.timestamp + SOCIAL_CACHE_FRESHNESS_THRESHOLD) {
-        setNpcs(cached.npcs);
+      // ストアから読み込み
+      if (store.npcs) {
         setNpcsLoading(false);
         return;
       }
 
       // サーバーから取得
       const fetchedNPCs = await getSocialNPCs();
-      setNpcs(fetchedNPCs);
-      setCachedNPCs(fetchedNPCs);
+      store.setNPCs(fetchedNPCs);
     } catch (error) {
       console.error('Failed to load NPCs:', error);
       const errorType = error instanceof Error ? error.message : 'general';
@@ -368,7 +147,7 @@ export const useSocial = (
     } finally {
       setNpcsLoading(false);
     }
-  }, []);
+  }, [store]);
 
   /**
    * タイムライン初期読み込み
@@ -380,25 +159,17 @@ export const useSocial = (
     setError(null);
 
     try {
-      // キャッシュから読み込み
-      const cached = getCachedPosts(user.uid);
-      if (cached && Date.now() < cached.timestamp + SOCIAL_CACHE_FRESHNESS_THRESHOLD) {
-        setPosts(cached.posts);
-        setHasMorePosts(cached.hasMore);
+      // ストアから読み込み
+      const existingTimeline = store.timeline[user.uid];
+      if (existingTimeline) {
         setPostsLoading(false);
         return;
       }
 
-      // 古いキャッシュを一旦表示
-      if (cached) {
-        setPosts(cached.posts);
-        setHasMorePosts(cached.hasMore);
-      }
-
       // サーバーから取得
-      const { items: newPosts, hasMore } = await getTimeline({ 
-        userId: user.uid, 
-        limit: SOCIAL_POSTS_PER_PAGE 
+      const { items: newPosts, hasMore } = await getTimeline({
+        userId: user.uid,
+        limit: SOCIAL_POSTS_PER_PAGE
       });
 
       // NPCデータと結合してUI用に変換
@@ -407,9 +178,7 @@ export const useSocial = (
         return convertToUISocialPost(post, author);
       });
 
-      setPosts(uiPosts);
-      setHasMorePosts(hasMore);
-      setCachedPosts(user.uid, uiPosts, hasMore);
+      store.setUserTimeline(user.uid, uiPosts, hasMore);
     } catch (error) {
       console.error('Failed to load timeline:', error);
       const errorType = error instanceof Error ? error.message : 'general';
@@ -417,7 +186,7 @@ export const useSocial = (
     } finally {
       setPostsLoading(false);
     }
-  }, [user, getAuthorInfo]);
+  }, [user, getAuthorInfo, store]);
 
   /**
    * タイムラインの追加読み込み（無限スクロール）
@@ -441,14 +210,8 @@ export const useSocial = (
           return convertToUISocialPost(post, author);
         });
 
-        setPosts(prev => {
-          const updatedPosts = [...prev, ...uiPosts];
-          setCachedPosts(user.uid, updatedPosts, hasMore);
-          return updatedPosts;
-        });
+        store.appendUserTimeline(user.uid, uiPosts, hasMore);
       }
-      
-      setHasMorePosts(hasMore);
     } catch (error) {
       console.error('Failed to load more posts:', error);
       const errorType = error instanceof Error ? error.message : 'general';
@@ -456,7 +219,7 @@ export const useSocial = (
     } finally {
       setIsLoadingMorePosts(false);
     }
-  }, [user, hasMorePosts, isLoadingMorePosts, posts, getAuthorInfo]);
+  }, [user, hasMorePosts, isLoadingMorePosts, posts, getAuthorInfo, store]);
 
   /**
    * 新しい投稿を作成
@@ -466,22 +229,24 @@ export const useSocial = (
 
     try {
       setError(null);
-      const newPost = await createSocialPost(user.uid, activeAccount.id, content);
-      
+      const newPost = await createSocialPost(activeAccount.id, content);
+
       const author = {
         id: activeAccount.id,
         name: activeAccount.name,
         avatar: activeAccount.avatar
       };
-      
+
       const uiPost = convertToUISocialPost(newPost, author);
-      
-      setPosts(prev => {
-        const updatedPosts = [uiPost, ...prev];
-        setCachedPosts(user.uid, updatedPosts, hasMorePosts);
-        return updatedPosts;
-      });
-      
+
+      // タイムラインの先頭に追加
+      const currentTimeline = store.timeline[user.uid];
+      if (currentTimeline) {
+        store.setUserTimeline(user.uid, [uiPost, ...currentTimeline.posts], currentTimeline.hasMore);
+      } else {
+        store.setUserTimeline(user.uid, [uiPost], true);
+      }
+
       return uiPost;
     } catch (error) {
       console.error('Failed to create post:', error);
@@ -489,7 +254,7 @@ export const useSocial = (
       setError(getSocialErrorMessage(errorType as SocialErrorType));
       throw error;
     }
-  }, [user, activeAccount, hasMorePosts]);
+  }, [user, activeAccount, store]);
 
   /**
    * DM連絡先を読み込み
@@ -501,23 +266,16 @@ export const useSocial = (
     setError(null);
 
     try {
-      // キャッシュから読み込み
-      const cached = getCachedContacts(user.uid, activeAccount.id);
-      if (cached && Date.now() < cached.timestamp + SOCIAL_CACHE_FRESHNESS_THRESHOLD) {
-        setContacts(cached.contacts);
+      // ストアから読み込み
+      const cached = store.contacts[`${user.uid}_${activeAccount.id}`];
+      if (cached) {
         setContactsLoading(false);
         return;
       }
 
-      // 古いキャッシュを一旦表示
-      if (cached) {
-        setContacts(cached.contacts);
-      }
-
       // サーバーから取得
-      const fetchedContacts = await getSocialContacts(user.uid, activeAccount.id);
-      setContacts(fetchedContacts);
-      setCachedContacts(user.uid, activeAccount.id, fetchedContacts);
+      const fetchedContacts = await getSocialContacts(activeAccount.id);
+      store.setUserContacts(user.uid, activeAccount.id, fetchedContacts);
     } catch (error) {
       console.error('Failed to load contacts:', error);
       const errorType = error instanceof Error ? error.message : 'general';
@@ -525,7 +283,7 @@ export const useSocial = (
     } finally {
       setContactsLoading(false);
     }
-  }, [user, activeAccount]);
+  }, [user, activeAccount, store]);
 
   /**
    * DMメッセージ初期読み込み
@@ -537,36 +295,22 @@ export const useSocial = (
     setError(null);
 
     try {
-      // キャッシュから読み込み
-      const cached = getCachedMessages(user.uid, activeAccount.id, contactId);
-      if (cached && Date.now() < cached.timestamp + SOCIAL_CACHE_FRESHNESS_THRESHOLD) {
-        setMessages(cached.messages);
-        setHasMoreMessages(cached.hasMore);
+      // ストアから読み込み
+      const cached = store.messages[`${user.uid}_${activeAccount.id}_${contactId}`];
+      if (cached) {
         setMessagesLoading(false);
         return;
       }
 
-      // 古いキャッシュを一旦表示
-      if (cached) {
-        setMessages(cached.messages);
-        setHasMoreMessages(cached.hasMore);
-      } else {
-        setMessages([]);
-        setHasMoreMessages(true);
-      }
-
       // サーバーから取得
       const { items: newMessages, hasMore } = await getSocialMessages({
-        userId: user.uid,
         accountId: activeAccount.id,
         contactId,
         limit: SOCIAL_MESSAGES_PER_PAGE
       });
 
       const uiMessages = newMessages.map(convertToUISocialDMMessage);
-      setMessages(uiMessages);
-      setHasMoreMessages(hasMore);
-      setCachedMessages(user.uid, activeAccount.id, contactId, uiMessages, hasMore);
+      store.setUserMessages(user.uid, activeAccount.id, contactId, uiMessages, hasMore);
     } catch (error) {
       console.error('Failed to load messages:', error);
       const errorType = error instanceof Error ? error.message : 'general';
@@ -574,7 +318,7 @@ export const useSocial = (
     } finally {
       setMessagesLoading(false);
     }
-  }, [user, activeAccount]);
+  }, [user, activeAccount, store]);
 
   /**
    * DMメッセージの追加読み込み（無限スクロール）
@@ -587,7 +331,6 @@ export const useSocial = (
 
     try {
       const { items: newMessages, hasMore } = await getSocialMessages({
-        userId: user.uid,
         accountId: activeAccount.id,
         contactId: selectedContact.id,
         limit: SOCIAL_MESSAGES_PER_PAGE,
@@ -596,14 +339,8 @@ export const useSocial = (
 
       if (newMessages.length > 0) {
         const uiMessages = newMessages.map(convertToUISocialDMMessage);
-        setMessages(prev => {
-          const updatedMessages = [...uiMessages, ...prev];
-          setCachedMessages(user.uid, activeAccount.id, selectedContact.id, updatedMessages, hasMore);
-          return updatedMessages;
-        });
+        store.appendUserMessages(user.uid, activeAccount.id, selectedContact.id, uiMessages, hasMore);
       }
-      
-      setHasMoreMessages(hasMore);
     } catch (error) {
       console.error('Failed to load more messages:', error);
       const errorType = error instanceof Error ? error.message : 'general';
@@ -611,7 +348,7 @@ export const useSocial = (
     } finally {
       setIsLoadingMoreMessages(false);
     }
-  }, [user, activeAccount, selectedContact, hasMoreMessages, isLoadingMoreMessages, messages]);
+  }, [user, activeAccount, selectedContact, hasMoreMessages, isLoadingMoreMessages, messages, store]);
 
   /**
    * 新しい連絡先を追加
@@ -636,14 +373,11 @@ export const useSocial = (
       };
 
       // Firestoreに保存
-      await addSocialContact(user.uid, activeAccount.id, newContact);
+      await addSocialContact(activeAccount.id, newContact);
 
-      // 状態を更新
-      setContacts(prev => {
-        const updatedContacts = [newContact, ...prev];
-        setCachedContacts(user.uid, activeAccount.id, updatedContacts);
-        return updatedContacts;
-      });
+      // ストアを更新
+      const updatedContacts = [newContact, ...contacts];
+      store.setUserContacts(user.uid, activeAccount.id, updatedContacts);
       return newContact;
     } catch (error) {
       console.error('Failed to add contact:', error);
@@ -651,7 +385,7 @@ export const useSocial = (
       setError(getSocialErrorMessage(errorType as SocialErrorType));
       throw error;
     }
-  }, [user, activeAccount, contacts]);
+  }, [user, activeAccount, contacts, store]);
 
   /**
    * プロフィールを更新（キャッシュも更新）
@@ -661,17 +395,24 @@ export const useSocial = (
 
     try {
       setError(null);
-      await updateSocialAccount(user.uid, activeAccount.id, profileData);
+
+      // SocialAccountProviderの updateAccount を使用
+      if (updateAccount) {
+        await updateAccount(activeAccount.id, profileData);
+      } else {
+        // フォールバック: 直接Firestoreを更新
+        await updateSocialAccount(activeAccount.id, profileData);
+      }
 
       // アカウントキャッシュを更新
-      const cached = getCachedAccounts(user.uid);
+      const cached = store.accounts[user.uid];
       if (cached) {
-        const updatedAccounts = cached.accounts.map(account =>
+        const updatedAccounts = cached.accounts.map((account: SocialAccount) =>
           account.id === activeAccount.id
             ? { ...account, ...profileData }
             : account
         );
-        setCachedAccounts(user.uid, updatedAccounts);
+        store.setUserAccounts(user.uid, updatedAccounts);
       }
 
       return true;
@@ -681,7 +422,7 @@ export const useSocial = (
       setError(getSocialErrorMessage(errorType as SocialErrorType));
       throw error;
     }
-  }, [user, activeAccount]);
+  }, [user, activeAccount, store, updateAccount]);
 
   /**
    * DMメッセージを送信
@@ -700,19 +441,12 @@ export const useSocial = (
 
     // UI状態を即座に更新
     const addMessageToState = (message: UISocialDMMessage) => {
-      setMessages(prev => {
-        const newMessages = [...prev, message];
-        setCachedMessages(user.uid, activeAccount.id, selectedContact.id, newMessages, hasMoreMessages);
-        return newMessages;
-      });
+      store.addUserMessage(user.uid, activeAccount.id, selectedContact.id, message);
     };
 
     const removeMessageFromState = (messageId: string) => {
-      setMessages(prev => {
-        const newMessages = prev.filter(msg => msg.id !== messageId);
-        setCachedMessages(user.uid, activeAccount.id, selectedContact.id, newMessages, hasMoreMessages);
-        return newMessages;
-      });
+      const filteredMessages = messages.filter(msg => msg.id !== messageId);
+      store.setUserMessages(user.uid, activeAccount.id, selectedContact.id, filteredMessages, hasMoreMessages);
     };
 
     addMessageToState(userMessage);
@@ -721,7 +455,7 @@ export const useSocial = (
       setError(null);
 
       // ユーザーメッセージを保存
-      await addSocialMessage(user.uid, activeAccount.id, selectedContact.id, {
+      await addSocialMessage(activeAccount.id, selectedContact.id, {
         sender: 'user',
         text,
         timestamp: userMessage.timestamp,
@@ -746,7 +480,7 @@ export const useSocial = (
       };
 
       // AI応答を保存
-      await addSocialMessage(user.uid, activeAccount.id, selectedContact.id, {
+      await addSocialMessage(activeAccount.id, selectedContact.id, {
         sender: 'npc',
         text: aiText,
         timestamp: aiMessage.timestamp,
@@ -769,7 +503,7 @@ export const useSocial = (
       };
       addMessageToState(errorMessage);
     }
-  }, [user, activeAccount, selectedContact, hasMoreMessages, messages]);
+  }, [user, activeAccount, selectedContact, hasMoreMessages, messages, store]);
 
   // 初期データ読み込み
   useEffect(() => {
@@ -778,47 +512,31 @@ export const useSocial = (
 
   useEffect(() => {
     if (user && activeAccount) {
-      // アカウント切り替え時にDM関連の状態をリセット
-      setContacts([]);
-      setMessages([]);
-      setSelectedContact(null);
-
+      // アカウント切り替え時にキャッシュを切り替え（削除ではない）
       loadContacts();
     }
   }, [user, activeAccount, loadContacts]);
 
-  useEffect(() => {
-    if (npcs.length > 0 && !npcsLoading) {
-      loadInitialTimeline();
-    }
-  }, [npcs, npcsLoading, loadInitialTimeline]);
-
-  // タイムライン初期化（初回のみ）
+  // SocialApp初期化：デフォルトアカウント作成後に初期タイムライン表示
   useEffect(() => {
     if (user && npcs.length > 0 && !npcsLoading) {
-      const initializeTimeline = async () => {
+      const initializeSocialApp = async () => {
         try {
-          // タイムラインが空かチェック
-          const cached = getCachedPosts(user.uid);
-          if (!cached || cached.posts.length === 0) {
-            console.log('Initializing user timeline...');
-            await initializeUserTimeline(user.uid);
-            // 初期化後、タイムライン再読み込み
-            loadInitialTimeline();
-          }
+          console.log('Initializing Social App - User timeline...');
+          // 初期タイムライン表示
+          loadInitialTimeline();
         } catch (error) {
-          console.error('Failed to initialize timeline:', error);
+          console.error('Failed to initialize Social App:', error);
         }
       };
-      initializeTimeline();
+
+      initializeSocialApp();
     }
   }, [user, npcs, npcsLoading, loadInitialTimeline]);
 
   useEffect(() => {
     if (selectedContact) {
       loadInitialMessages(selectedContact.id);
-    } else {
-      setMessages([]);
     }
   }, [selectedContact, loadInitialMessages]);
 
@@ -832,45 +550,85 @@ export const useSocial = (
    */
   const getNPCProfile = useCallback(async (npcId: string): Promise<SocialNPC | null> => {
     try {
-      // キャッシュから読み込み
-      const cached = getCachedNPCProfile(npcId);
-      if (cached && Date.now() < cached.timestamp + SOCIAL_CACHE_FRESHNESS_THRESHOLD) {
-        return cached.npc;
+      // NPCリストから検索
+      const npc = npcs.find(n => n.id === npcId);
+      if (npc) {
+        return npc;
       }
 
       // サーバーから取得
-      const npc = await getSocialNPC(npcId);
-      if (npc) {
-        setCachedNPCProfile(npc);
-      }
-      return npc;
+      const fetchedNPC = await getSocialNPC(npcId);
+      return fetchedNPC;
     } catch (error) {
       console.error('Failed to get NPC profile:', error);
       return null;
     }
-  }, []);
+  }, [npcs]);
 
   /**
    * キャッシュ付きでソーシャルアカウントリストを取得
    */
   const loadSocialAccounts = useCallback(async (userId: string): Promise<SocialAccount[]> => {
     try {
-      // キャッシュから読み込み
-      const cached = getCachedAccounts(userId);
-      if (cached && Date.now() < cached.timestamp + SOCIAL_CACHE_FRESHNESS_THRESHOLD) {
+      // ストアから読み込み
+      const cached = store.accounts[userId];
+      if (cached) {
         return cached.accounts;
       }
 
-      // サーバーから取得
-      const accounts = await getSocialAccounts(userId);
-      setCachedAccounts(userId, accounts);
+      // サーバーから取得（認証済みユーザーのアカウントのみ）
+      const accounts = await getSocialAccounts();
+      store.setUserAccounts(userId, accounts);
       return accounts;
     } catch (error) {
       console.error('Failed to load social accounts:', error);
       throw error;
     }
-  }, []);
+  }, [store]);
 
+
+  /**
+   * 投稿を検索（段階的にタイムラインを拡張）
+   */
+  const searchPosts = useCallback(async (
+    query: string,
+    targetLimit: number = SOCIAL_POSTS_PER_PAGE
+  ): Promise<UISocialPost[]> => {
+    if (!query.trim()) return [];
+
+    const searchQuery = query.toLowerCase();
+    const matches: UISocialPost[] = [];
+    let attempts = 0;
+    const maxAttempts = 5; // 無限ループを防止
+
+    while (matches.length < targetLimit && hasMorePosts && attempts < maxAttempts) {
+      // 現在のタイムラインから検索
+      const currentMatches = posts.filter(post =>
+        post.content.toLowerCase().includes(searchQuery)
+      );
+
+      // 新しく見つかったマッチを追加（重複除外）
+      const newMatches = currentMatches.filter(match =>
+        !matches.find(existing => existing.id === match.id)
+      );
+      matches.push(...newMatches);
+
+      // 十分な結果が得られた場合は終了
+      if (matches.length >= targetLimit) {
+        break;
+      }
+
+      // まだ足りない場合は、より多くのポストを読み込み
+      if (hasMorePosts) {
+        await loadMorePosts();
+        attempts++;
+      } else {
+        break;
+      }
+    }
+
+    return matches.slice(0, targetLimit);
+  }, [posts, hasMorePosts, loadMorePosts]);
 
   // エラーの自動クリア
   useEffect(() => {
@@ -919,6 +677,9 @@ export const useSocial = (
 
     // 連絡先管理
     addNewContact,
+
+    // 検索
+    searchPosts,
 
     // リフレッシュ
     refreshTimeline: loadInitialTimeline,

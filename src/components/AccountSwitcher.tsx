@@ -44,7 +44,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({ onClose, onNav
     );
   }
 
-  const inactiveAccounts = accounts.filter(account => !account.isActive);
+  const inactiveAccounts = accounts.filter(account => account.id !== activeAccount?.id);
 
   return (
     <div className="space-y-6">

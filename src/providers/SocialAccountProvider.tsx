@@ -47,7 +47,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
 
     try {
       setError(null);
-      const fetchedAccounts = await getSocialAccounts(user.uid);
+      const fetchedAccounts = await getSocialAccounts();
       setAccounts(fetchedAccounts);
 
       // アクティブアカウントを設定
@@ -70,7 +70,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
     
     try {
       setError(null);
-      await switchActiveAccount(user.uid, accountId);
+      await switchActiveAccount(accountId);
       
       // ローカル状態を更新
       setAccounts(prev => prev.map(account => ({
@@ -107,7 +107,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
       setError(null);
       
       // アカウントデータをそのまま使用（重複チェックは呼び出し側で実行）
-      const newAccount = await createSocialAccount(user.uid, accountData);
+      const newAccount = await createSocialAccount(accountData);
       
       // ローカル状態を更新
       setAccounts(prev => {
@@ -139,7 +139,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
     
     try {
       setError(null);
-      await updateSocialAccount(user.uid, accountId, updates);
+      await updateSocialAccount(accountId, updates);
       
       // ローカル状態を更新
       setAccounts(prev => prev.map(account => 
@@ -168,7 +168,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
     
     try {
       setError(null);
-      await deleteSocialAccount(user.uid, accountId);
+      await deleteSocialAccount(accountId);
       
       // ローカル状態を更新
       const remainingAccounts = accounts.filter(account => account.id !== accountId);
@@ -180,7 +180,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
         setActiveAccount(newActiveAccount);
         
         if (newActiveAccount) {
-          await switchActiveAccount(user.uid, newActiveAccount.id);
+          await switchActiveAccount(newActiveAccount.id);
         }
       }
     } catch (error) {
