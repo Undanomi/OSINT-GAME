@@ -3,7 +3,6 @@
 import {
   collection,
   doc,
-  addDoc,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -839,7 +838,7 @@ export async function addSocialContact(
 }
 
 /**
- * DMメッセージ履歴を取得
+ * DMメッセージ履歴を取得（時間ベースID活用）
  */
 export async function getSocialMessages(params: Omit<DMHistoryParams, 'userId'>): Promise<PaginatedResult<SocialDMMessage>> {
   const userId = await getAuthenticatedUserId();
@@ -851,14 +850,19 @@ export async function getSocialMessages(params: Omit<DMHistoryParams, 'userId'>)
     const { accountId, contactId, limit: pageLimit = SOCIAL_MESSAGES_PER_PAGE, cursor } = params;
 
     const messagesRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'Contacts', contactId, 'history');
+
+    // タイムスタンプフィールドでソート（インデックス自動作成）
     let messagesQuery = query(
       messagesRef,
       orderBy('timestamp', 'desc'),
       firestoreLimit(pageLimit)
     );
-    
+
     if (cursor) {
-      const cursorDoc = await getDoc(doc(messagesRef, cursor));
+      // カーソルドキュメントより古いメッセージを取得
+      const cursorDocRef = doc(messagesRef, cursor);
+      const cursorDoc = await getDoc(cursorDocRef);
+
       if (cursorDoc.exists()) {
         messagesQuery = query(
           messagesRef,
@@ -868,7 +872,7 @@ export async function getSocialMessages(params: Omit<DMHistoryParams, 'userId'>)
         );
       }
     }
-    
+
     const snapshot = await getDocs(messagesQuery);
     const messages = snapshot.docs.map(doc => ({
       id: doc.id,
@@ -893,7 +897,7 @@ export async function getSocialMessages(params: Omit<DMHistoryParams, 'userId'>)
 export async function addSocialMessage(
   accountId: string,
   contactId: string,
-  message: Omit<SocialDMMessage, 'id'>
+  message: SocialDMMessage
 ): Promise<SocialDMMessage> {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
@@ -902,15 +906,14 @@ export async function addSocialMessage(
 
   try {
     const messagesRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'Contacts', contactId, 'history');
-    const docRef = await addDoc(messagesRef, {
-      ...message,
+    const messageRef = doc(messagesRef, message.id);
+    await setDoc(messageRef, {
+      sender: message.sender,
+      text: message.text,
       timestamp: Timestamp.fromDate(message.timestamp),
     });
 
-    return {
-      id: docRef.id,
-      ...message,
-    };
+    return message;
   } catch (error) {
     console.error('Failed to add social message:', error);
     throw new Error('dbError');

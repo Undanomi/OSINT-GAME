@@ -36,10 +36,12 @@ import {
 
 
 /**
- * セキュアなID生成
+ * タイムスタンプベースのメッセージID生成
  */
-function generateSecureId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+function generateTimestampId(timestamp: Date): string {
+  const timeString = timestamp.toISOString().replace(/[-:T]/g, '').slice(0, 14);
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  return `${timeString}_${randomSuffix}`;
 }
 
 
@@ -108,8 +110,9 @@ export const useSocial = (
         return { id: 'unknown', name: 'Unknown', avatar: 'U' };
       }
     } else {
-      // ユーザー投稿の場合は allAccounts から情報を取得
-      const userAccount = allAccounts.find(acc => acc.id === post.authorId);
+      // ユーザー投稿の場合はストアのアカウント情報から取得
+      const cachedAccounts = user ? store.accounts[user.uid]?.accounts || [] : [];
+      const userAccount = [...allAccounts, ...cachedAccounts].find(acc => acc.id === post.authorId);
       if (userAccount) {
         return {
           id: userAccount.id,
@@ -121,7 +124,7 @@ export const useSocial = (
         return { id: 'unknown', name: 'Unknown', avatar: 'U' };
       }
     }
-  }, [npcs, allAccounts]);
+  }, [npcs, allAccounts, user, store.accounts]);
 
   /**
    * NPCデータを読み込み
@@ -164,6 +167,15 @@ export const useSocial = (
       if (existingTimeline) {
         setPostsLoading(false);
         return;
+      }
+
+      // 全アカウント情報を事前に読み込み（作者情報解決のため）
+      try {
+        const accounts = await getSocialAccounts();
+        store.setUserAccounts(user.uid, accounts);
+      } catch (accountError) {
+        console.warn('Failed to load accounts for timeline:', accountError);
+        // アカウント読み込みエラーでもタイムライン表示は継続
       }
 
       // サーバーから取得
@@ -430,13 +442,14 @@ export const useSocial = (
   const sendMessage = useCallback(async (text: string) => {
     if (!user || !activeAccount || !selectedContact) throw new Error('authError');
 
-    const messageId = crypto.randomUUID();
+    const userTimestamp = new Date();
+    const messageId = generateTimestampId(userTimestamp);
     const userMessage: UISocialDMMessage = {
       id: messageId,
       sender: 'me',
       text,
-      time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-      timestamp: new Date(),
+      time: userTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: userTimestamp,
     };
 
     // UI状態を即座に更新
@@ -456,6 +469,7 @@ export const useSocial = (
 
       // ユーザーメッセージを保存
       await addSocialMessage(activeAccount.id, selectedContact.id, {
+        id: messageId,
         sender: 'user',
         text,
         timestamp: userMessage.timestamp,
@@ -470,17 +484,19 @@ export const useSocial = (
 
       const aiText = await generateSocialAIResponse(text, chatHistory, selectedContact.id);
 
-      const aiMessageId = generateSecureId();
+      const aiTimestamp = new Date();
+      const aiMessageId = generateTimestampId(aiTimestamp);
       const aiMessage: UISocialDMMessage = {
         id: aiMessageId,
         sender: 'other',
         text: aiText,
-        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date(),
+        time: aiTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: aiTimestamp,
       };
 
       // AI応答を保存
       await addSocialMessage(activeAccount.id, selectedContact.id, {
+        id: aiMessageId,
         sender: 'npc',
         text: aiText,
         timestamp: aiMessage.timestamp,
@@ -494,12 +510,13 @@ export const useSocial = (
       const errorType = error instanceof Error ? error.message : 'general';
       const errorText = getSocialErrorMessage(errorType as SocialErrorType);
 
+      const errorTimestamp = new Date();
       const errorMessage: UISocialDMMessage = {
-        id: generateSecureId(),
+        id: generateTimestampId(errorTimestamp),
         sender: 'other',
         text: errorText,
-        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date(),
+        time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: errorTimestamp,
       };
       addMessageToState(errorMessage);
     }
@@ -597,10 +614,36 @@ export const useSocial = (
     if (!query.trim()) return [];
 
     const searchQuery = query.toLowerCase();
+
+    // タイムラインが空の場合は初期読み込みを実行
+    if (posts.length === 0 && !postsLoading) {
+      await loadInitialTimeline();
+
+      // 状態が非同期更新されるため、storeから直接取得
+      const updatedPosts = user ? store.timeline[user.uid]?.posts || [] : [];
+
+      // 即座に検索を実行するために更新された投稿を使用
+      if (updatedPosts.length > 0) {
+        const immediateMatches = updatedPosts.filter(post =>
+          post.content.toLowerCase().includes(searchQuery)
+        );
+        return immediateMatches.slice(0, targetLimit);
+      }
+    }
+
     const matches: UISocialPost[] = [];
     let attempts = 0;
     const maxAttempts = 5; // 無限ループを防止
 
+    // 最初に現在の投稿から検索を実行
+    if (posts.length > 0) {
+      const currentMatches = posts.filter(post =>
+        post.content.toLowerCase().includes(searchQuery)
+      );
+      matches.push(...currentMatches);
+    }
+
+    // 追加投稿の読み込みが可能な場合のみループ実行
     while (matches.length < targetLimit && hasMorePosts && attempts < maxAttempts) {
       // 現在のタイムラインから検索
       const currentMatches = posts.filter(post =>
@@ -628,7 +671,7 @@ export const useSocial = (
     }
 
     return matches.slice(0, targetLimit);
-  }, [posts, hasMorePosts, loadMorePosts]);
+  }, [posts, hasMorePosts, loadMorePosts, postsLoading, loadInitialTimeline, user, store]);
 
   // エラーの自動クリア
   useEffect(() => {
