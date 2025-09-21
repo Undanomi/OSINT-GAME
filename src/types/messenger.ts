@@ -60,6 +60,25 @@ export type ErrorType = 'rateLimit' | 'dbError' | 'networkError' | 'authError' |
 export type ContactType = 'darkOrganization' | 'default';
 
 /**
+ * 提出問題の構造
+ */
+export interface SubmissionQuestion {
+  id: string;
+  text: string;
+  correctAnswer: string;
+}
+
+/**
+ * 提出結果の構造
+ */
+export interface SubmissionResult {
+  success: boolean;
+  correctAnswers: number;
+  totalQuestions: number;
+  explanationText?: string;
+}
+
+/**
  * デフォルトのメッセンジャー連絡先データ
  */
 export const defaultMessengerContacts: MessengerContact[] = [

@@ -272,3 +272,149 @@ $ node scripts/seedFirestore.js data/sample-facelook.json
   - https://facelook.com/test.taro
   - https://facelook.com/test.hanako
 ```
+
+## メッセンジャー提出データの登録
+
+### 概要
+
+メッセンジャーアプリの提出問題システム用のデータを自動登録するスクリプトです。
+`/submit` コマンドで表示される質問と解説データをFirestoreに登録します。
+
+### 使い方
+
+```bash
+# 基本的な使い方
+node scripts/seedSubmissionData.js data/submission-questions.json
+
+# 既存のドキュメントを上書きする
+node scripts/seedSubmissionData.js data/submission-questions.json --overwrite
+
+# 既存のドキュメントをスキップする
+node scripts/seedSubmissionData.js data/submission-questions.json --skip-existing
+```
+
+### JSONファイルの形式
+
+#### 構造例
+
+```json
+{
+  "darkOrganization": {
+    "questions": [
+      {
+        "id": "question_001",
+        "text": "質問文をここに記述\n\nA) 選択肢1\nB) 選択肢2\nC) 選択肢3\nD) 選択肢4",
+        "correctAnswer": "a"
+      },
+      {
+        "id": "question_002",
+        "text": "質問文2...",
+        "correctAnswer": "b"
+      },
+      {
+        "id": "question_003",
+        "text": "質問文3...",
+        "correctAnswer": "c"
+      }
+    ],
+    "explanation": {
+      "text": "全問正解時の解説文をここに記述\n\n複数行での記述が可能"
+    }
+  }
+}
+```
+
+#### フィールド説明
+
+**NPCタイプレベル**:
+- キー: NPCタイプ名（例: `darkOrganization`）
+
+**questions配列**:
+- `id`: 質問の一意識別子
+- `text`: 質問文（改行 `\n` で複数行可能）
+- `correctAnswer`: 正解の選択肢（小文字の a, b, c, d）
+
+**explanation オブジェクト**:
+- `text`: 全問正解時に表示される解説文
+
+### 登録されるFirestore構造
+
+```
+messenger/
+├── darkOrganization/
+    └── config/
+        ├── submissionQuestions     # 質問データ
+        └── submissionExplanation   # 解説データ
+```
+
+### 実行例
+
+```bash
+$ node scripts/seedSubmissionData.js data/submission-questions.json
+
+========================================
+  メッセンジャー提出データ自動登録
+========================================
+
+[*] JSONファイルを読み込んでいます...
+    ファイルパス: /path/to/data/submission-questions.json
+
+[+] メッセンジャー提出データを読み込みました
+
+[*] データを検証しています...
+[+] データ検証成功
+
+[i] 登録するNPCタイプ:
+  - darkOrganization: 3個の質問
+
+[*] Firestore へのデータ登録を開始します...
+
+[+] 登録成功: darkOrganization/submissionQuestions (3個の質問)
+[+] 登録成功: darkOrganization/submissionExplanation
+
+========================================
+[!] メッセンジャー提出データ登録が完了しました！
+    成功: 2 件
+    失敗: 0 件
+========================================
+
+[i] 登録されたデータの確認:
+  Firebase Console → Firestore Database → messenger コレクション
+  各NPCタイプ → config → submissionQuestions/submissionExplanation
+```
+
+### 重要な注意事項
+
+#### 回答形式
+- `correctAnswer` は必ず小文字で指定（a, b, c, d）
+- プレイヤーの入力は大文字小文字を区別せずに比較されます
+
+#### 質問文の形式
+- 改行は `\n` で指定
+- 選択肢は A), B), C), D) 形式を推奨
+- 質問文は読みやすいように改行を活用
+
+#### エラーハンドリング
+- 既存データがある場合はデフォルトで警告表示
+- `--overwrite` で強制上書き
+- `--skip-existing` で既存データをスキップ
+
+### NPCタイプの追加
+
+新しいNPCタイプ（例: `government`, `corporation`）を追加する場合:
+
+```json
+{
+  "darkOrganization": { ... },
+  "government": {
+    "questions": [ ... ],
+    "explanation": { ... }
+  },
+  "corporation": {
+    "questions": [ ... ],
+    "explanation": { ... }
+  }
+}
+```
+
+各NPCタイプごとに独立したドキュメントが作成されます。

@@ -4,11 +4,13 @@ import React, { useState, useRef, useEffect, useCallback, UIEvent } from 'react'
 import { AppProps } from '@/types/app';
 import { BaseApp } from '@/components/BaseApp';
 import { Send } from 'lucide-react';
-import { addMessage, generateAIResponse, getContacts, addContact, getIntroductionMessageFromFirestore } from '@/actions/messenger';
+import { addMessage, generateAIResponse, getContacts, addContact, getIntroductionMessageFromFirestore, getSubmissionQuestions, validateSubmission } from '@/actions/messenger';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useMessenger } from '@/hooks/useMessenger';
-import { UIMessage, ErrorType, selectErrorMessage, defaultMessengerContacts, ChatMessage } from '@/types/messenger';
+import { UIMessage, ErrorType, selectErrorMessage, defaultMessengerContacts, ChatMessage, SubmissionQuestion } from '@/types/messenger';
 import { appNotifications } from '@/utils/notifications';
+import { useGameStore } from '@/store/gameStore';
+import { useSubmissionStore } from '@/store/submissionStore';
 
 function generateSecureId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
@@ -98,6 +100,14 @@ async function initializeMessengerIntroduction(): Promise<boolean> {
 
 export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const { user } = useAuthContext();
+  const { completeSubmission } = useGameStore();
+  const {
+    submissionState,
+    setSubmissionMode,
+    setSubmissionQuestion,
+    addSubmissionAnswer,
+    setSubmissionResult,
+  } = useSubmissionStore();
 
   const {
     contacts,
@@ -115,6 +125,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   const [inputText, setInputText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [submissionQuestions, setSubmissionQuestions] = useState<SubmissionQuestion[]>([]);
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
   const initializationExecuted = useRef(false);
@@ -138,6 +149,37 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     }
   }, []);
 
+  const startSubmissionMode = useCallback(async () => {
+    if (!selectedContact || selectedContact.type !== 'darkOrganization') return;
+
+    try {
+      const questions = await getSubmissionQuestions('darkOrganization');
+      setSubmissionQuestions(questions);
+      setSubmissionMode(true);
+
+      const firstQuestion = questions[0];
+      if (firstQuestion) {
+        const questionMessage: UIMessage = {
+          id: generateSecureId(),
+          sender: 'other',
+          text: firstQuestion.text,
+          time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: new Date(),
+        };
+        addMessageToState(questionMessage);
+      }
+    } catch {
+      const errorMessage: UIMessage = {
+        id: generateSecureId(),
+        sender: 'other',
+        text: 'エラーが発生しました。自動応答モードを開始できません。',
+        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: new Date(),
+      };
+      addMessageToState(errorMessage);
+    }
+  }, [selectedContact, setSubmissionMode, addMessageToState]);
+
   const handleSendMessage = useCallback(async () => {
     if (!inputText.trim() || !selectedContact || !user || inputText.trim().length > 500) return;
 
@@ -154,6 +196,68 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     setInputText('');
     addMessageToState(userMessage);
 
+    // /submit コマンドの検知
+    if (currentInput.trim() === '/submit' && selectedContact.type === 'darkOrganization') {
+      await startSubmissionMode();
+      return;
+    }
+
+    // 提出モード中の処理
+    if (submissionState.isInSubmissionMode && selectedContact.type === 'darkOrganization') {
+      try {
+        addSubmissionAnswer(currentInput);
+
+        if (submissionState.currentQuestion < submissionState.totalQuestions) {
+          // 次の質問を表示
+          const nextQuestionIndex = submissionState.currentQuestion;
+          const nextQuestion = submissionQuestions[nextQuestionIndex];
+
+          if (nextQuestion) {
+            setSubmissionQuestion(submissionState.currentQuestion + 1);
+
+            const questionMessage: UIMessage = {
+              id: generateSecureId(),
+              sender: 'other',
+              text: nextQuestion.text,
+              time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+              timestamp: new Date(),
+            };
+            addMessageToState(questionMessage);
+          }
+        } else {
+          // 全ての質問が完了、結果を検証
+          const allAnswers = [...submissionState.answers, currentInput];
+          const result = await validateSubmission(allAnswers, 'darkOrganization');
+
+          const resultMessage: UIMessage = {
+            id: generateSecureId(),
+            sender: 'other',
+            text: `検証中...`,
+            time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+            timestamp: new Date(),
+          };
+          addMessageToState(resultMessage);
+
+          // 結果をsubmissionStoreに保存
+          setSubmissionResult(result);
+
+          // シーン遷移
+          completeSubmission(result.success);
+        }
+      } catch {
+        const errorMessage: UIMessage = {
+          id: generateSecureId(),
+          sender: 'other',
+          text: '提出処理中にエラーが発生しました。',
+          time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: new Date(),
+        };
+        addMessageToState(errorMessage);
+      }
+      return;
+    }
+
+    // 通常のAI応答処理
     try {
       await addMessage(selectedContact.id, {
         id: messageId,
@@ -162,7 +266,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         timestamp: userMessage.timestamp,
       });
 
-      const aiText = await generateAIResponse(currentInput, [], selectedContact.type); // chatHistoryは別途実装
+      const aiText = await generateAIResponse(currentInput, [], selectedContact.type);
 
       const aiMessageId = generateSecureId();
       const aiMessage: UIMessage = {
@@ -197,7 +301,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       };
       addMessageToState(errorMessage);
     }
-  }, [inputText, selectedContact, user, addMessageToState, removeMessageFromState]);
+  }, [inputText, selectedContact, user, submissionState, submissionQuestions, addMessageToState, removeMessageFromState, startSubmissionMode, addSubmissionAnswer, setSubmissionQuestion, setSubmissionResult, completeSubmission]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.keyCode === 13 && !e.shiftKey) {

@@ -16,7 +16,7 @@ import {
 import { requireAuth } from '@/lib/auth/server';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
 // prompts以下は廃止予定のため削除
-import type { MessengerContact, ChatMessage, RateLimitInfo } from '@/types/messenger';
+import type { MessengerContact, ChatMessage, RateLimitInfo, SubmissionQuestion, SubmissionResult } from '@/types/messenger';
 import {
   MESSAGES_PER_PAGE,
   RATE_LIMIT_PER_MINUTE,
@@ -389,3 +389,75 @@ export async function getSystemPromptFromFirestore(npcType: string): Promise<Sys
     throw error;
   }
 }
+
+/**
+ * 提出問題を取得
+ */
+export async function getSubmissionQuestions(npcType: string): Promise<SubmissionQuestion[]> {
+  try {
+    const docRef = doc(db, 'messenger', npcType, 'config', 'submissionQuestions');
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data.questions || [];
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error getting submission questions:', error);
+    throw error;
+  }
+}
+
+/**
+ * 提出された回答を検証
+ */
+export const validateSubmission = requireAuth(async (
+  userId: string,
+  answers: string[],
+  npcType: string = 'darkOrganization'
+): Promise<SubmissionResult> => {
+  try {
+    checkRateLimit(userId);
+
+    const questions = await getSubmissionQuestions(npcType);
+    if (questions.length === 0) {
+      throw new Error('提出問題が見つかりません');
+    }
+
+    let correctAnswers = 0;
+    for (let i = 0; i < Math.min(answers.length, questions.length); i++) {
+      const userAnswer = answers[i].trim().toLowerCase();
+      const correctAnswer = questions[i].correctAnswer.trim().toLowerCase();
+      if (userAnswer === correctAnswer) {
+        correctAnswers++;
+      }
+    }
+
+    const success = correctAnswers === questions.length;
+
+    const explanationDocRef = doc(db, 'messenger', npcType, 'config', 'submissionExplanation');
+    const explanationSnap = await getDoc(explanationDocRef);
+    const explanationText = explanationSnap.exists() ? explanationSnap.data().text : undefined;
+
+    return {
+      success,
+      correctAnswers,
+      totalQuestions: questions.length,
+      explanationText,
+    };
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error validating submission:', error);
+    }
+
+    if (error instanceof Error) {
+      if (['rateLimit', 'dbError', 'networkError', 'authError', 'general'].includes(error.message)) {
+        throw error;
+      }
+    }
+
+    throw new Error('general');
+  }
+});
