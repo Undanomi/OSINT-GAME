@@ -44,7 +44,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({ onClose, onNav
     );
   }
 
-  const inactiveAccounts = accounts.filter(account => !account.isActive);
+  const inactiveAccounts = accounts.filter(account => account.id !== activeAccount?.id);
 
   return (
     <div className="space-y-6">
@@ -65,7 +65,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({ onClose, onNav
           </button>
           <div className="text-center">
             <p className="font-semibold text-lg">{activeAccount.name}</p>
-            <p className="text-gray-500 text-sm">{getDisplayUserId(activeAccount.id)}</p>
+            <p className="text-gray-500 text-sm">{getDisplayUserId(activeAccount.account_id)}</p>
           </div>
         </div>
       )}
@@ -78,7 +78,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({ onClose, onNav
               key={account.id}
               onClick={() => handleSwitchAccount(account.id)}
               className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 font-bold cursor-pointer hover:opacity-80"
-              title={`${account.name} (${getDisplayUserId(account.id)})`}
+              title={`${account.name} (${getDisplayUserId(account.account_id)})`}
             >
               {account.avatar}
             </button>
