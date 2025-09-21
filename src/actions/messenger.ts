@@ -70,7 +70,7 @@ export const addContact = requireAuth(async (userId: string, contact: Omit<Messe
 });
 
 /**
- * 特定の連絡先とのメッセージ履歴をページネーション付きで取得する
+ * 特定の連絡先とのメッセージ履歴をページネーション付きで取得する（時間ベースID活用）
  */
 export const getMessages = requireAuth(async (
   userId: string,
@@ -81,10 +81,22 @@ export const getMessages = requireAuth(async (
     if (!contactId) return { messages: [], hasMore: false };
 
     const historyRef = collection(db, 'users', userId, 'messages', contactId, 'history');
-    let q = query(historyRef, orderBy('timestamp', 'desc'), limit(MESSAGES_PER_PAGE + 1));
+
+    // タイムスタンプフィールドでソート（インデックス自動作成）
+    let q = query(
+      historyRef,
+      orderBy('timestamp', 'desc'),
+      limit(MESSAGES_PER_PAGE + 1)
+    );
 
     if (cursorTimestamp) {
-      q = query(q, startAfter(Timestamp.fromDate(new Date(cursorTimestamp))));
+      // カーソルタイムスタンプより古いメッセージを取得
+      q = query(
+        historyRef,
+        orderBy('timestamp', 'desc'),
+        startAfter(Timestamp.fromDate(new Date(cursorTimestamp))),
+        limit(MESSAGES_PER_PAGE + 1)
+      );
     }
 
     const snapshot = await getDocs(q);

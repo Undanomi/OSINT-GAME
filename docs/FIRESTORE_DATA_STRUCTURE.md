@@ -1,6 +1,17 @@
 # Firestore データ構造ガイド
 
-## 統一されたデータ構造
+## 概要
+
+このドキュメントでは、OSINT-GAMEプロジェクトで使用される2つの主要システムのFirestoreデータ構造について説明します：
+
+1. **OSINT検索システム** - 偽サイトページの検索・表示システム
+2. **SNSアプリケーション** - ソーシャルメディア機能
+
+---
+
+## 1. OSINT検索システム
+
+### 統一されたデータ構造
 
 すべての偽サイトページは、`search_results` コレクションに統一された形式で保存されます。
 各ページは1ページ完結型として扱われ、リンクや遷移はありません。
@@ -128,12 +139,12 @@ Firebase Consoleから手動でデータを追加する場合：
     friend_002.jpg             # 友達アイコン2
     photo_001.jpg              # フォトギャラリー1
     photo_002.jpg              # フォトギャラリー2
-  
+
   /facelook_test_hanako/       # 別のユーザーページ
     profile.jpg
     cover.jpg
     ...
-  
+
 ```
 
 Storage URLの形式：
@@ -195,6 +206,227 @@ Playback Machineは、アーカイブされたウェブページを閲覧でき�
    - 現実的なブラウザ体験を提供（expired = 検索できない、エラーページ表示）
    - Playback Machineは別途検索して発見する必要がある
    - アーカイブされた日付によって、異なる情報が見られる可能性（将来の拡張）
+
+## 2. SNSアプリケーション
+
+### データ構造概要
+
+SNSアプリケーションでは、以下のような階層構造でデータを管理します：
+
+```
+users/
+  {userId}/
+    socialAccounts/
+      {accountId}/
+        posts/
+          {postId}
+    socialTimeline/
+      {postId}
+    socialContacts/
+      {contactId}/
+        history/
+          {messageId}
+
+socialNPCs/
+  {npcId}/
+    posts/
+      {postId}
+
+socialNPCPosts/
+  {postId}
+
+defaultSocialAccountSettings/
+  {settingId}
+```
+
+### コレクション詳細
+
+#### 1. ユーザーアカウント (`users/{userId}/socialAccounts/{stableId}`)
+
+各ユーザーは最大3つのソーシャルアカウントを持てます。
+
+**デュアルIDシステム**：
+- `id` (stable_id): UUID形式の内部識別子（不変、投稿やフォロー関係で使用）
+- `account_id`: ユーザーが変更可能な表示用ID（検索や表示で使用）
+
+```typescript
+interface SocialAccount {
+  id: string;                    // stable_id: UUID形式の内部識別子（不変）
+  account_id: string;            // 表示用ID（ユーザーが変更可能、重複チェック有り）
+  name: string;                  // 表示名
+  avatar: string;                // アバター文字（A-Z）
+  bio: string;                   // 自己紹介
+  location: string;              // 所在地
+  company?: string;              // 会社名
+  position?: string;             // 役職
+  education?: string;            // 学歴
+  birthday?: string;             // 誕生日（YYYY-MM-DD）
+  isActive: boolean;             // アクティブアカウントフラグ
+  createdAt: Date;               // 作成日時
+  updatedAt: Date;               // 更新日時
+  followersCount: number;        // フォロワー数
+  followingCount: number;        // フォロー数
+  canDM: boolean;                // DM可能フラグ
+}
+```
+
+#### 2. ユーザー投稿 (`users/{userId}/socialAccounts/{accountId}/posts/{postId}`)
+
+各アカウントの投稿データです。
+
+```typescript
+interface SocialPost {
+  id: string;                    // 投稿ID
+  authorId: string;              // 投稿者ID
+  authorType: 'user' | 'npc';    // 投稿者タイプ
+  content: string;               // 投稿内容
+  timestamp: Date;               // 投稿日時
+  likes: number;                 // いいね数
+  comments: number;              // コメント数
+  shares: number;                // シェア数
+}
+```
+
+#### 3. ユーザータイムライン (`users/{userId}/socialTimeline/{postId}`)
+
+ユーザー個別のタイムライン表示用投稿データです。自分の投稿とNPC投稿が混在します。
+
+```typescript
+interface TimelinePost extends SocialPost {
+  // SocialPostと同じ構造
+  // ユーザー投稿とNPC投稿の両方を含む
+}
+```
+
+#### 4. NPC定義 (`socialNPCs/{stableId}`)
+
+NPCキャラクターの基本情報です。
+
+**デュアルIDシステム**：
+- `id` (stable_id): UUID形式の内部識別子（不変、投稿やフォロー関係で使用）
+- `account_id`: 表示・検索用ID（固定、NPCの場合は管理者が設定）
+
+```typescript
+interface SocialNPC {
+  id: string;                    // stable_id: UUID形式の内部識別子（不変）
+  account_id: string;            // 表示・検索用ID（固定）
+  name: string;                  // 表示名
+  avatar: string;                // アバター文字
+  bio: string;                   // 自己紹介
+  location: string;              // 所在地
+  company?: string;              // 会社名
+  position?: string;             // 役職
+  education?: string;            // 学歴
+  birthday?: string;             // 誕生日
+  followersCount: number;        // フォロワー数
+  followingCount: number;        // フォロー数
+  canDM: boolean;                // DM可能フラグ
+  systemPrompt: string;          // AI応答用システムプロンプト
+  isActive: boolean;             // アクティブフラグ
+}
+```
+
+#### 5. NPC投稿 (`socialNPCs/{stableId}/posts/{postId}`)
+
+NPCの個別投稿データです。
+
+```typescript
+interface NPCPost extends SocialPost {
+  // SocialPostと同じ構造
+  // authorType は常に 'npc'
+  // authorId は NPC の stable_id を使用
+}
+```
+
+#### 6. NPC統合投稿 (`socialNPCPosts/{postId}`)
+
+すべてのNPC投稿を統合したコレクションです。タイムライン表示の効率化に使用されます。
+
+```typescript
+interface NPCCentralPost extends SocialPost {
+  // SocialPostと同じ構造
+  // すべてのNPC投稿のコピー
+}
+```
+
+#### 7. DM連絡先 (`users/{userId}/socialContacts/{contactId}`)
+
+ユーザーのDM連絡先情報です。
+
+```typescript
+interface SocialContact {
+  id: string;                    // 連絡先ID（NPCのID）
+  name: string;                  // 表示名
+  type: 'npc' | 'default';       // 連絡先タイプ
+}
+```
+
+#### 8. DMメッセージ (`users/{userId}/socialContacts/{contactId}/history/{messageId}`)
+
+DM会話履歴です。
+
+```typescript
+interface SocialDMMessage {
+  id: string;                    // メッセージID
+  sender: 'user' | 'npc';        // 送信者タイプ
+  text: string;                  // メッセージ内容
+  timestamp: Date;               // 送信日時
+}
+```
+
+#### 9. デフォルトアカウント設定 (`defaultSocialAccountSettings/{stableId}`)
+
+新規ユーザー用のデフォルトアカウント設定です。
+
+**デュアルIDシステム**：
+- `id` (stable_id): UUID形式の内部識別子（テンプレート用）
+- `account_id`: 新規ユーザーのデフォルト表示ID
+
+```typescript
+interface DefaultSocialAccountSetting extends SocialAccount {
+  // SocialAccountと同じ構造（デュアルIDシステム含む）
+  // 新規ユーザー登録時に使用される
+}
+```
+
+### データフロー
+
+#### タイムライン表示ロジック
+
+1. **ローカルキャッシュ (socialStore) をチェック**
+   - 十分な投稿があれば表示
+
+2. **ユーザータイムライン (`users/{userId}/socialTimeline`) をチェック**
+   - 不足分を取得してキャッシュに追加
+
+3. **NPC統合投稿 (`socialNPCPosts`) をチェック**
+   - さらに不足分を取得
+   - ユーザータイムラインとキャッシュの両方に保存
+
+#### 投稿作成フロー
+
+**ユーザー投稿の場合:**
+1. `users/{userId}/socialAccounts/{stableId}/posts/{postId}` に保存
+2. `users/{userId}/socialTimeline/{postId}` にもコピー保存
+3. `authorId` には stable_id を使用
+
+**NPC投稿の場合:**
+1. `socialNPCs/{stableId}/posts/{postId}` に保存
+2. `socialNPCPosts/{postId}` にもコピー保存
+3. `authorId` には NPC の stable_id を使用
+
+### キャッシュ戦略
+
+- **ローカルストレージ**: ユーザー別・アカウント別にキャッシュを分離
+- **キャッシュ切り替え**: ユーザー切り替え時は新しいキャッシュセットを使用
+- **有効期限**: 5分間の新鮮度チェック、24時間で期限切れ
+
+### ページング仕様
+
+- **投稿取得**: 15件ずつページング
+- **メッセージ取得**: 20件ずつページング
+- **カーソル**: 最後の投稿/メッセージのIDを使用
+
 
 ## メッセンジャー提出システム
 

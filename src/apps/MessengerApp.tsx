@@ -12,8 +12,13 @@ import { appNotifications } from '@/utils/notifications';
 import { useGameStore } from '@/store/gameStore';
 import { useSubmissionStore } from '@/store/submissionStore';
 
-function generateSecureId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+/**
+ * タイムスタンプベースのメッセージID生成
+ */
+function generateTimestampId(timestamp: Date): string {
+  const timeString = timestamp.toISOString().replace(/[-:T]/g, '').slice(0, 14);
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  return `${timeString}_${randomSuffix}`;
 }
 
 async function initializeUserContacts(): Promise<void> {
@@ -160,22 +165,24 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
       const firstQuestion = questions[0];
       if (firstQuestion) {
+        const questionTimestamp = new Date();
         const questionMessage: UIMessage = {
-          id: generateSecureId(),
+          id: generateTimestampId(questionTimestamp),
           sender: 'other',
           text: firstQuestion.text,
-          time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-          timestamp: new Date(),
+          time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: questionTimestamp,
         };
         addTemporaryMessage(questionMessage);
       }
     } catch {
+      const errorTimestamp = new Date();
       const errorMessage: UIMessage = {
-        id: generateSecureId(),
+        id: generateTimestampId(errorTimestamp),
         sender: 'other',
         text: 'エラーが発生しました。自動応答モードを開始できません。',
-        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date(),
+        time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: errorTimestamp,
       };
       addTemporaryMessage(errorMessage);
     }
@@ -185,13 +192,14 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     if (!inputText.trim() || !selectedContact || !user || inputText.trim().length > 500) return;
 
     const currentInput = inputText;
-    const messageId = generateSecureId();
+    const userTimestamp = new Date();
+    const messageId = generateTimestampId(userTimestamp);
     const userMessage: UIMessage = {
       id: messageId,
       sender: 'me',
       text: currentInput,
-      time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-      timestamp: new Date(),
+      time: userTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: userTimestamp,
     };
 
     setInputText('');
@@ -216,13 +224,13 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
           if (nextQuestion) {
             setSubmissionQuestion(submissionState.currentQuestion + 1);
-
+            const questionTimestamp = new Date();
             const questionMessage: UIMessage = {
-              id: generateSecureId(),
+              id: generateTimestampId(questionTimestamp),
               sender: 'other',
               text: nextQuestion.text,
-              time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-              timestamp: new Date(),
+              time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+              timestamp: questionTimestamp,
             };
             addTemporaryMessage(questionMessage);
           }
@@ -230,13 +238,13 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           // 全ての質問が完了、結果を検証
           const allAnswers = [...submissionState.answers, currentInput];
           const result = await validateSubmission(allAnswers, 'darkOrganization');
-
+          const validationTimestamp = new Date();
           const resultMessage: UIMessage = {
-            id: generateSecureId(),
+            id: generateTimestampId(validationTimestamp),
             sender: 'other',
             text: `検証中...`,
-            time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-            timestamp: new Date(),
+            time: validationTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+            timestamp: validationTimestamp,
           };
           addTemporaryMessage(resultMessage);
 
@@ -249,12 +257,13 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           }, 3000);
         }
       } catch {
+        const errorTimestamp = new Date();
         const errorMessage: UIMessage = {
-          id: generateSecureId(),
+          id: generateTimestampId(errorTimestamp),
           sender: 'other',
           text: '提出処理中にエラーが発生しました。',
-          time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-          timestamp: new Date(),
+          time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: errorTimestamp,
         };
         addTemporaryMessage(errorMessage);
       }
@@ -273,13 +282,14 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
       const aiText = await generateAIResponse(currentInput, [], selectedContact.type);
 
-      const aiMessageId = generateSecureId();
+      const aiTimestamp = new Date();
+      const aiMessageId = generateTimestampId(aiTimestamp);
       const aiMessage: UIMessage = {
         id: aiMessageId,
         sender: 'other',
         text: aiText,
-        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date(),
+        time: aiTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: aiTimestamp,
       };
 
       await addMessage(selectedContact.id, {
@@ -297,12 +307,13 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       const errorType = error instanceof Error ? error.message as ErrorType : 'general';
       const errorText = selectErrorMessage(errorType, selectedContact.type);
 
+      const errorTimestamp = new Date();
       const errorMessage: UIMessage = {
-        id: generateSecureId(),
+        id: generateTimestampId(errorTimestamp),
         sender: 'other',
         text: errorText,
-        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date(),
+        time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: errorTimestamp,
       };
       addMessageToState(errorMessage);
     }

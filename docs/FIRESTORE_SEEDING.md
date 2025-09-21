@@ -273,6 +273,155 @@ $ node scripts/seedFirestore.js data/sample-facelook.json
   - https://facelook.com/test.hanako
 ```
 
+---
+
+## SNSアプリケーション用データ登録
+
+### 概要
+
+SNSアプリケーションでは、以下のデータを登録する必要があります：
+
+1. **NPCキャラクター** (`socialNPCs/{npcId}`)
+2. **NPC投稿データ** (`socialNPCs/{npcId}/posts/{postId}` および `socialNPCPosts/{postId}`)
+3. **デフォルトアカウント設定** (`defaultSocialAccountSettings/{settingId}`)
+
+### データファイル
+
+SNSアプリケーション用のデータファイルが `data/` ディレクトリに用意されています：
+
+- `data/social-npcs.json` - NPCキャラクターのプロフィール情報
+- `data/social-npc-posts.json` - NPCの投稿データ
+- `data/default-social-accounts.json` - 新規ユーザー用デフォルトアカウント設定
+
+### 実行手順
+
+#### 1. NPCキャラクターを登録
+
+```bash
+node scripts/seedSocialNPCs.js data/social-npcs.json
+```
+
+この操作で `socialNPCs/{npcId}` コレクションにNPCのプロフィール情報が登録されます。
+
+#### 2. NPC投稿データを登録
+
+```bash
+node scripts/seedSocialPosts.js data/social-npc-posts.json
+```
+
+この操作で以下のデータが登録されます：
+- `socialNPCs/{npcId}/posts/{postId}` - NPC個別の投稿
+- `socialNPCPosts/{postId}` - 統合投稿コレクション
+
+#### 3. デフォルトアカウント設定を登録
+
+```bash
+node scripts/seedDefaultAccounts.js data/default-social-accounts.json
+```
+
+この操作で `defaultSocialAccountSettings/{settingId}` にデフォルトアカウント設定が登録されます。
+
+### 全データの一括登録
+
+すべてのSNSデータを一度に登録する場合：
+
+```bash
+npm run seed:social
+```
+
+または手動で順次実行：
+
+```bash
+node scripts/seedSocialNPCs.js data/social-npcs.json
+node scripts/seedSocialPosts.js data/social-npc-posts.json
+node scripts/seedDefaultAccounts.js data/default-social-accounts.json
+```
+
+### データ構造の詳細
+
+#### NPCキャラクター (`social-npcs.json`)
+
+```json
+{
+  "id": "ai_researcher",
+  "name": "ミラベル・テクノス",
+  "avatar": "M",
+  "bio": "AI研究者として新しい可能性を探求しています...",
+  "location": "ネオトーキョー・シリコン区",
+  "company": "フューチャーマインド研究所",
+  "position": "主任研究員",
+  "education": "カイゼン工科大学 情報融合学院",
+  "birthday": "1988-04-15",
+  "followersCount": 2847,
+  "followingCount": 1923,
+  "canDM": true,
+  "systemPrompt": "あなたはAI研究者の...",
+  "isActive": true
+}
+```
+
+#### NPC投稿データ (`social-npc-posts.json`)
+
+```json
+{
+  "npcId": "ai_researcher",
+  "posts": [
+    {
+      "id": "ai_post_001",
+      "content": "量子機械学習の新しい研究成果が...",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "likes": 156,
+      "comments": 23,
+      "shares": 45
+    }
+  ]
+}
+```
+
+#### デフォルトアカウント (`default-social-accounts.json`) - デュアルIDシステム対応
+
+```json
+{
+  "id": "a7f3d8e2-4b9c-4d6f-8e2a-1f5b3c7d9e4a",   // stable_id（UUID形式、テンプレート用）
+  "account_id": "detective_01",                   // ユーザーのデフォルト表示ID
+  "name": "探偵 ケン",
+  "avatar": "K",
+  "bio": "情報収集と分析が得意な探偵です...",
+  "location": "インベスティゲート・シティ",
+  "company": "フリーランス",
+  "position": "プライベート・インベスティゲーター",
+  "education": "クリムゾン大学 法学部",
+  "birthday": "1990-05-15",
+  "isActive": true,
+  "followersCount": 150,
+  "followingCount": 200,
+  "canDM": true
+}
+```
+
+**重要**: デフォルトアカウントでもデュアルIDシステムを使用し、新規ユーザーにコピーされる際に新しいstable_idが生成されます。
+
+### 注意事項
+
+- **データの整合性**: NPCの投稿データを登録する前に、対応するNPCキャラクターが `socialNPCs` コレクションに存在している必要があります
+- **デュアルIDシステム**: すべてのNPCとデフォルトアカウントはUUID形式のstable_idと表示用のaccount_idを持ちます
+- **タイムスタンプ**: 投稿の `timestamp` は ISO 8601 形式で記載してください
+- **ID の一意性**: 各データのstable_idとaccount_idはそれぞれ一意である必要があります
+- **UUID形式**: stable_idはUUID形式（例: d1e2f3g4-5h6i-7j8k-9l0m-n1o2p3q4r5s6）で記載してください
+- **アバター文字**: アバターは A-Z の1文字で指定してください
+
+### トラブルシューティング
+
+#### エラー: NPC not found
+NPCの投稿データを登録する際に「NPC not found」エラーが発生する場合は、先にNPCキャラクター(`social-npcs.json`)を登録してください。
+
+#### エラー: Invalid timestamp format
+タイムスタンプが無効な場合は、ISO 8601形式（例: `2024-01-15T10:30:00Z`）で記載されているか確認してください。
+
+#### エラー: Duplicate ID
+IDが重複している場合は、各データファイル内でIDが一意になるよう修正してください。
+
+
 ## メッセンジャー提出データの登録
 
 ### 概要
