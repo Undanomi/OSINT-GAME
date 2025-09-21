@@ -121,6 +121,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     loadMoreMessages,
     addMessageToState,
     removeMessageFromState,
+    addTemporaryMessage,
   } = useMessenger();
 
   const [inputText, setInputText] = useState('');
@@ -166,7 +167,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
           timestamp: new Date(),
         };
-        addMessageToState(questionMessage);
+        addTemporaryMessage(questionMessage);
       }
     } catch {
       const errorMessage: UIMessage = {
@@ -176,9 +177,9 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
         timestamp: new Date(),
       };
-      addMessageToState(errorMessage);
+      addTemporaryMessage(errorMessage);
     }
-  }, [selectedContact, setSubmissionMode, addMessageToState]);
+  }, [selectedContact, setSubmissionMode, addTemporaryMessage]);
 
   const handleSendMessage = useCallback(async () => {
     if (!inputText.trim() || !selectedContact || !user || inputText.trim().length > 500) return;
@@ -194,16 +195,17 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     };
 
     setInputText('');
-    addMessageToState(userMessage);
 
     // /submit コマンドの検知
     if (currentInput.trim() === '/submit' && selectedContact.type === 'darkOrganization') {
+      addTemporaryMessage(userMessage);
       await startSubmissionMode();
       return;
     }
 
     // 提出モード中の処理
     if (submissionState.isInSubmissionMode && selectedContact.type === 'darkOrganization') {
+      addTemporaryMessage(userMessage);
       try {
         addSubmissionAnswer(currentInput);
 
@@ -222,7 +224,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
               time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
               timestamp: new Date(),
             };
-            addMessageToState(questionMessage);
+            addTemporaryMessage(questionMessage);
           }
         } else {
           // 全ての質問が完了、結果を検証
@@ -236,13 +238,15 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
             time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
             timestamp: new Date(),
           };
-          addMessageToState(resultMessage);
+          addTemporaryMessage(resultMessage);
 
           // 結果をsubmissionStoreに保存
           setSubmissionResult(result);
 
-          // シーン遷移
-          completeSubmission(result.success);
+          // 3秒後にシーン遷移
+          setTimeout(() => {
+            completeSubmission(result.success);
+          }, 3000);
         }
       } catch {
         const errorMessage: UIMessage = {
@@ -252,12 +256,13 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
           timestamp: new Date(),
         };
-        addMessageToState(errorMessage);
+        addTemporaryMessage(errorMessage);
       }
       return;
     }
 
     // 通常のAI応答処理
+    addMessageToState(userMessage);
     try {
       await addMessage(selectedContact.id, {
         id: messageId,
@@ -301,7 +306,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       };
       addMessageToState(errorMessage);
     }
-  }, [inputText, selectedContact, user, submissionState, submissionQuestions, addMessageToState, removeMessageFromState, startSubmissionMode, addSubmissionAnswer, setSubmissionQuestion, setSubmissionResult, completeSubmission]);
+  }, [inputText, selectedContact, user, submissionState, submissionQuestions, addMessageToState, removeMessageFromState, addTemporaryMessage, startSubmissionMode, addSubmissionAnswer, setSubmissionQuestion, setSubmissionResult, completeSubmission]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.keyCode === 13 && !e.shiftKey) {

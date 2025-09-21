@@ -141,6 +141,12 @@ export const useMessenger = () => {
     });
   }, [user, selectedContact, hasMore, setCachedMessages]);
 
+  const addTemporaryMessage = useCallback((message: UIMessage) => {
+    if(!user || !selectedContact) return;
+
+    setMessages(prev => [...prev, message]);
+  }, [user, selectedContact]);
+
   useEffect(() => {
     if (user) {
       loadContacts();
@@ -167,5 +173,6 @@ export const useMessenger = () => {
     loadMoreMessages,
     addMessageToState,
     removeMessageFromState,
+    addTemporaryMessage,
   };
 };
