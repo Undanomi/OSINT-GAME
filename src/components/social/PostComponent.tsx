@@ -34,7 +34,7 @@ export const PostComponent: React.FC<PostComponentProps> = ({ post, onUserSelect
             <span className="text-gray-500 text-sm">•</span>
             <span className="text-gray-500 text-sm">{post.timeString}</span>
           </div>
-          <p className="mt-2 text-gray-800 leading-relaxed">{post.content}</p>
+          <p className="mt-2 text-gray-800 leading-relaxed break-words">{post.content}</p>
           <div className="flex items-center justify-between mt-4 max-w-md">
             <button className="flex items-center space-x-2 text-gray-500 hover:text-pink-600">
               <Heart size={18} />
