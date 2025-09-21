@@ -54,7 +54,6 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
     loadMoreMessages,
     sendMessage,
     addNewContact,
-    updateUserProfile,
     error,
     setError,
     npcs,
@@ -67,6 +66,7 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [selectedNPC, setSelectedNPC] = useState<SocialNPC | null>(null);
   const [selectedInactiveUser, setSelectedInactiveUser] = useState<SocialAccount | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [profileEditError, setProfileEditError] = useState<string>('');
   const timelineRef = useRef<HTMLDivElement>(null);
 
   // 無限スクロール処理
@@ -100,6 +100,7 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
           if (npcPost) {
             const npcInfo: SocialNPC = {
               id: userId,
+              account_id: npcPost.author.account_id,
               name: npcPost.author.name,
               avatar: npcPost.author.avatar,
               bio: '',
@@ -169,11 +170,20 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
   // プロフィール更新処理
   const handleProfileUpdate = async (updatedAccount: SocialAccount) => {
     try {
-      await updateUserProfile(updatedAccount);
+      setProfileEditError(''); // エラーをクリア
+      await updateAccount(activeAccount?.id || '', updatedAccount);
       setCurrentView('my-profile');
     } catch (error) {
-      // エラーはuseSocialで管理されている
-      console.error('Failed to update profile:', error);
+      if (error instanceof Error) {
+        if (error.message === 'accountDuplicate') {
+          setProfileEditError('このユーザーIDは既に使用されています。別のIDを選択してください。');
+        } else {
+          setProfileEditError('プロフィールの更新に失敗しました。しばらく待ってから再試行してください。');
+        }
+      } else {
+        setProfileEditError('プロフィールの更新に失敗しました。しばらく待ってから再試行してください。');
+      }
+      // エラーがある場合は画面遷移しない（edit-profileに留まる）
     }
   };
 
@@ -320,8 +330,12 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
         return (
           <ProfileEditPage
             account={activeAccount}
+            error={profileEditError}
             onSave={handleProfileUpdate}
-            onCancel={() => setCurrentView('my-profile')}
+            onCancel={() => {
+              setProfileEditError(''); // エラーをクリア
+              setCurrentView('my-profile');
+            }}
           />
         );
       case 'new-post':

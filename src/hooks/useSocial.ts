@@ -104,10 +104,10 @@ export const useSocial = (
     if (post.authorType === 'npc') {
       const npc = npcs.find(n => n.id === post.authorId);
       if (npc) {
-        return { id: npc.id, name: npc.name, avatar: npc.avatar };
+        return { id: npc.id, account_id: npc.account_id, name: npc.name, avatar: npc.avatar };
       } else {
         console.warn(`NPC not found for post ${post.id}, authorId: ${post.authorId}`);
-        return { id: 'unknown', name: 'Unknown', avatar: 'U' };
+        return { id: 'unknown', account_id: 'unknown', name: 'Unknown', avatar: 'U' };
       }
     } else {
       // ユーザー投稿の場合はストアのアカウント情報から取得
@@ -116,12 +116,13 @@ export const useSocial = (
       if (userAccount) {
         return {
           id: userAccount.id,
+          account_id: userAccount.account_id,
           name: userAccount.name,
           avatar: userAccount.avatar
         };
       } else {
         console.warn(`User account not found for post ${post.id}, authorId: ${post.authorId}`);
-        return { id: 'unknown', name: 'Unknown', avatar: 'U' };
+        return { id: 'unknown', account_id: 'unknown', name: 'Unknown', avatar: 'U' };
       }
     }
   }, [npcs, allAccounts, user, store.accounts]);
@@ -241,10 +242,11 @@ export const useSocial = (
 
     try {
       setError(null);
-      const newPost = await createSocialPost(activeAccount.id, content);
+      const newPost = await createSocialPost(activeAccount.id, content); // activeAccount.idはstable_id
 
       const author = {
         id: activeAccount.id,
+        account_id: activeAccount.account_id,
         name: activeAccount.name,
         avatar: activeAccount.avatar
       };

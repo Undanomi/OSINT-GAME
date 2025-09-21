@@ -63,6 +63,7 @@ export const InactiveUserProfilePage: React.FC<InactiveUserProfilePageProps> = (
         timeString: formatTimestamp(post.timestamp),
         author: {
           id: account.id,
+          account_id: account.account_id,
           name: account.name,
           avatar: account.avatar,
         }
@@ -90,7 +91,7 @@ export const InactiveUserProfilePage: React.FC<InactiveUserProfilePageProps> = (
     } finally {
       setLoading(false);
     }
-  }, [account.id, account.name, account.avatar, loading, hasMore, cursor]);
+  }, [account.id, account.account_id, account.name, account.avatar, loading, hasMore, cursor]);
 
   // refに最新の関数を保存
   loadUserPostsRef.current = loadUserPosts;
@@ -129,7 +130,7 @@ export const InactiveUserProfilePage: React.FC<InactiveUserProfilePageProps> = (
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-800">{account.name}</h2>
-                <p className="text-gray-600">{getDisplayUserId(account.id)}</p>
+                <p className="text-gray-600">{getDisplayUserId(account.account_id)}</p>
                 <p className="text-sm text-gray-700 mt-2 max-w-md leading-relaxed">{account.bio}</p>
               </div>
             </div>

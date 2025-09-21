@@ -1,6 +1,6 @@
 [
   {
-    "npcId": "ai_researcher",
+    "npcId": "d1e2f3g4-5h6i-7j8k-9l0m-n1o2p3q4r5s6",
     "posts": [
       {
         "id": "ai_post_001",
@@ -29,7 +29,7 @@
     ]
   },
   {
-    "npcId": "travel_blogger",
+    "npcId": "e2f3g4h5-6i7j-8k9l-0m1n-o2p3q4r5s6t7",
     "posts": [
       {
         "id": "travel_post_001",
@@ -58,7 +58,7 @@
     ]
   },
   {
-    "npcId": "chef_creative",
+    "npcId": "f3g4h5i6-7j8k-9l0m-1n2o-p3q4r5s6t7u8",
     "posts": [
       {
         "id": "chef_post_001",
@@ -87,7 +87,7 @@
     ]
   },
   {
-    "npcId": "fitness_trainer",
+    "npcId": "g4h5i6j7-8k9l-0m1n-2o3p-q4r5s6t7u8v9",
     "posts": [
       {
         "id": "fitness_post_001",
@@ -116,7 +116,7 @@
     ]
   },
   {
-    "npcId": "artist_painter",
+    "npcId": "h5i6j7k8-9l0m-1n2o-3p4q-r5s6t7u8v9w0",
     "posts": [
       {
         "id": "artist_post_001",

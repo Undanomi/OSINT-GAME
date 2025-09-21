@@ -378,11 +378,12 @@ node scripts/seedDefaultAccounts.js data/default-social-accounts.json
 }
 ```
 
-#### デフォルトアカウント (`default-social-accounts.json`)
+#### デフォルトアカウント (`default-social-accounts.json`) - デュアルIDシステム対応
 
 ```json
 {
-  "id": "detective_01",
+  "id": "a7f3d8e2-4b9c-4d6f-8e2a-1f5b3c7d9e4a",   // stable_id（UUID形式、テンプレート用）
+  "account_id": "detective_01",                   // ユーザーのデフォルト表示ID
   "name": "探偵 ケン",
   "avatar": "K",
   "bio": "情報収集と分析が得意な探偵です...",
@@ -398,11 +399,15 @@ node scripts/seedDefaultAccounts.js data/default-social-accounts.json
 }
 ```
 
+**重要**: デフォルトアカウントでもデュアルIDシステムを使用し、新規ユーザーにコピーされる際に新しいstable_idが生成されます。
+
 ### 注意事項
 
 - **データの整合性**: NPCの投稿データを登録する前に、対応するNPCキャラクターが `socialNPCs` コレクションに存在している必要があります
+- **デュアルIDシステム**: すべてのNPCとデフォルトアカウントはUUID形式のstable_idと表示用のaccount_idを持ちます
 - **タイムスタンプ**: 投稿の `timestamp` は ISO 8601 形式で記載してください
-- **ID の一意性**: 各データのIDは一意である必要があります
+- **ID の一意性**: 各データのstable_idとaccount_idはそれぞれ一意である必要があります
+- **UUID形式**: stable_idはUUID形式（例: d1e2f3g4-5h6i-7j8k-9l0m-n1o2p3q4r5s6）で記載してください
 - **アバター文字**: アバターは A-Z の1文字で指定してください
 
 ### トラブルシューティング

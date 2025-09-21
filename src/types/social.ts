@@ -5,10 +5,11 @@
 
 /**
  * ソーシャルアカウント情報（Firestore用）
- * path: users/{userId}/socialAccounts/{accountId}
+ * path: users/{userId}/socialAccounts/{stable_id}
  */
 export interface SocialAccount {
-  id: string;
+  id: string; // stable_id: バックエンドでの一意識別子（不変）
+  account_id: string; // account_id: フロントエンド表示用ID（変更可能）
   name: string;
   avatar: string;
   bio: string;
@@ -19,6 +20,7 @@ export interface SocialAccount {
   birthday?: string;
   isActive: boolean;
   createdAt: Date;
+  updatedAt: Date;
   followersCount: number;
   followingCount: number;
   canDM: boolean;
@@ -26,10 +28,11 @@ export interface SocialAccount {
 
 /**
  * NPC定義情報（Firestore用）
- * path: socialNPCs/{npcId}
+ * path: socialNPCs/{stable_id}
  */
 export interface SocialNPC {
-  id: string;
+  id: string; // stable_id: バックエンドでの一意識別子（不変）
+  account_id: string; // account_id: フロントエンド表示用ID（従来のnpc_idに相当）
   name: string;
   avatar: string;
   bio: string;
@@ -56,7 +59,7 @@ export interface SocialNPC {
  */
 export interface SocialPost {
   id: string;
-  authorId: string; // SocialAccount.id または SocialNPC.id
+  authorId: string; // SocialAccount.id（stable_id）または SocialNPC.id（stable_id）
   authorType: 'user' | 'npc';
   content: string;
   timestamp: Date;
@@ -76,7 +79,8 @@ export interface UISocialPost extends Omit<SocialPost, 'timestamp'> {
   timeString: string;
   /** 投稿者の情報 */
   author: {
-    id: string;
+    id: string; // stable_id (内部識別用)
+    account_id: string; // 表示用ID
     name: string;
     avatar: string;
   };
@@ -313,7 +317,7 @@ export type ContactType = 'npc' | 'default';
 /**
  * エラータイプの列挙
  */
-export type SocialErrorType = 'rateLimit' | 'dbError' | 'networkError' | 'authError' | 'aiServiceError' | 'aiResponseError' | 'accountLimit' | 'general';
+export type SocialErrorType = 'rateLimit' | 'dbError' | 'networkError' | 'authError' | 'aiServiceError' | 'aiResponseError' | 'accountLimit' | 'accountDuplicate' | 'general';
 
 /**
  * デフォルトのソーシャルアカウントデータ（初回登録時用）
@@ -335,6 +339,7 @@ export const SOCIAL_ERROR_MESSAGES = {
   aiServiceError: "AIサービスが一時的に利用できません。しばらく待ってから再試行してください。",
   aiResponseError: "AI応答の処理中にエラーが発生しました。再試行してください。",
   accountLimit: "アカウント数の上限（3個）に達しました。既存のアカウントを削除してから作成してください。",
+  accountDuplicate: "このユーザーIDは既に使用されています。別のIDを選択してください。",
   general: "申し訳ありません。エラーが発生しました。"
 };
 
@@ -350,7 +355,7 @@ export function getSocialErrorMessage(errorType: SocialErrorType): string {
  */
 export function convertToUISocialPost(
   post: SocialPost,
-  author: { id: string; name: string; avatar: string }
+  author: { id: string; account_id: string; name: string; avatar: string }
 ): UISocialPost {
   const now = new Date();
   const diffMs = now.getTime() - post.timestamp.getTime();
@@ -395,8 +400,9 @@ export function convertToUISocialDMMessage(message: SocialDMMessage): UISocialDM
 
 /**
  * 表示用のユーザーIDを取得（@マーク付き）
+ * @param accountId フロントエンド表示用のaccount_id
  */
-export function getDisplayUserId(id: string | undefined): string {
-  if (!id) return '@unknown';
-  return id.startsWith('@') ? id : `@${id}`;
+export function getDisplayUserId(accountId: string | undefined): string {
+  if (!accountId) return '@unknown';
+  return accountId.startsWith('@') ? accountId : `@${accountId}`;
 }

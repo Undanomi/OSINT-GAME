@@ -119,9 +119,10 @@ export async function getAllDefaultSocialAccountSettings(): Promise<SocialAccoun
     settingsSnapshot.forEach((doc) => {
       const data = doc.data();
       settings.push({
-        id: doc.id,
         ...data,
+        id: doc.id,
         createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
       } as SocialAccount);
     });
 
@@ -151,11 +152,15 @@ export async function getSocialAccounts(): Promise<SocialAccount[]> {
     const accountsQuery = query(accountsRef, orderBy('createdAt', 'asc'));
     const snapshot = await getDocs(accountsQuery);
 
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-    })) as SocialAccount[];
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as SocialAccount;
+    });
   } catch (error) {
     console.error('Failed to get social accounts:', error);
     throw new Error('dbError');
@@ -208,6 +213,48 @@ export async function createSocialAccount(
 /**
  * ソーシャルアカウントを更新
  */
+/**
+ * account_idの重複チェック（認証済みユーザーのアカウントとNPCを対象）
+ */
+async function checkAccountIdDuplicate(
+  accountId: string,
+  excludeStableId: string
+): Promise<boolean> {
+  try {
+    const userId = await getAuthenticatedUserId();
+    if (!userId) {
+      throw new Error('authError');
+    }
+
+    // 1. NPCのaccount_idをチェック
+    const npcsRef = collection(db, 'socialNPCs');
+    const npcQuery = query(npcsRef, where('account_id', '==', accountId));
+    const npcSnapshot = await getDocs(npcQuery);
+
+    if (!npcSnapshot.empty) {
+      return true; // NPC側で重複
+    }
+
+    // 2. 認証済みユーザーのアカウントをチェック
+    const socialAccountsRef = collection(db, 'users', userId, 'socialAccounts');
+    const accountQuery = query(socialAccountsRef, where('account_id', '==', accountId));
+    const accountSnapshot = await getDocs(accountQuery);
+
+    if (!accountSnapshot.empty) {
+      // excludeStableIdが指定されている場合、それを除外
+      const matchingDocs = accountSnapshot.docs.filter(doc => doc.id !== excludeStableId);
+      if (matchingDocs.length > 0) {
+        return true; // 重複あり
+      }
+    }
+
+    return false; // 重複なし
+  } catch (error) {
+    console.error('Error checking account ID duplicate:', error);
+    throw new Error('dbError');
+  }
+}
+
 export async function updateSocialAccount(
   accountId: string,
   updates: Partial<SocialAccount>
@@ -218,11 +265,25 @@ export async function updateSocialAccount(
   }
 
   try {
+    // account_idが変更される場合は重複チェック
+    if (updates.account_id) {
+      const isDuplicate = await checkAccountIdDuplicate(updates.account_id, accountId);
+      if (isDuplicate) {
+        throw new Error('accountDuplicate');
+      }
+    }
+
     const accountRef = doc(db, 'users', userId, 'socialAccounts', accountId);
-    const updateData: Partial<SocialAccount> = { ...updates };
+    const updateData = {
+      ...updates,
+      updatedAt: new Date()
+    };
 
     await updateDoc(accountRef, updateData);
   } catch (error) {
+    if (error instanceof Error && error.message === 'accountDuplicate') {
+      throw error;
+    }
     console.error('Failed to update social account:', error);
     throw new Error('dbError');
   }
@@ -282,7 +343,7 @@ export async function switchActiveAccount(accountId: string): Promise<void> {
  * 新しい投稿を作成（認証必須）
  */
 export async function createSocialPost(
-  accountId: string,
+  stableId: string,
   content: string
 ): Promise<SocialPost> {
   const userId = await getAuthenticatedUserId();
@@ -298,12 +359,12 @@ export async function createSocialPost(
     throw new Error('投稿は500文字以内で入力してください');
   }
   try {
-    const postsRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'posts');
+    const postsRef = collection(db, 'users', userId, 'socialAccounts', stableId, 'posts');
     const now = new Date();
     const timestampId = generateTimestampId(now);
 
     const newPost: Omit<SocialPost, 'id'> = {
-      authorId: accountId,
+      authorId: stableId, // stable_idを使用
       authorType: 'user',
       content: content.trim(), // XSS対策：トリム処理
       timestamp: now,

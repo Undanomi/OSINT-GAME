@@ -77,8 +77,8 @@ export const SearchPage: React.FC<SearchPageProps> = ({
   // ユーザーアカウントで検索
   const filteredUserAccounts = allAccounts.filter(account => {
     if (isUserIdSearch) {
-      // @検索の場合はIDのみで検索
-      return account.id.toLowerCase().includes(userIdQuery);
+      // @検索の場合はaccount_idで検索
+      return account.account_id.toLowerCase().includes(userIdQuery);
     } else {
       // 通常検索の場合は名前で検索
       return account.name.toLowerCase().includes(query);
@@ -88,8 +88,8 @@ export const SearchPage: React.FC<SearchPageProps> = ({
   // NPC検索
   const filteredNPCs = npcs.filter(npc => {
     if (isUserIdSearch) {
-      // @検索の場合はIDのみで検索
-      return npc.id.toLowerCase().includes(userIdQuery);
+      // @検索の場合はaccount_idで検索
+      return npc.account_id.toLowerCase().includes(userIdQuery);
     } else {
       // 通常検索の場合は名前で検索
       return npc.name.toLowerCase().includes(query);
@@ -149,7 +149,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-semibold text-gray-900 truncate">{user.name}</h4>
-                            <p className="text-sm text-gray-500 truncate">@{user.id}</p>
+                            <p className="text-sm text-gray-500 truncate">@{user.account_id}</p>
                             {user.bio && (
                               <p className="text-sm text-gray-600 truncate mt-1">{user.bio}</p>
                             )}

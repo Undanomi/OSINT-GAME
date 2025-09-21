@@ -30,7 +30,7 @@ export const PostComponent: React.FC<PostComponentProps> = ({ post, onUserSelect
             >
               {post.author.name}
             </h3>
-            <span className="text-gray-500 text-sm">{getDisplayUserId(post.author.id)}</span>
+            <span className="text-gray-500 text-sm">{getDisplayUserId(post.author.account_id)}</span>
             <span className="text-gray-500 text-sm">•</span>
             <span className="text-gray-500 text-sm">{post.timeString}</span>
           </div>

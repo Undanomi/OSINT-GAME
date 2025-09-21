@@ -1,6 +1,7 @@
 [
   {
-    "id": "ai_researcher",
+    "id": "d1e2f3g4-5h6i-7j8k-9l0m-n1o2p3q4r5s6",
+    "account_id": "ai_researcher",
     "name": "ミラベル・テクノス",
     "avatar": "M",
     "bio": "AI研究者として新しい可能性を探求しています。量子機械学習とニューラルフュージョンが専門分野です。",
@@ -16,7 +17,8 @@
     "isActive": true
   },
   {
-    "id": "travel_blogger",
+    "id": "e2f3g4h5-6i7j-8k9l-0m1n-o2p3q4r5s6t7",
+    "account_id": "travel_blogger",
     "name": "ユキオ・ワンダラー",
     "avatar": "Y",
     "bio": "世界各地を旅して、その土地の文化や人々の暮らしを発信しています。現在73ヶ国訪問済み！",
@@ -32,7 +34,8 @@
     "isActive": true
   },
   {
-    "id": "chef_creative",
+    "id": "f3g4h5i6-7j8k-9l0m-1n2o-p3q4r5s6t7u8",
+    "account_id": "chef_creative",
     "name": "サクラ・フレーバーマスター",
     "avatar": "S",
     "bio": "創作料理を通じて人々を笑顔にしたい。季節の食材を活かしたフュージョンキュイジーヌを日々研究中です。",
@@ -48,7 +51,8 @@
     "isActive": true
   },
   {
-    "id": "fitness_trainer",
+    "id": "g4h5i6j7-8k9l-0m1n-2o3p-q4r5s6t7u8v9",
+    "account_id": "fitness_trainer",
     "name": "ダイチ・パワーフィット",
     "avatar": "D",
     "bio": "健康な体作りをサポートするフィットネストレーナーです。ホリスティック運動学の楽しさを多くの人に伝えたい！",
@@ -64,7 +68,8 @@
     "isActive": true
   },
   {
-    "id": "artist_painter",
+    "id": "h5i6j7k8-9l0m-1n2o-3p4q-r5s6t7u8v9w0",
+    "account_id": "artist_painter",
     "name": "アヤカ・カラーストーム",
     "avatar": "A",
     "bio": "ネオインプレッショニズムを中心とした現代アートを制作しています。感情や想いをプリズムカラーに込めて表現することが私のテーマです。",

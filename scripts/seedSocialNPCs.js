@@ -71,12 +71,22 @@ const db = admin.firestore();
  * NPCデータの検証
  */
 function validateNPCData(npc) {
-  const requiredFields = ['id', 'name', 'avatar', 'bio', 'isActive', 'canDM', 'systemPrompt'];
+  const requiredFields = ['id', 'account_id', 'name', 'avatar', 'bio', 'isActive', 'canDM', 'systemPrompt'];
 
   for (const field of requiredFields) {
     if (npc[field] === undefined || npc[field] === null) {
       throw new Error(`必須フィールド '${field}' が不足しています`);
     }
+  }
+
+  // idはstable_idとして使用され、UUID形式であること
+  if (typeof npc.id !== 'string' || npc.id.length < 10) {
+    throw new Error(`id フィールドは stable_id として10文字以上である必要があります: ${npc.id}`);
+  }
+
+  // account_idは表示用IDとして使用される
+  if (typeof npc.account_id !== 'string' || npc.account_id.length === 0) {
+    throw new Error(`account_id フィールドは表示用IDとして必須です: ${npc.account_id}`);
   }
 
   // アバターは1文字のアルファベットである必要がある
@@ -87,6 +97,12 @@ function validateNPCData(npc) {
   // 数値フィールドのデフォルト値設定
   npc.followersCount = npc.followersCount || 0;
   npc.followingCount = npc.followingCount || 0;
+
+  // デフォルト値の設定
+  if (!npc.location) npc.location = '';
+  if (!npc.company) npc.company = '';
+  if (!npc.position) npc.position = '';
+  if (!npc.education) npc.education = '';
 
   return true;
 }

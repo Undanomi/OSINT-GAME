@@ -73,6 +73,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         timeString: formatTimestamp(post.timestamp),
         author: {
           id: activeAccount.id,
+          account_id: activeAccount.account_id,
           name: activeAccount.name,
           avatar: activeAccount.avatar,
         }
@@ -129,7 +130,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-800">{activeAccount.name}</h2>
-              <p className="text-gray-600">{getDisplayUserId(activeAccount.id)}</p>
+              <p className="text-gray-600">{getDisplayUserId(activeAccount.account_id)}</p>
               <p className="text-sm text-gray-700 mt-2 max-w-md leading-relaxed">{activeAccount.bio}</p>
             </div>
           </div>

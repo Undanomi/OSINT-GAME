@@ -66,6 +66,7 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
         timeString: formatTimestamp(post.timestamp),
         author: {
           id: npc.id,
+          account_id: npc.account_id,
           name: npc.name,
           avatar: npc.avatar,
         }
@@ -93,7 +94,7 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [npc.id, npc.name, npc.avatar, loading, hasMore, cursor]);
+  }, [npc.id, npc.account_id, npc.name, npc.avatar, loading, hasMore, cursor]);
 
   // refに最新の関数を保存
   loadNPCPostsRef.current = loadNPCPosts;
@@ -132,7 +133,7 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-800">{npc.name}</h2>
-                <p className="text-gray-600">{getDisplayUserId(npc.id)}</p>
+                <p className="text-gray-600">{getDisplayUserId(npc.account_id)}</p>
                 <p className="text-sm text-gray-700 mt-2 max-w-md leading-relaxed">{npc.bio}</p>
               </div>
             </div>

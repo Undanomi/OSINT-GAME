@@ -43,7 +43,7 @@ try {
   if (fs.existsSync(serviceAccountPath)) {
     // サービスアカウントキーファイルが存在する場合
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-    app = admin.initializeApp({
+    admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       projectId: serviceAccount.project_id
     });
@@ -55,7 +55,7 @@ try {
       throw new Error('プロジェクトIDが設定されていません。NEXT_PUBLIC_FIREBASE_PROJECT_ID または FIREBASE_PROJECT_ID を設定してください。');
     }
 
-    app = admin.initializeApp({
+    admin.initializeApp({
       projectId: projectId
     });
     console.log('[+] Firebase Admin SDK initialized with default credentials');
@@ -71,12 +71,22 @@ const db = admin.firestore();
  * デフォルトアカウントデータの検証
  */
 function validateAccountData(account) {
-  const requiredFields = ['id', 'name', 'avatar', 'bio', 'isActive', 'canDM'];
+  const requiredFields = ['id', 'account_id', 'name', 'avatar', 'bio', 'isActive', 'canDM'];
 
   for (const field of requiredFields) {
     if (account[field] === undefined || account[field] === null) {
       throw new Error(`必須フィールド '${field}' が不足しています`);
     }
+  }
+
+  // idはstable_idとして使用され、UUID形式であること
+  if (typeof account.id !== 'string' || account.id.length < 10) {
+    throw new Error(`id フィールドは stable_id として10文字以上である必要があります: ${account.id}`);
+  }
+
+  // account_idは表示用IDとして使用される
+  if (typeof account.account_id !== 'string' || account.account_id.length === 0) {
+    throw new Error(`account_id フィールドは表示用IDとして必須です: ${account.account_id}`);
   }
 
   // アバターは1文字のアルファベットである必要がある
@@ -164,7 +174,8 @@ async function main() {
     // 登録するデータのリスト表示
     console.log('\n[i] 登録するデフォルトアカウント設定:');
     for (const account of jsonData) {
-      console.log(`  - ${account.id}: ${account.name} (${account.position || 'ポジション不明'})`);
+      console.log(`  - ${account.account_id}: ${account.name} (${account.position || 'ポジション不明'})`);
+      console.log(`    stable_id: ${account.id}`);
     }
 
     // Firestoreへの登録

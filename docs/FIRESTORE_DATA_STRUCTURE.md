@@ -243,13 +243,18 @@ defaultSocialAccountSettings/
 
 ### コレクション詳細
 
-#### 1. ユーザーアカウント (`users/{userId}/socialAccounts/{accountId}`)
+#### 1. ユーザーアカウント (`users/{userId}/socialAccounts/{stableId}`)
 
 各ユーザーは最大3つのソーシャルアカウントを持てます。
 
+**デュアルIDシステム**：
+- `id` (stable_id): UUID形式の内部識別子（不変、投稿やフォロー関係で使用）
+- `account_id`: ユーザーが変更可能な表示用ID（検索や表示で使用）
+
 ```typescript
 interface SocialAccount {
-  id: string;                    // アカウントID
+  id: string;                    // stable_id: UUID形式の内部識別子（不変）
+  account_id: string;            // 表示用ID（ユーザーが変更可能、重複チェック有り）
   name: string;                  // 表示名
   avatar: string;                // アバター文字（A-Z）
   bio: string;                   // 自己紹介
@@ -260,6 +265,7 @@ interface SocialAccount {
   birthday?: string;             // 誕生日（YYYY-MM-DD）
   isActive: boolean;             // アクティブアカウントフラグ
   createdAt: Date;               // 作成日時
+  updatedAt: Date;               // 更新日時
   followersCount: number;        // フォロワー数
   followingCount: number;        // フォロー数
   canDM: boolean;                // DM可能フラグ
@@ -294,13 +300,18 @@ interface TimelinePost extends SocialPost {
 }
 ```
 
-#### 4. NPC定義 (`socialNPCs/{npcId}`)
+#### 4. NPC定義 (`socialNPCs/{stableId}`)
 
 NPCキャラクターの基本情報です。
 
+**デュアルIDシステム**：
+- `id` (stable_id): UUID形式の内部識別子（不変、投稿やフォロー関係で使用）
+- `account_id`: 表示・検索用ID（固定、NPCの場合は管理者が設定）
+
 ```typescript
 interface SocialNPC {
-  id: string;                    // NPC ID
+  id: string;                    // stable_id: UUID形式の内部識別子（不変）
+  account_id: string;            // 表示・検索用ID（固定）
   name: string;                  // 表示名
   avatar: string;                // アバター文字
   bio: string;                   // 自己紹介
@@ -317,7 +328,7 @@ interface SocialNPC {
 }
 ```
 
-#### 5. NPC投稿 (`socialNPCs/{npcId}/posts/{postId}`)
+#### 5. NPC投稿 (`socialNPCs/{stableId}/posts/{postId}`)
 
 NPCの個別投稿データです。
 
@@ -325,6 +336,7 @@ NPCの個別投稿データです。
 interface NPCPost extends SocialPost {
   // SocialPostと同じ構造
   // authorType は常に 'npc'
+  // authorId は NPC の stable_id を使用
 }
 ```
 
@@ -364,13 +376,17 @@ interface SocialDMMessage {
 }
 ```
 
-#### 9. デフォルトアカウント設定 (`defaultSocialAccountSettings/{settingId}`)
+#### 9. デフォルトアカウント設定 (`defaultSocialAccountSettings/{stableId}`)
 
 新規ユーザー用のデフォルトアカウント設定です。
 
+**デュアルIDシステム**：
+- `id` (stable_id): UUID形式の内部識別子（テンプレート用）
+- `account_id`: 新規ユーザーのデフォルト表示ID
+
 ```typescript
 interface DefaultSocialAccountSetting extends SocialAccount {
-  // SocialAccountと同じ構造
+  // SocialAccountと同じ構造（デュアルIDシステム含む）
   // 新規ユーザー登録時に使用される
 }
 ```
@@ -392,12 +408,14 @@ interface DefaultSocialAccountSetting extends SocialAccount {
 #### 投稿作成フロー
 
 **ユーザー投稿の場合:**
-1. `users/{userId}/socialAccounts/{accountId}/posts/{postId}` に保存
+1. `users/{userId}/socialAccounts/{stableId}/posts/{postId}` に保存
 2. `users/{userId}/socialTimeline/{postId}` にもコピー保存
+3. `authorId` には stable_id を使用
 
 **NPC投稿の場合:**
-1. `socialNPCs/{npcId}/posts/{postId}` に保存
+1. `socialNPCs/{stableId}/posts/{postId}` に保存
 2. `socialNPCPosts/{postId}` にもコピー保存
+3. `authorId` には NPC の stable_id を使用
 
 ### キャッシュ戦略
 
