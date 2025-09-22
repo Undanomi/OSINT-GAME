@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuthContext } from '@/providers/AuthProvider';
-import { getContacts, getMessages } from '@/actions/messenger';
-import { MessengerContact, UIMessage, convertFirestoreToUIMessage } from '@/types/messenger';
+import { getContacts, getMessages, addMessage, addContact, getIntroductionMessageFromFirestore } from '@/actions/messenger';
+import { MessengerContact, UIMessage, convertFirestoreToUIMessage, defaultMessengerContacts, ChatMessage } from '@/types/messenger';
 import { useMessengerStore } from '@/store/messengerStore';
+import { appNotifications } from '@/utils/notifications';
 
 
 
@@ -26,6 +27,10 @@ export const useMessenger = () => {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [needsCacheUpdate, setNeedsCacheUpdate] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const initializationExecuted = useRef(false);
 
   const loadContacts = useCallback(async () => {
     if (!user) return;
@@ -104,12 +109,7 @@ export const useMessenger = () => {
       );
       if (newMessages.length > 0) {
         const uiMessages = newMessages.map(convertFirestoreToUIMessage);
-        setMessages(prev => {
-          const updatedMessages = [...uiMessages, ...prev];
-          // キャッシュも更新
-          setCachedMessages(selectedContact.id, updatedMessages, newHasMore);
-          return updatedMessages;
-        });
+        setMessages(prev => [...uiMessages, ...prev]);
       }
       setHasMore(newHasMore);
     } catch (error) {
@@ -117,29 +117,21 @@ export const useMessenger = () => {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [user, selectedContact, messages, hasMore, isLoadingMore, setCachedMessages]);
+  }, [user, selectedContact, messages, hasMore, isLoadingMore]);
 
   const addMessageToState = useCallback((message: UIMessage) => {
     if(!user || !selectedContact) return;
 
-    setMessages(prev => {
-        const newMessages = [...prev, message];
-        // キャッシュも更新
-        setCachedMessages(selectedContact.id, newMessages, hasMore);
-        return newMessages;
-    });
-  }, [user, selectedContact, hasMore, setCachedMessages]);
+    setMessages(prev => [...prev, message]);
+    setNeedsCacheUpdate(true);
+  }, [user, selectedContact]);
 
   const removeMessageFromState = useCallback((messageId: string) => {
     if(!user || !selectedContact) return;
 
-    setMessages(prev => {
-        const newMessages = prev.filter(msg => msg.id !== messageId);
-        // キャッシュも更新
-        setCachedMessages(selectedContact.id, newMessages, hasMore);
-        return newMessages;
-    });
-  }, [user, selectedContact, hasMore, setCachedMessages]);
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    setNeedsCacheUpdate(true);
+  }, [user, selectedContact]);
 
   const addTemporaryMessage = useCallback((message: UIMessage) => {
     if(!user || !selectedContact) return;
@@ -147,11 +139,94 @@ export const useMessenger = () => {
     setMessages(prev => [...prev, message]);
   }, [user, selectedContact]);
 
+  // 初期化関数群
+  const initializeUserContacts = useCallback(async (): Promise<void> => {
+    try {
+      for (const contact of defaultMessengerContacts) {
+        const { id, ...contactData } = contact;
+        await addContact(contactData, id);
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error initializing user contacts:', error);
+      }
+      throw error;
+    }
+  }, []);
+
+  const sendIntroductionMessage = useCallback(async (): Promise<void> => {
+    try {
+      const introData = await getIntroductionMessageFromFirestore('darkOrganization');
+      const introText = introData?.text || 'ようこそ。あなたが我々に興味を持ってくれたことを知っています。まずは簡単な質問から始めましょうか。何か知りたいことはありますか？';
+      const contactId = 'dark_organization';
+
+      const introMessage: ChatMessage = {
+        id: `intro-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        sender: 'npc',
+        text: introText,
+        timestamp: new Date(),
+      };
+
+      await addMessage(contactId, introMessage);
+
+      const previewText = introText.length > 50 ? `${introText.substring(0, 50)}...` : introText;
+      appNotifications.fromApp(
+        'messenger',
+        '闇の組織からの新着メッセージ',
+        previewText,
+        'info',
+        5000
+      );
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error in sendIntroductionMessage:', error);
+      }
+      throw error;
+    }
+  }, []);
+
+  const initializeMessenger = useCallback(async () => {
+    // 既に実行済み、または実行中、または初期化完了の場合は何もしない
+    if (initializationExecuted.current || isInitializing || isInitialized) return;
+
+    // 実行フラグを立てて重複実行を防止
+    initializationExecuted.current = true;
+    setIsInitializing(true);
+
+    try {
+      const contacts = await getContacts();
+      if (contacts.length > 0) {
+        setIsInitialized(true);
+        return;
+      }
+
+      console.log('Starting messenger initialization...');
+
+      // 1. デフォルト連絡先をDBに追加
+      await initializeUserContacts();
+
+      // 2. イントロメッセージを送信
+      await sendIntroductionMessage();
+
+      setIsInitialized(true);
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Messenger initialization failed:', error);
+      }
+      // エラー時のみフラグをリセットしてリトライ可能にする
+      initializationExecuted.current = false;
+    } finally {
+      setIsInitializing(false);
+    }
+  }, [isInitializing, isInitialized, initializeUserContacts, sendIntroductionMessage]);
+
   useEffect(() => {
-    if (user) {
+    if (user && !isInitializing && !isInitialized) {
+      initializeMessenger();
+    } else if (user && isInitialized) {
       loadContacts();
     }
-  }, [user, loadContacts]);
+  }, [user, isInitializing, isInitialized, initializeMessenger, loadContacts]);
 
   useEffect(() => {
     if (selectedContact) {
@@ -160,6 +235,14 @@ export const useMessenger = () => {
       setMessages([]);
     }
   }, [selectedContact, loadInitialMessages]);
+
+  // addMessageToState と removeMessageFromState 用のキャッシュ更新
+  useEffect(() => {
+    if (needsCacheUpdate && selectedContact && messages.length > 0) {
+      setCachedMessages(selectedContact.id, messages, hasMore);
+      setNeedsCacheUpdate(false);
+    }
+  }, [needsCacheUpdate, selectedContact, messages, hasMore, setCachedMessages]);
 
   return {
     contacts,
