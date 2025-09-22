@@ -10,8 +10,13 @@ import { useMessenger } from '@/hooks/useMessenger';
 import { UIMessage, ErrorType, selectErrorMessage, defaultMessengerContacts, ChatMessage } from '@/types/messenger';
 import { appNotifications } from '@/utils/notifications';
 
-function generateSecureId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+/**
+ * タイムスタンプベースのメッセージID生成
+ */
+function generateTimestampId(timestamp: Date): string {
+  const timeString = timestamp.toISOString().replace(/[-:T]/g, '').slice(0, 14);
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  return `${timeString}_${randomSuffix}`;
 }
 
 async function initializeUserContacts(): Promise<void> {
@@ -142,13 +147,14 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     if (!inputText.trim() || !selectedContact || !user || inputText.trim().length > 500) return;
 
     const currentInput = inputText;
-    const messageId = generateSecureId();
+    const userTimestamp = new Date();
+    const messageId = generateTimestampId(userTimestamp);
     const userMessage: UIMessage = {
       id: messageId,
       sender: 'me',
       text: currentInput,
-      time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-      timestamp: new Date(),
+      time: userTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: userTimestamp,
     };
 
     setInputText('');
@@ -164,13 +170,14 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
       const aiText = await generateAIResponse(currentInput, [], selectedContact.type); // chatHistoryは別途実装
 
-      const aiMessageId = generateSecureId();
+      const aiTimestamp = new Date();
+      const aiMessageId = generateTimestampId(aiTimestamp);
       const aiMessage: UIMessage = {
         id: aiMessageId,
         sender: 'other',
         text: aiText,
-        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date(),
+        time: aiTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: aiTimestamp,
       };
 
       await addMessage(selectedContact.id, {
@@ -188,12 +195,13 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       const errorType = error instanceof Error ? error.message as ErrorType : 'general';
       const errorText = selectErrorMessage(errorType, selectedContact.type);
 
+      const errorTimestamp = new Date();
       const errorMessage: UIMessage = {
-        id: generateSecureId(),
+        id: generateTimestampId(errorTimestamp),
         sender: 'other',
         text: errorText,
-        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date(),
+        time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: errorTimestamp,
       };
       addMessageToState(errorMessage);
     }

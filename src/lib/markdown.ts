@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * Parse markdown text and return React nodes
- * Supports tables, code blocks, bold, italic, inline code, and links
+ * Supports tables, code blocks, lists, bold, italic, inline code, and line breaks
  */
 export const parseMarkdown = (text: string): React.ReactNode => {
   if (!text) return null;
@@ -10,10 +10,16 @@ export const parseMarkdown = (text: string): React.ReactNode => {
   // Check if it's a markdown table
   if (text.includes('|') && text.includes('\n')) {
     const lines = text.trim().split('\n');
-    const hasTableHeader = lines.length >= 2 && lines[1].includes('---');
 
-    if (hasTableHeader) {
-      return parseMarkdownTable(text);
+    if (lines.length >= 2) {
+      // Check first line has at least 2 columns (1 pipe separator)
+      const firstLineColumns = lines[0].split('|').filter(col => col.trim() !== '').length;
+      // Check second line is separator with ---
+      const hasTableSeparator = lines[1].includes('---') && lines[1].includes('|');
+
+      if (firstLineColumns >= 2 && hasTableSeparator) {
+        return parseMarkdownTable(text);
+      }
     }
   }
 
@@ -22,8 +28,113 @@ export const parseMarkdown = (text: string): React.ReactNode => {
     return parseCodeBlocks(text);
   }
 
+  // Check for lists (unordered or ordered)
+  if (hasListPattern(text)) {
+    return parseListContent(text);
+  }
+
   // Parse other markdown formatting
   return parseInlineMarkdown(text);
+};
+
+/**
+ * Check if text contains list patterns
+ */
+const hasListPattern = (text: string): boolean => {
+  const lines = text.trim().split('\n');
+  return lines.some(line => {
+    const trimmed = line.trim();
+    // Unordered list: -, *, +
+    if (/^[-*+]\s/.test(trimmed)) return true;
+    // Ordered list: 1., 2., etc.
+    if (/^\d+\.\s/.test(trimmed)) return true;
+    return false;
+  });
+};
+
+/**
+ * Parse list content (both ordered and unordered)
+ */
+const parseListContent = (text: string): React.ReactNode => {
+  const lines = text.trim().split('\n');
+  const result: React.ReactNode[] = [];
+  let currentList: { type: 'ul' | 'ol'; items: string[] } | null = null;
+  let nonListLines: string[] = [];
+  let key = 0;
+
+  const flushNonListLines = () => {
+    if (nonListLines.length > 0) {
+      result.push(
+        React.createElement(
+          'div',
+          { key: `text-${key++}`, className: 'mb-2' },
+          parseInlineMarkdown(nonListLines.join('\n'))
+        )
+      );
+      nonListLines = [];
+    }
+  };
+
+  const flushCurrentList = () => {
+    if (currentList && currentList.items.length > 0) {
+      const listElement = React.createElement(
+        currentList.type,
+        {
+          key: `list-${key++}`,
+          className: currentList.type === 'ul'
+            ? 'list-disc list-inside mb-2 space-y-0.5'
+            : 'list-decimal list-inside mb-2 space-y-0.5'
+        },
+        currentList.items.map((item, index) =>
+          React.createElement(
+            'li',
+            { key: index, className: 'text-gray-800' },
+            parseInlineMarkdown(item)
+          )
+        )
+      );
+      result.push(listElement);
+      currentList = null;
+    }
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Check for unordered list item
+    const unorderedMatch = trimmed.match(/^[-*+]\s(.*)$/);
+    if (unorderedMatch) {
+      flushNonListLines();
+      if (currentList?.type !== 'ul') {
+        flushCurrentList();
+        currentList = { type: 'ul', items: [] };
+      }
+      currentList.items.push(unorderedMatch[1]);
+      continue;
+    }
+
+    // Check for ordered list item
+    const orderedMatch = trimmed.match(/^\d+\.\s(.*)$/);
+    if (orderedMatch) {
+      flushNonListLines();
+      if (currentList?.type !== 'ol') {
+        flushCurrentList();
+        currentList = { type: 'ol', items: [] };
+      }
+      currentList.items.push(orderedMatch[1]);
+      continue;
+    }
+
+    // Not a list item
+    flushCurrentList();
+    nonListLines.push(line);
+  }
+
+  // Flush remaining content
+  flushCurrentList();
+  flushNonListLines();
+
+  return React.createElement(React.Fragment, null, ...result);
 };
 
 /**
@@ -108,7 +219,7 @@ export const parseCodeBlocks = (text: string): React.ReactNode => {
       parts.push(
         React.createElement(
           'div',
-          { key: `text-${key++}`, className: 'mb-4' },
+          { key: `text-${key++}`, className: 'mb-2' },
           parseInlineMarkdown(beforeText)
         )
       );
@@ -120,7 +231,7 @@ export const parseCodeBlocks = (text: string): React.ReactNode => {
     parts.push(
       React.createElement(
         'div',
-        { key: `code-${key++}`, className: 'my-4' },
+        { key: `code-${key++}`, className: 'my-2' },
         React.createElement(
           'div',
           { className: 'bg-gray-100 text-gray-600 text-xs px-3 py-1 border-b' },
@@ -143,7 +254,7 @@ export const parseCodeBlocks = (text: string): React.ReactNode => {
     parts.push(
       React.createElement(
         'div',
-        { key: `text-${key++}`, className: 'mb-4' },
+        { key: `text-${key++}`, className: 'mb-2' },
         parseInlineMarkdown(remainingText)
       )
     );
@@ -155,36 +266,91 @@ export const parseCodeBlocks = (text: string): React.ReactNode => {
 
 /**
  * Parse inline markdown formatting
- * Supports: **bold**, *italic*, `code`, [links](url)
+ * Supports: **bold**, *italic*, `code`, and paragraphs
  */
 export const parseInlineMarkdown = (text: string): React.ReactNode => {
   if (!text) return null;
 
-  // Split by markdown patterns while preserving them
+  // Split into paragraphs (double newlines) and single lines
+  const paragraphs = text.split('\n\n').filter(p => p.trim() !== '');
+
+  if (paragraphs.length > 1) {
+    // Multiple paragraphs - wrap each in <p>
+    return React.createElement(
+      React.Fragment,
+      null,
+      ...paragraphs.map((paragraph, index) => {
+        const processedParagraph = parseInlineMarkdownLines(paragraph);
+        return React.createElement(
+          'p',
+          { key: index, className: 'mb-3 last:mb-0' },
+          processedParagraph
+        );
+      })
+    );
+  }
+
+  // Single paragraph or lines - handle line breaks within it
+  return parseInlineMarkdownLines(text);
+};
+
+/**
+ * Parse markdown for single paragraph with line breaks
+ */
+const parseInlineMarkdownLines = (text: string): React.ReactNode => {
+  const lines = text.split('\n');
+  if (lines.length > 1) {
+    return React.createElement(
+      React.Fragment,
+      null,
+      ...lines.map((line, index) => {
+        const processedLine = parseInlineMarkdownSingleLine(line);
+        if (index < lines.length - 1) {
+          return React.createElement(
+            React.Fragment,
+            { key: index },
+            processedLine,
+            React.createElement('br', { key: `br-${index}` })
+          );
+        }
+        return React.createElement(React.Fragment, { key: index }, processedLine);
+      })
+    );
+  }
+
+  return parseInlineMarkdownSingleLine(text);
+};
+
+/**
+ * Parse inline markdown formatting for a single line
+ * Supports: **bold**, *italic*, `code`
+ */
+const parseInlineMarkdownSingleLine = (text: string): React.ReactNode => {
+  if (!text) return null;
+
   const parts: React.ReactNode[] = [];
-  let currentText = text;
   let key = 0;
 
-  while (currentText.length > 0) {
-    // Bold text (**text**)
-    const boldMatch = currentText.match(/^\*\*(.+?)\*\*/);
-    if (boldMatch) {
-      parts.push(React.createElement('strong', { key: key++ }, boldMatch[1]));
-      currentText = currentText.slice(boldMatch[0].length);
-      continue;
+  // Combined regex for all markdown patterns - optimized for performance
+  const markdownRegex = /(\*\*([^*]+)\*\*)|(\*([^*]+)\*)|(`([^`]+)`)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = markdownRegex.exec(text)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
     }
 
-    // Italic text (*text*)
-    const italicMatch = currentText.match(/^\*(.+?)\*/);
-    if (italicMatch) {
-      parts.push(React.createElement('em', { key: key++ }, italicMatch[1]));
-      currentText = currentText.slice(italicMatch[0].length);
-      continue;
-    }
-
-    // Code text (`text`)
-    const codeMatch = currentText.match(/^`(.+?)`/);
-    if (codeMatch) {
+    // Process the matched markdown
+    if (match[1]) {
+      // Bold (**text**)
+      parts.push(React.createElement('strong', { key: key++ }, match[2]));
+    } else if (match[3]) {
+      // Italic (*text*)
+      parts.push(React.createElement('em', { key: key++ }, match[4]));
+    } else if (match[5]) {
+      // Code (`text`)
       parts.push(
         React.createElement(
           'code',
@@ -192,47 +358,22 @@ export const parseInlineMarkdown = (text: string): React.ReactNode => {
             key: key++,
             className: 'bg-gray-100 px-1 py-0.5 rounded text-sm font-mono'
           },
-          codeMatch[1]
+          match[6]
         )
       );
-      currentText = currentText.slice(codeMatch[0].length);
-      continue;
     }
 
-    // Links [text](url)
-    const linkMatch = currentText.match(/^\[(.+?)\]\((.+?)\)/);
-    if (linkMatch) {
-      parts.push(
-        React.createElement(
-          'a',
-          {
-            key: key++,
-            href: linkMatch[2],
-            className: 'text-blue-600 hover:underline',
-            target: '_blank',
-            rel: 'noopener noreferrer'
-          },
-          linkMatch[1]
-        )
-      );
-      currentText = currentText.slice(linkMatch[0].length);
-      continue;
-    }
+    lastIndex = match.index + match[0].length;
+  }
 
-    // Regular text - find next markdown pattern or take the rest
-    const nextMarkdownMatch = currentText.match(/\*\*|\*|`|\[/);
-    if (nextMarkdownMatch && nextMarkdownMatch.index !== undefined && nextMarkdownMatch.index > 0) {
-      parts.push(currentText.slice(0, nextMarkdownMatch.index));
-      currentText = currentText.slice(nextMarkdownMatch.index);
-    } else if (nextMarkdownMatch && nextMarkdownMatch.index === 0) {
-      // If markdown pattern at start but didn't match above, treat as regular character
-      parts.push(currentText[0]);
-      currentText = currentText.slice(1);
-    } else {
-      // No more markdown patterns, add the rest
-      parts.push(currentText);
-      break;
-    }
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  // If no markdown was found, return the original text
+  if (parts.length === 0) {
+    return text;
   }
 
   return React.createElement(React.Fragment, null, ...parts);
