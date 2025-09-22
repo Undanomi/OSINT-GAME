@@ -177,7 +177,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         timestamp: userMessage.timestamp,
       });
 
-      const aiText = await generateAIResponse(currentInput, [], selectedContact.type);
+      const aiText = await generateAIResponse(currentInput, messages, selectedContact.type);
 
       const aiTimestamp = new Date();
       const aiMessageId = generateTimestampId(aiTimestamp);
@@ -214,7 +214,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       };
       addMessageToState(errorMessage);
     }
-  }, [inputText, selectedContact, user, submissionState, submissionQuestions, addMessageToState, removeMessageFromState, addTemporaryMessage, startSubmissionMode, addSubmissionAnswer, setSubmissionQuestion, setSubmissionResult, completeSubmission]);
+  }, [inputText, selectedContact, user, submissionState, submissionQuestions, addMessageToState, removeMessageFromState, addTemporaryMessage, startSubmissionMode, addSubmissionAnswer, setSubmissionQuestion, setSubmissionResult, completeSubmission, messages]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.keyCode === 13 && !e.shiftKey) {

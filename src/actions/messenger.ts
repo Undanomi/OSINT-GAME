@@ -16,7 +16,8 @@ import {
 import { requireAuth } from '@/lib/auth/server';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
 // prompts以下は廃止予定のため削除
-import type { MessengerContact, ChatMessage, RateLimitInfo, SubmissionQuestion, SubmissionResult } from '@/types/messenger';
+import type { MessengerContact, ChatMessage, RateLimitInfo, UIMessage, SubmissionQuestion, SubmissionResult } from '@/types/messenger';
+import { convertUIMessageToContent } from '@/types/messenger';
 import {
   MESSAGES_PER_PAGE,
   RATE_LIMIT_PER_MINUTE,
@@ -181,25 +182,31 @@ function cleanupExpiredRateLimits(currentTime: number): void {
 
 /**
  * 会話履歴を最適化してメモリ使用量を制御
- * パフォーマンス向上のため長さとサイズ両方で制限
+ * 直近20件を取得し、20件以下の場合は最初のmodelメッセージを除去
  */
 function optimizeConversationHistory(history: Content[]): Content[] {
   if (!history || history.length === 0) {
     return [];
   }
 
+  // 1. 直近20件を取得
   let optimizedHistory = [...history];
-
-  // 1. 長さ制限: 最新のMAX_CONVERSATION_HISTORY_LENGTH件のみ保持
   if (optimizedHistory.length > MAX_CONVERSATION_HISTORY_LENGTH) {
     optimizedHistory = optimizedHistory.slice(-MAX_CONVERSATION_HISTORY_LENGTH);
   }
 
-  // 2. サイズ制限: 累計文字数がMAX_CONVERSATION_HISTORY_SIZEを超えたら古いものから削除
+  // 2. 20件以下の場合、最初のmodelメッセージを除去
+  if (optimizedHistory.length <= MAX_CONVERSATION_HISTORY_LENGTH) {
+    const firstModelIndex = optimizedHistory.findIndex(msg => msg.role === 'model');
+    if (firstModelIndex !== -1) {
+      optimizedHistory = optimizedHistory.filter((_, index) => index !== firstModelIndex);
+    }
+  }
+
+  // 3. サイズ制限チェック
   let totalSize = 0;
   let validHistoryLength = optimizedHistory.length;
 
-  // 後ろから計算して制限サイズに収まる範囲を特定
   for (let i = optimizedHistory.length - 1; i >= 0; i--) {
     const entry = optimizedHistory[i];
     const entrySize = JSON.stringify(entry).length;
@@ -228,7 +235,7 @@ function optimizeConversationHistory(history: Content[]): Content[] {
 export const generateAIResponse = requireAuth(async (
   userId: string,
   userInput: string,
-  conversationHistory?: Content[],
+  conversationHistory?: UIMessage[],
   contactType?: string
 ): Promise<string> => {
   try {
@@ -270,8 +277,9 @@ export const generateAIResponse = requireAuth(async (
       systemInstruction: systemPromptData.prompt,
     });
 
-    // 会話履歴の最適化（メモリ使用量制御）
-    const optimizedHistory = optimizeConversationHistory(conversationHistory || []);
+    // UIMessage配列をContent配列に変換してから最適化
+    const contentHistory = conversationHistory ? conversationHistory.map(convertUIMessageToContent) : [];
+    const optimizedHistory = optimizeConversationHistory(contentHistory);
 
     // プロンプトの構築
     const promptForModel = `プレイヤーからの入力: ${sanitizedInput}`;

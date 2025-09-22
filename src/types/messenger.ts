@@ -212,3 +212,13 @@ export function convertFirestoreToUIMessage(message: ChatMessage): UIMessage {
     timestamp: message.timestamp
   };
 }
+
+/**
+ * UIMessageをGoogleGenerativeAIのContent形式に変換する
+ */
+export function convertUIMessageToContent(message: UIMessage): { role: 'user' | 'model'; parts: { text: string }[] } {
+  return {
+    role: message.sender === 'me' ? 'user' : 'model',
+    parts: [{ text: message.text }]
+  };
+}
