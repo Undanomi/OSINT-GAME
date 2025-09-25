@@ -60,6 +60,25 @@ export type ErrorType = 'rateLimit' | 'dbError' | 'networkError' | 'authError' |
 export type ContactType = 'darkOrganization' | 'default';
 
 /**
+ * 提出問題の構造
+ */
+export interface SubmissionQuestion {
+  id: string;
+  text: string;
+  correctAnswer: string;
+}
+
+/**
+ * 提出結果の構造
+ */
+export interface SubmissionResult {
+  success: boolean;
+  correctAnswers: number;
+  totalQuestions: number;
+  explanationText?: string;
+}
+
+/**
  * デフォルトのメッセンジャー連絡先データ
  */
 export const defaultMessengerContacts: MessengerContact[] = [
@@ -191,5 +210,15 @@ export function convertFirestoreToUIMessage(message: ChatMessage): UIMessage {
     text: message.text,
     time: message.timestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
     timestamp: message.timestamp
+  };
+}
+
+/**
+ * UIMessageをGoogleGenerativeAIのContent形式に変換する
+ */
+export function convertUIMessageToContent(message: UIMessage): { role: 'user' | 'model'; parts: { text: string }[] } {
+  return {
+    role: message.sender === 'me' ? 'user' : 'model',
+    parts: [{ text: message.text }]
   };
 }

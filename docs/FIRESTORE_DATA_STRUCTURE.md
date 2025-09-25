@@ -139,12 +139,12 @@ Firebase Consoleから手動でデータを追加する場合：
     friend_002.jpg             # 友達アイコン2
     photo_001.jpg              # フォトギャラリー1
     photo_002.jpg              # フォトギャラリー2
-  
+
   /facelook_test_hanako/       # 別のユーザーページ
     profile.jpg
     cover.jpg
     ...
-  
+
 ```
 
 Storage URLの形式：
@@ -206,8 +206,6 @@ Playback Machineは、アーカイブされたウェブページを閲覧でき�
    - 現実的なブラウザ体験を提供（expired = 検索できない、エラーページ表示）
    - Playback Machineは別途検索して発見する必要がある
    - アーカイブされた日付によって、異なる情報が見られる可能性（将来の拡張）
-
----
 
 ## 2. SNSアプリケーション
 
@@ -428,3 +426,81 @@ interface DefaultSocialAccountSetting extends SocialAccount {
 - **投稿取得**: 15件ずつページング
 - **メッセージ取得**: 20件ずつページング
 - **カーソル**: 最後の投稿/メッセージのIDを使用
+
+
+## メッセンジャー提出システム
+
+### 概要
+メッセンジャーアプリ内で `/submit` コマンドを実行すると、3つの質問が順次表示され、全問正解すると解説シーンに遷移、不正解の場合は失敗シーンに遷移するシステムです。
+
+### コレクション: `messenger`
+
+#### ドキュメント構造
+
+```
+messenger/
+├── {npcType}/           # NPCタイプ（例: darkOrganization）
+    └── config/          # 設定データサブコレクション
+        ├── submissionQuestions    # 提出問題データ
+        ├── submissionExplanation  # 解説データ
+        ├── systemPrompts         # システムプロンプト（既存）
+        └── introductionMessage   # イントロダクション（既存）
+```
+
+#### submissionQuestions ドキュメント
+
+```javascript
+{
+  "questions": [
+    {
+      "id": "question_001",
+      "text": "質問文\n\nA) 選択肢1\nB) 選択肢2\nC) 選択肢3\nD) 選択肢4",
+      "correctAnswer": "a"  // 正解の選択肢（小文字）
+    },
+    {
+      "id": "question_002",
+      "text": "質問文2...",
+      "correctAnswer": "b"
+    },
+    {
+      "id": "question_003",
+      "text": "質問文3...",
+      "correctAnswer": "c"
+    }
+  ]
+}
+```
+
+#### submissionExplanation ドキュメント
+
+```javascript
+{
+  "text": "解説文をここに記述\n\n複数行にわたる解説が可能\n最終的に成功シーンで表示される"
+}
+```
+
+### フロー
+
+1. **提出開始**: `/submit` コマンド → `submissionQuestions` から質問を取得
+2. **質問進行**: 順次質問を表示、回答を `gameStore.submissionState` に蓄積
+3. **最終検証**: 全回答完了後、サーバーサイドで `validateSubmission` 実行
+4. **結果処理**:
+   - 全問正解 → `gamePhase: 'submission-explanation'`
+   - 不正解 → `gamePhase: 'submission-failure'`
+
+### データ型定義
+
+```typescript
+interface SubmissionQuestion {
+  id: string;
+  text: string;
+  correctAnswer: string;
+}
+
+interface SubmissionResult {
+  success: boolean;
+  correctAnswers: number;
+  totalQuestions: number;
+  explanationText?: string;
+}
+```

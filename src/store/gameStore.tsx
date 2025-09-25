@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type GamePhase = 'title' | 'disclaimer' | 'scenario-selection' | 'scenario-loading' | 'game';
+type GamePhase = 'title' | 'disclaimer' | 'scenario-selection' | 'scenario-loading' | 'game' | 'submission-explanation' | 'submission-failure';
 
 interface GameState {
   isGameStarted: boolean;
@@ -10,6 +10,7 @@ interface GameState {
   resetGame: () => void;
   setGamePhase: (phase: GamePhase) => void;
   setSelectedScenario: (scenarioId: string) => void;
+  completeSubmission: (success: boolean) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -20,8 +21,11 @@ export const useGameStore = create<GameState>((set) => ({
   resetGame: () => set({
     isGameStarted: false,
     gamePhase: 'title',
-    selectedScenario: null
+    selectedScenario: null,
   }),
   setGamePhase: (phase) => set({ gamePhase: phase }),
   setSelectedScenario: (scenarioId) => set({ selectedScenario: scenarioId, gamePhase: 'scenario-loading' }),
+  completeSubmission: (success) => set({
+    gamePhase: success ? 'submission-explanation' : 'submission-failure',
+  }),
 }));

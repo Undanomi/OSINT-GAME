@@ -4,11 +4,12 @@ import React, { useState, useRef, useEffect, useCallback, UIEvent } from 'react'
 import { AppProps } from '@/types/app';
 import { BaseApp } from '@/components/BaseApp';
 import { Send } from 'lucide-react';
-import { addMessage, generateAIResponse, getContacts, addContact, getIntroductionMessageFromFirestore } from '@/actions/messenger';
+import { addMessage, generateAIResponse, getSubmissionQuestions, validateSubmission } from '@/actions/messenger';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useMessenger } from '@/hooks/useMessenger';
-import { UIMessage, ErrorType, selectErrorMessage, defaultMessengerContacts, ChatMessage } from '@/types/messenger';
-import { appNotifications } from '@/utils/notifications';
+import { UIMessage, ErrorType, selectErrorMessage, SubmissionQuestion } from '@/types/messenger';
+import { useGameStore } from '@/store/gameStore';
+import { useSubmissionStore } from '@/store/submissionStore';
 
 /**
  * タイムスタンプベースのメッセージID生成
@@ -19,90 +20,16 @@ function generateTimestampId(timestamp: Date): string {
   return `${timeString}_${randomSuffix}`;
 }
 
-async function initializeUserContacts(): Promise<void> {
-  try {
-    for (const contact of defaultMessengerContacts) {
-      const { id, ...contactData } = contact;
-      await addContact(contactData, id);
-    }
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error initializing user contacts:', error);
-    }
-    throw error;
-  }
-}
-
-async function sendIntroductionMessage(): Promise<void> {
-  try {
-    const introData = await getIntroductionMessageFromFirestore('darkOrganization');
-    const introText = introData?.text || 'ようこそ。あなたが我々に興味を持ってくれたことを知っています。まずは簡単な質問から始めましょうか。何か知りたいことはありますか？';
-    const contactId = 'dark_organization';
-
-    const introMessage: ChatMessage = {
-      id: `intro-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-      sender: 'npc',
-      text: introText,
-      timestamp: new Date(),
-    };
-
-    await addMessage(contactId, introMessage);
-
-    const previewText = introText.length > 50 ? `${introText.substring(0, 50)}...` : introText;
-    appNotifications.fromApp(
-      'messenger',
-      '闇の組織からの新着メッセージ',
-      previewText,
-      'info',
-      5000
-    );
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error in sendIntroductionMessage:', error);
-    }
-    throw error;
-  }
-}
-
-// グローバルな初期化フラグ
-let globalInitializationPromise: Promise<boolean> | null = null;
-
-async function initializeMessengerIntroduction(): Promise<boolean> {
-  // 既に初期化処理が実行中または完了している場合は、その結果を返す
-  if (globalInitializationPromise) {
-    return globalInitializationPromise;
-  }
-
-  // 初期化処理を開始
-  globalInitializationPromise = (async () => {
-    try {
-      const contacts = await getContacts();
-      if (contacts.length > 0) {
-        return false; // 既に初期化済み
-      }
-
-      console.log('Starting messenger initialization...');
-
-      // 1. デフォルト連絡先をDBに追加
-      await initializeUserContacts();
-
-      // 2. 少し遅れてからイントロメッセージを送信
-      setTimeout(sendIntroductionMessage, 2000);
-
-      return true;
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Messenger initialization failed:', error);
-      }
-      return false;
-    }
-  })();
-
-  return globalInitializationPromise;
-}
-
 export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const { user } = useAuthContext();
+  const { completeSubmission } = useGameStore();
+  const {
+    submissionState,
+    setSubmissionMode,
+    setSubmissionQuestion,
+    addSubmissionAnswer,
+    setSubmissionResult,
+  } = useSubmissionStore();
 
   const {
     contacts,
@@ -116,32 +43,47 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     loadMoreMessages,
     addMessageToState,
     removeMessageFromState,
+    addTemporaryMessage,
   } = useMessenger();
 
   const [inputText, setInputText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [submissionQuestions, setSubmissionQuestions] = useState<SubmissionQuestion[]>([]);
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
-  const initializationExecuted = useRef(false);
 
-  // メッセンジャーの初期化処理
-  useEffect(() => {
-    if (!initializationExecuted.current) {
-      initializationExecuted.current = true;
+  const startSubmissionMode = useCallback(async () => {
+    if (!selectedContact || selectedContact.type !== 'darkOrganization') return;
 
-      initializeMessengerIntroduction()
-        .then((wasInitialized) => {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Messenger initialization result:', wasInitialized ? 'initialized' : 'already initialized');
-          }
-        })
-        .catch((error) => {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('Messenger initialization failed:', error);
-          }
-        });
+    try {
+      const questions = await getSubmissionQuestions('darkOrganization');
+      setSubmissionQuestions(questions);
+      setSubmissionMode(true);
+
+      const firstQuestion = questions[0];
+      if (firstQuestion) {
+        const questionTimestamp = new Date();
+        const questionMessage: UIMessage = {
+          id: generateTimestampId(questionTimestamp),
+          sender: 'other',
+          text: firstQuestion.text,
+          time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: questionTimestamp,
+        };
+        addTemporaryMessage(questionMessage);
+      }
+    } catch {
+      const errorTimestamp = new Date();
+      const errorMessage: UIMessage = {
+        id: generateTimestampId(errorTimestamp),
+        sender: 'other',
+        text: 'エラーが発生しました。自動応答モードを開始できません。',
+        time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: errorTimestamp,
+      };
+      addTemporaryMessage(errorMessage);
     }
-  }, []);
+  }, [selectedContact, setSubmissionMode, addTemporaryMessage]);
 
   const handleSendMessage = useCallback(async () => {
     if (!inputText.trim() || !selectedContact || !user || inputText.trim().length > 500) return;
@@ -158,8 +100,75 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     };
 
     setInputText('');
-    addMessageToState(userMessage);
 
+    // /submit コマンドの検知
+    if (currentInput.trim() === '/submit' && selectedContact.type === 'darkOrganization') {
+      addTemporaryMessage(userMessage);
+      await startSubmissionMode();
+      return;
+    }
+
+    // 提出モード中の処理
+    if (submissionState.isInSubmissionMode && selectedContact.type === 'darkOrganization') {
+      addTemporaryMessage(userMessage);
+      try {
+        addSubmissionAnswer(currentInput);
+
+        if (submissionState.currentQuestion < submissionState.totalQuestions) {
+          // 次の質問を表示
+          const nextQuestionIndex = submissionState.currentQuestion;
+          const nextQuestion = submissionQuestions[nextQuestionIndex];
+
+          if (nextQuestion) {
+            setSubmissionQuestion(submissionState.currentQuestion + 1);
+            const questionTimestamp = new Date();
+            const questionMessage: UIMessage = {
+              id: generateTimestampId(questionTimestamp),
+              sender: 'other',
+              text: nextQuestion.text,
+              time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+              timestamp: questionTimestamp,
+            };
+            addTemporaryMessage(questionMessage);
+          }
+        } else {
+          // 全ての質問が完了、結果を検証
+          const allAnswers = [...submissionState.answers, currentInput];
+          const result = await validateSubmission(allAnswers, 'darkOrganization');
+          const validationTimestamp = new Date();
+          const resultMessage: UIMessage = {
+            id: generateTimestampId(validationTimestamp),
+            sender: 'other',
+            text: `検証中...`,
+            time: validationTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+            timestamp: validationTimestamp,
+          };
+          addTemporaryMessage(resultMessage);
+
+          // 結果をsubmissionStoreに保存
+          setSubmissionResult(result);
+
+          // 3秒後にシーン遷移
+          setTimeout(() => {
+            completeSubmission(result.success);
+          }, 3000);
+        }
+      } catch {
+        const errorTimestamp = new Date();
+        const errorMessage: UIMessage = {
+          id: generateTimestampId(errorTimestamp),
+          sender: 'other',
+          text: '提出処理中にエラーが発生しました。',
+          time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: errorTimestamp,
+        };
+        addTemporaryMessage(errorMessage);
+      }
+      return;
+    }
+
+    // 通常のAI応答処理
+    addMessageToState(userMessage);
     try {
       await addMessage(selectedContact.id, {
         id: messageId,
@@ -168,7 +177,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         timestamp: userMessage.timestamp,
       });
 
-      const aiText = await generateAIResponse(currentInput, [], selectedContact.type); // chatHistoryは別途実装
+      const aiText = await generateAIResponse(currentInput, messages, selectedContact.type);
 
       const aiTimestamp = new Date();
       const aiMessageId = generateTimestampId(aiTimestamp);
@@ -205,7 +214,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       };
       addMessageToState(errorMessage);
     }
-  }, [inputText, selectedContact, user, addMessageToState, removeMessageFromState]);
+  }, [inputText, selectedContact, user, submissionState, submissionQuestions, addMessageToState, removeMessageFromState, addTemporaryMessage, startSubmissionMode, addSubmissionAnswer, setSubmissionQuestion, setSubmissionResult, completeSubmission, messages]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.keyCode === 13 && !e.shiftKey) {
