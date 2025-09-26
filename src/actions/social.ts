@@ -33,9 +33,21 @@ import {
 } from '@/types/social';
 import {
   SOCIAL_POSTS_PER_PAGE,
-  SOCIAL_MESSAGES_PER_PAGE
+  SOCIAL_MESSAGES_PER_PAGE,
+  MAX_SOCIAL_CONVERSATION_HISTORY_LENGTH,
+  MAX_SOCIAL_CONVERSATION_HISTORY_SIZE,
+  MAX_SOCIAL_AI_RETRY_ATTEMPTS
 } from '@/lib/social/constants';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
+import { requireAuth } from '@/lib/auth/server';
+import type { RateLimitInfo } from '@/types/messenger';
+
+// =====================================
+// レート制限設定
+// =====================================
+const RATE_LIMIT_PER_MINUTE = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const userRateLimit = new Map<string, RateLimitInfo>();
 
 /**
  * AI応答生成用のパラメータ
@@ -46,6 +58,88 @@ interface SocialAIRequestParams {
   npcId: string;
   userProfile: SocialAccount; // フロントエンドから送信（編集可能なため）
   accountId: string; // バックエンドで関係性を取得・更新するために使用
+}
+
+// =====================================
+// レート制限ユーティリティ
+// =====================================
+
+/**
+ * レート制限チェック関数
+ */
+function checkRateLimit(userId: string): { allowed: boolean } {
+  const now = Date.now();
+  const userLimit = userRateLimit.get(userId);
+
+  // 定期的に古いエントリをクリーンアップ（メモリリーク防止）
+  cleanupExpiredRateLimits(now);
+
+  if (!userLimit || now > userLimit.resetTime) {
+    // 新規または制限時間リセット
+    userRateLimit.set(userId, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW_MS
+    });
+    return { allowed: true };
+  }
+
+  if (userLimit.count >= RATE_LIMIT_PER_MINUTE) {
+    // レート制限に達している
+    throw new Error('rateLimit');
+  }
+
+  // カウントアップして許可
+  userLimit.count++;
+  return { allowed: true };
+}
+
+/**
+ * 期限切れのレート制限エントリをクリーンアップ
+ * メモリリーク防止のため定期実行
+ */
+function cleanupExpiredRateLimits(currentTime: number): void {
+  for (const [userId, limitInfo] of userRateLimit.entries()) {
+    if (currentTime > limitInfo.resetTime) {
+      userRateLimit.delete(userId);
+    }
+  }
+}
+
+/**
+ * 会話履歴を最適化してメモリ使用量を制御
+ * 1. 直近の設定件数に制限
+ * 2. サイズ制限チェック
+ */
+function optimizeConversationHistory(history: Content[]): Content[] {
+  if (!history || history.length === 0) {
+    return [];
+  }
+
+  // 1. 直近の設定件数を取得
+  let optimizedHistory = [...history];
+  if (optimizedHistory.length > MAX_SOCIAL_CONVERSATION_HISTORY_LENGTH) {
+    optimizedHistory = optimizedHistory.slice(-MAX_SOCIAL_CONVERSATION_HISTORY_LENGTH);
+  }
+
+  // 2. サイズ制限チェック
+  let totalSize = 0;
+  let validHistoryLength = optimizedHistory.length;
+
+  for (let i = optimizedHistory.length - 1; i >= 0; i--) {
+    const entry = optimizedHistory[i];
+    const entrySize = JSON.stringify(entry).length;
+
+    if (totalSize + entrySize > MAX_SOCIAL_CONVERSATION_HISTORY_SIZE) {
+      validHistoryLength = i + 1;
+      break;
+    }
+
+    totalSize += entrySize;
+  }
+
+  optimizedHistory = optimizedHistory.slice(-validHistoryLength);
+
+  return optimizedHistory;
 }
 
 // =====================================
@@ -1055,17 +1149,21 @@ export async function updateSocialRelationship(
 /**
  * SocialApp用のAI応答を生成（プロフィール情報と信頼度・警戒度を含む）
  */
-export async function generateSocialAIResponse(
+export const generateSocialAIResponse = requireAuth(async (
+  userId: string,
   params: SocialAIRequestParams
-): Promise<SocialAIResponse> {
+): Promise<SocialAIResponse> => {
   const { message, chatHistory, npcId, userProfile, accountId } = params;
+
+  // レート制限チェック
+  checkRateLimit(userId);
 
   // バックエンドで現在の関係性を取得
   const relationship = await getSocialRelationship(accountId, npcId);
   const currentTrust = relationship?.trust || 30;
   const currentCaution = relationship?.caution || 70;
   try {
-    // レート制限とAPIキーチェック（簡易版）
+    // APIキーチェック
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error('AI サービスが利用できません');
@@ -1110,8 +1208,8 @@ export async function generateSocialAIResponse(
       systemInstruction: npc.systemPrompt + dynamicPrompt,
     });
 
-    // 会話履歴の最適化（最新10件まで）
-    const optimizedHistory = chatHistory.slice(-10);
+    // 会話履歴の最適化（サイズベース制限含む）
+    const optimizedHistory = optimizeConversationHistory(chatHistory);
 
     // プロンプトの構築（信頼度・警戒度の現在値を含む）
     const promptForModel = `[現在の状態] 信頼度: ${currentTrust}, 警戒度: ${currentCaution}\n[プレイヤーの入力] ${sanitizedInput}`;
@@ -1128,9 +1226,8 @@ export async function generateSocialAIResponse(
     // リトライロジック付きでAI応答を取得
     let aiResponse: SocialAIResponse;
     let retryCount = 0;
-    const maxRetries = 3;
 
-    while (retryCount < maxRetries) {
+    while (retryCount < MAX_SOCIAL_AI_RETRY_ATTEMPTS) {
       try {
         const result = await chat.sendMessage(promptForModel);
         const responseText = result.response.text();
@@ -1155,7 +1252,7 @@ export async function generateSocialAIResponse(
         console.error(`AI API call attempt ${retryCount + 1} failed:`, apiError);
 
         retryCount++;
-        if (retryCount >= maxRetries) {
+        if (retryCount >= MAX_SOCIAL_AI_RETRY_ATTEMPTS) {
           throw new Error('AI応答の形式が無効です');
         }
         // リトライする前に少し待機
@@ -1192,40 +1289,4 @@ export async function generateSocialAIResponse(
 
     throw new Error('aiServiceError');
   }
-}
-
-/**
- * 旧バージョンとの互換性のためのラッパー関数
- */
-export async function generateSocialAIResponseLegacy(
-  message: string,
-  chatHistory: Content[],
-  npcId: string
-): Promise<string> {
-  // デフォルトのプロフィールと関係性を使用
-  const defaultProfile: SocialAccount = {
-    id: 'unknown',
-    account_id: 'unknown_user',
-    name: '不明なユーザー',
-    avatar: '🤔',
-    bio: '',
-    location: '',
-    isActive: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    followersCount: 0,
-    followingCount: 0,
-    canDM: true
-  };
-
-  const params: SocialAIRequestParams = {
-    message,
-    chatHistory,
-    npcId,
-    userProfile: defaultProfile,
-    accountId: 'unknown'
-  };
-
-  const response = await generateSocialAIResponse(params);
-  return response.responseText;
-}
+});
