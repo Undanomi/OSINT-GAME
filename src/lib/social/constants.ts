@@ -63,3 +63,7 @@ export const TIMELINE_REFRESH_INTERVAL_MS = 30 * 1000; // 30秒
 
 // エラー関連
 export const ERROR_DISPLAY_DURATION_MS = 5 * 1000; // 5秒
+
+// 信頼度・警戒度の閾値設定（ゲームオーバー条件）
+export const TRUST_GAME_OVER_THRESHOLD = 10; // 信頼度が10以下でゲームオーバー
+export const CAUTION_GAME_OVER_THRESHOLD = 90; // 警戒度が90以上でゲームオーバー

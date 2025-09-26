@@ -3,11 +3,11 @@
 import React from 'react';
 import { useGameStore } from '@/store/gameStore';
 
-interface SubmissionExplanationProps {
+interface MissionCompleteProps {
   onComplete: () => void;
 }
 
-export const SubmissionExplanation: React.FC<SubmissionExplanationProps> = ({ onComplete }) => {
+export const MissionComplete: React.FC<MissionCompleteProps> = ({ onComplete }) => {
   const { setGamePhase } = useGameStore();
 
   const handleContinue = () => {

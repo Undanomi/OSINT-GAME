@@ -46,6 +46,7 @@ export interface SocialNPC {
   canDM: boolean;
   systemPrompt: string; // DM用のシステムプロンプト
   isActive: boolean;
+  isGameOverTarget: boolean; // この NPCが信頼度・警戒度ゲームオーバーの対象かどうか
   createdAt: Date;
   updatedAt: Date;
 }

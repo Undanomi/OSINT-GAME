@@ -112,7 +112,8 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
               systemPrompt: '',
               isActive: false,
               createdAt: new Date(),
-              updatedAt: new Date()
+              updatedAt: new Date(),
+              isGameOverTarget: false,
             };
             setSelectedNPC(npcInfo);
             setCurrentView('npc-profile');

@@ -357,6 +357,7 @@ node scripts/seedDefaultAccounts.js data/default-social-accounts.json
   "canDM": true,
   "systemPrompt": "あなたはAI研究者のミラベル・テクノスです。量子機械学習の専門家として、技術的で知的な会話をします。\n\nプレイヤーが質問をした場合は、以下のJSON形式で応答してください：\n{\n  \"responseText\": \"実際の返答内容\",\n  \"newTrust\": 信頼度の値(0-100),\n  \"newCaution\": 警戒度の値(0-100)\n}\n\n応答は必ずJSON形式で返してください。",
   "isActive": true,
+  "isGameOverTarget": true,
   "errorMessages": {
     "rateLimit": "研究データの処理中です。しばらく待ってから再度お試しください。",
     "dbError": "データベースシステムにエラーが発生しました。技術部門に連絡します。",
@@ -418,6 +419,41 @@ node scripts/seedDefaultAccounts.js data/default-social-accounts.json
 - **ID の一意性**: 各データのstable_idとaccount_idはそれぞれ一意である必要があります
 - **UUID形式**: stable_idはUUID形式（例: d1e2f3g4-5h6i-7j8k-9l0m-n1o2p3q4r5s6）で記載してください
 - **アバター文字**: アバターは A-Z の1文字で指定してください
+- **ゲームオーバー対象**: `isGameOverTarget` を `true` に設定したNPCのみが信頼度・警戒度によるゲームオーバーの対象になります
+
+### 信頼度・警戒度システム設定
+
+#### ゲームオーバー対象NPCの設定
+特定のNPCを信頼度・警戒度によるゲームオーバーの対象にするには、`isGameOverTarget` フィールドを設定します：
+
+```json
+{
+  "id": "target_npc",
+  "name": "重要なターゲット",
+  "isGameOverTarget": true,
+  "systemPrompt": "...JSON形式で信頼度・警戒度を返すプロンプト..."
+}
+```
+
+#### 閾値設定
+- **信頼度**: 10以下でゲームオーバー
+- **警戒度**: 90以上でゲームオーバー
+
+#### systemPromptの記述
+`isGameOverTarget: true` のNPCには、AI応答時に信頼度・警戒度を含むJSON形式で返すようにsystemPromptを設定してください：
+
+```
+あなたは[キャラクター名]です。[キャラクター設定]
+
+プレイヤーが質問をした場合は、以下のJSON形式で応答してください：
+{
+  "responseText": "実際の返答内容",
+  "newTrust": 信頼度の値(0-100),
+  "newCaution": 警戒度の値(0-100)
+}
+
+応答は必ずJSON形式で返してください。
+```
 
 ### トラブルシューティング
 

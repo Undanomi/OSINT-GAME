@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useSocialStore } from '@/stores/socialStore';
+import { useGameStore } from '@/store/gameStore';
 import {
   getTimeline,
   createSocialPost,
@@ -32,6 +33,8 @@ import {
   SOCIAL_POSTS_PER_PAGE,
   SOCIAL_MESSAGES_PER_PAGE,
   MAX_SOCIAL_CONVERSATION_HISTORY_LENGTH,
+  TRUST_GAME_OVER_THRESHOLD,
+  CAUTION_GAME_OVER_THRESHOLD,
 } from '@/lib/social/constants';
 
 
@@ -55,6 +58,7 @@ export const useSocial = (
 ) => {
   const { user } = useAuthContext();
   const store = useSocialStore();
+  const { triggerGameOver } = useGameStore();
 
   // ローディング状態
   const [postsLoading, setPostsLoading] = useState(false);
@@ -501,6 +505,21 @@ export const useSocial = (
         timestamp: aiMessage.timestamp,
       });
 
+      // ゲームオーバー対象NPCかどうかをチェック
+      const currentNPC = npcs.find(npc => npc.id === selectedContact.id);
+      if (currentNPC?.isGameOverTarget) {
+        // 信頼度・警戒度の閾値チェック
+        if (aiResponse.newTrust <= TRUST_GAME_OVER_THRESHOLD) {
+          triggerGameOver('social-relationship', `信頼度が${TRUST_GAME_OVER_THRESHOLD}以下に低下しました。ターゲットとの関係が完全に破綻し、これ以上の情報収集が不可能になりました。`);
+          return;
+        }
+
+        if (aiResponse.newCaution >= CAUTION_GAME_OVER_THRESHOLD) {
+          triggerGameOver('social-relationship', `警戒度が${CAUTION_GAME_OVER_THRESHOLD}以上に上昇しました。ターゲットに完全に警戒され、これ以上の情報収集が不可能になりました。`);
+          return;
+        }
+      }
+
       addMessageToState(aiMessage);
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -534,7 +553,7 @@ export const useSocial = (
     } finally {
       setIsWaitingForAI(false);
     }
-  }, [user, activeAccount, selectedContact, messages, store, isWaitingForAI]);
+  }, [user, activeAccount, selectedContact, messages, store, isWaitingForAI, npcs, triggerGameOver]);
 
   // 初期データ読み込み
   useEffect(() => {
