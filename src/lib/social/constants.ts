@@ -5,8 +5,6 @@ import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
  * ページネーション設定、キャッシュ設定、制限値など
  */
 
-// アカウント関連
-export const MAX_SOCIAL_ACCOUNTS_PER_USER = 3;
 
 // ページネーション関連
 export const SOCIAL_POSTS_PER_PAGE = 15;

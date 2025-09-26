@@ -484,7 +484,15 @@ export const useSocial = (
         parts: [{ text: msg.text }]
       }));
 
-      const aiText = await generateSocialAIResponse(text, chatHistory, selectedContact.id);
+      // 新しいAI応答生成関数を使用（プロフィールと関係性情報を含む）
+      const aiResponse = await generateSocialAIResponse({
+        message: text,
+        chatHistory,
+        npcId: selectedContact.id,
+        userProfile: activeAccount,
+        accountId: activeAccount.id
+      });
+      const aiText = aiResponse.responseText;
 
       const aiTimestamp = new Date();
       const aiMessageId = generateTimestampId(aiTimestamp);

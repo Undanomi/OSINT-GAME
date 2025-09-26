@@ -27,14 +27,26 @@ import {
   SocialDMMessage,
   PaginatedResult,
   TimelineParams,
-  DMHistoryParams
+  DMHistoryParams,
+  SocialRelationship,
+  SocialAIResponse
 } from '@/types/social';
-import { 
-  MAX_SOCIAL_ACCOUNTS_PER_USER,
+import {
   SOCIAL_POSTS_PER_PAGE,
   SOCIAL_MESSAGES_PER_PAGE
 } from '@/lib/social/constants';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
+
+/**
+ * AI応答生成用のパラメータ
+ */
+interface SocialAIRequestParams {
+  message: string;
+  chatHistory: Content[];
+  npcId: string;
+  userProfile: SocialAccount; // フロントエンドから送信（編集可能なため）
+  accountId: string; // バックエンドで関係性を取得・更新するために使用
+}
 
 // =====================================
 // ユーティリティ関数
@@ -184,12 +196,6 @@ export async function createSocialAccount(
       throw new Error('アカウントIDが無効です');
     }
 
-    // アカウント数制限チェック
-    const existingAccounts = await getSocialAccounts();
-    if (existingAccounts.length >= MAX_SOCIAL_ACCOUNTS_PER_USER) {
-      throw new Error('accountLimit');
-    }
-
     const accountsRef = collection(db, 'users', userId, 'socialAccounts');
 
     const docRef = doc(accountsRef, accountData.id);
@@ -203,9 +209,6 @@ export async function createSocialAccount(
     return accountData;
   } catch (error) {
     console.error('Failed to create social account:', error);
-    if (error instanceof Error && error.message === 'accountLimit') {
-      throw error;
-    }
     throw new Error('dbError');
   }
 }
@@ -320,14 +323,14 @@ export async function switchActiveAccount(accountId: string): Promise<void> {
     const batch = writeBatch(db);
     const accountsRef = collection(db, 'users', userId, 'socialAccounts');
     const accountsSnapshot = await getDocs(accountsRef);
-    
+
     accountsSnapshot.docs.forEach(docSnap => {
       const ref = doc(db, 'users', userId, 'socialAccounts', docSnap.id);
       batch.update(ref, {
         isActive: docSnap.id === accountId
       });
     });
-    
+
     await batch.commit();
   } catch (error) {
     console.error('Failed to switch active account:', error);
@@ -860,10 +863,15 @@ export async function getSocialContacts(accountId: string): Promise<SocialContac
     const contactsRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'Contacts');
     const snapshot = await getDocs(contactsRef);
 
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as SocialContact[];
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name,
+        type: data.type,
+        // 関係性情報は除外（trust, caution, lastInteractionAt）
+      };
+    }) as SocialContact[];
   } catch (error) {
     console.error('Failed to get social contacts:', error);
     throw new Error('dbError');
@@ -981,14 +989,81 @@ export async function addSocialMessage(
   }
 }
 
+
 /**
- * SocialApp用のAI応答を生成（NPCのFirestoreシステムプロンプトを使用）
+ * 関係性情報を取得
+ */
+export async function getSocialRelationship(
+  accountId: string,
+  contactId: string
+): Promise<SocialRelationship | null> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) {
+    throw new Error('認証が必要です');
+  }
+
+  try {
+    const relationshipRef = doc(db, 'users', userId, 'socialAccounts', accountId, 'Relationships', contactId);
+    const relationshipDoc = await getDoc(relationshipRef);
+
+    if (!relationshipDoc.exists()) {
+      return null;
+    }
+
+    const data = relationshipDoc.data();
+    return {
+      trust: data.trust || 30,
+      caution: data.caution || 70,
+      lastInteractionAt: data.lastInteractionAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    };
+  } catch (error) {
+    console.error('Failed to get social relationship:', error);
+    return null;
+  }
+}
+
+/**
+ * 関係性情報を更新または作成
+ */
+export async function updateSocialRelationship(
+  accountId: string,
+  contactId: string,
+  trust: number,
+  caution: number
+): Promise<void> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) {
+    throw new Error('認証が必要です');
+  }
+
+  try {
+    const relationshipRef = doc(db, 'users', userId, 'socialAccounts', accountId, 'Relationships', contactId);
+
+    await setDoc(relationshipRef, {
+      trust: Math.max(0, Math.min(100, trust)), // 0-100の範囲に制限
+      caution: Math.max(0, Math.min(100, caution)), // 0-100の範囲に制限
+      lastInteractionAt: Timestamp.fromDate(new Date()),
+      updatedAt: Timestamp.fromDate(new Date()),
+    }, { merge: true });
+  } catch (error) {
+    console.error('Failed to update social relationship:', error);
+    throw new Error('dbError');
+  }
+}
+
+/**
+ * SocialApp用のAI応答を生成（プロフィール情報と信頼度・警戒度を含む）
  */
 export async function generateSocialAIResponse(
-  message: string,
-  chatHistory: Content[],
-  npcId: string
-): Promise<string> {
+  params: SocialAIRequestParams
+): Promise<SocialAIResponse> {
+  const { message, chatHistory, npcId, userProfile, accountId } = params;
+
+  // バックエンドで現在の関係性を取得
+  const relationship = await getSocialRelationship(accountId, npcId);
+  const currentTrust = relationship?.trust || 30;
+  const currentCaution = relationship?.caution || 70;
   try {
     // レート制限とAPIキーチェック（簡易版）
     const apiKey = process.env.GEMINI_API_KEY;
@@ -1009,20 +1084,37 @@ export async function generateSocialAIResponse(
 
     const sanitizedInput = message.trim().substring(0, 500);
 
+    // 動的プロンプトの構築
+    const dynamicPrompt = `
+
+# 現在の対話相手情報
+* **ユーザー名:** ${userProfile.name}
+* **プロフィール:** ${userProfile.bio || '未設定'}
+* **職業:** ${userProfile.position || '不明'}
+* **会社:** ${userProfile.company || '不明'}
+* **学歴:** ${userProfile.education || '不明'}
+* **誕生日:** ${userProfile.birthday || '不明'}
+* **居住地:** ${userProfile.location || '不明'}
+
+# 現在の関係性状態
+* **現在の信頼度:** ${currentTrust}
+* **現在の警戒度:** ${currentCaution}
+`;
+
     // Google Generative AI インスタンス
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // AI モデルの設定（NPCのシステムプロンプトを使用）
+    // AI モデルの設定（拡張されたシステムプロンプトを使用）
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash-lite",
-      systemInstruction: npc.systemPrompt,
+      systemInstruction: npc.systemPrompt + dynamicPrompt,
     });
 
     // 会話履歴の最適化（最新10件まで）
     const optimizedHistory = chatHistory.slice(-10);
 
-    // プロンプトの構築
-    const promptForModel = `ユーザーからの入力: ${sanitizedInput}`;
+    // プロンプトの構築（信頼度・警戒度の現在値を含む）
+    const promptForModel = `[現在の状態] 信頼度: ${currentTrust}, 警戒度: ${currentCaution}\n[プレイヤーの入力] ${sanitizedInput}`;
 
     // AI応答の生成
     const chat = model.startChat({
@@ -1034,23 +1126,34 @@ export async function generateSocialAIResponse(
     });
 
     // リトライロジック付きでAI応答を取得
-    let aiText;
+    let aiResponse: SocialAIResponse;
     let retryCount = 0;
     const maxRetries = 3;
 
     while (retryCount < maxRetries) {
       try {
         const result = await chat.sendMessage(promptForModel);
-        aiText = result.response.text();
+        const responseText = result.response.text();
 
-        // レスポンスの基本検証
-        if (typeof aiText === 'string' && aiText.trim().length > 0) {
-          break;
-        } else {
-          throw new Error('Empty response');
+        const parsedResponse = JSON.parse(responseText.trim());
+
+        // 応答の検証
+        if (!parsedResponse.responseText ||
+            typeof parsedResponse.newTrust !== 'number' ||
+            typeof parsedResponse.newCaution !== 'number') {
+          throw new Error('Invalid response format');
         }
+
+        aiResponse = {
+          responseText: parsedResponse.responseText.trim().substring(0, 1000),
+          newTrust: Math.max(0, Math.min(100, parsedResponse.newTrust)),
+          newCaution: Math.max(0, Math.min(100, parsedResponse.newCaution))
+        };
+
+        break;
       } catch (apiError) {
         console.error(`AI API call attempt ${retryCount + 1} failed:`, apiError);
+
         retryCount++;
         if (retryCount >= maxRetries) {
           throw new Error('AI応答の形式が無効です');
@@ -1060,17 +1163,18 @@ export async function generateSocialAIResponse(
       }
     }
 
-    // レスポンスの型チェックとサニタイズ
-    if (typeof aiText !== 'string' || aiText.trim().length === 0) {
-      throw new Error('AI応答の形式が無効です');
+    if (!aiResponse!) {
+      throw new Error('AI応答の取得に失敗しました');
     }
 
-    // AI応答のサニタイズ（最大1000文字制限）
-    return aiText.trim().substring(0, 1000);
+    // AI応答で返された新しい関係性をバックエンドで自動更新
+    await updateSocialRelationship(accountId, npcId, aiResponse.newTrust, aiResponse.newCaution);
+
+    return aiResponse;
 
   } catch (error) {
     console.error('Failed to generate social AI response:', error);
-    
+
     if (error instanceof Error) {
       if (error.message.includes('NPC not found')) {
         throw new Error('general');
@@ -1085,7 +1189,43 @@ export async function generateSocialAIResponse(
         throw new Error('general');
       }
     }
-    
+
     throw new Error('aiServiceError');
   }
+}
+
+/**
+ * 旧バージョンとの互換性のためのラッパー関数
+ */
+export async function generateSocialAIResponseLegacy(
+  message: string,
+  chatHistory: Content[],
+  npcId: string
+): Promise<string> {
+  // デフォルトのプロフィールと関係性を使用
+  const defaultProfile: SocialAccount = {
+    id: 'unknown',
+    account_id: 'unknown_user',
+    name: '不明なユーザー',
+    avatar: '🤔',
+    bio: '',
+    location: '',
+    isActive: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    followersCount: 0,
+    followingCount: 0,
+    canDM: true
+  };
+
+  const params: SocialAIRequestParams = {
+    message,
+    chatHistory,
+    npcId,
+    userProfile: defaultProfile,
+    accountId: 'unknown'
+  };
+
+  const response = await generateSocialAIResponse(params);
+  return response.responseText;
 }

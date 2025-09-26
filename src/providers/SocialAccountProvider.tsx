@@ -17,7 +17,6 @@ import {
   createDefaultSocialAccount,
   getSocialErrorMessage
 } from '@/types/social';
-import { MAX_SOCIAL_ACCOUNTS_PER_USER } from '@/lib/social/constants';
 
 const SocialAccountContext = createContext<SocialAccountContextType | null>(null);
 
@@ -27,7 +26,7 @@ const SocialAccountContext = createContext<SocialAccountContextType | null>(null
  */
 export function SocialAccountProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuthContext();
-  
+
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [activeAccount, setActiveAccount] = useState<SocialAccount | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,17 +66,17 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
    */
   const switchAccount = useCallback(async (accountId: string) => {
     if (!user) throw new Error('authError');
-    
+
     try {
       setError(null);
       await switchActiveAccount(accountId);
-      
+
       // ローカル状態を更新
       setAccounts(prev => prev.map(account => ({
         ...account,
         isActive: account.id === accountId
       })));
-      
+
       const newActiveAccount = accounts.find(account => account.id === accountId) || null;
       setActiveAccount(newActiveAccount);
     } catch (error) {
@@ -95,20 +94,13 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
     accountData: SocialAccount
   ): Promise<SocialAccount> => {
     if (!user) throw new Error('authError');
-    
-    // アカウント数制限チェック
-    if (accounts.length >= MAX_SOCIAL_ACCOUNTS_PER_USER) {
-      const error = new Error('accountLimit');
-      setError(getSocialErrorMessage('accountLimit'));
-      throw error;
-    }
 
     try {
       setError(null);
-      
+
       // アカウントデータをそのまま使用（重複チェックは呼び出し側で実行）
       const newAccount = await createSocialAccount(accountData);
-      
+
       // ローカル状態を更新
       setAccounts(prev => {
         const updated = [...prev, newAccount];
@@ -118,7 +110,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
         }
         return updated;
       });
-      
+
       return newAccount;
     } catch (error) {
       console.error('Failed to create account:', error);
@@ -126,28 +118,28 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
       setError(getSocialErrorMessage(errorType as SocialErrorType));
       throw error;
     }
-  }, [user, accounts]);
+  }, [user]);
 
   /**
    * アカウントを更新
    */
   const updateAccount = useCallback(async (
-    accountId: string, 
+    accountId: string,
     updates: Partial<SocialAccount>
   ) => {
     if (!user) throw new Error('authError');
-    
+
     try {
       setError(null);
       await updateSocialAccount(accountId, updates);
-      
+
       // ローカル状態を更新
-      setAccounts(prev => prev.map(account => 
-        account.id === accountId 
+      setAccounts(prev => prev.map(account =>
+        account.id === accountId
           ? { ...account, ...updates }
           : account
       ));
-      
+
       // アクティブアカウントも更新
       if (activeAccount?.id === accountId) {
         setActiveAccount(prev => prev ? { ...prev, ...updates } : null);
@@ -165,20 +157,20 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
    */
   const deleteAccount = useCallback(async (accountId: string) => {
     if (!user) throw new Error('authError');
-    
+
     try {
       setError(null);
       await deleteSocialAccount(accountId);
-      
+
       // ローカル状態を更新
       const remainingAccounts = accounts.filter(account => account.id !== accountId);
       setAccounts(remainingAccounts);
-      
+
       // 削除されたアカウントがアクティブだった場合、他のアカウントをアクティブに
       if (activeAccount?.id === accountId) {
         const newActiveAccount = remainingAccounts[0] || null;
         setActiveAccount(newActiveAccount);
-        
+
         if (newActiveAccount) {
           await switchActiveAccount(newActiveAccount.id);
         }

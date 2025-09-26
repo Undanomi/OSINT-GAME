@@ -315,9 +315,30 @@ export type SocialView = 'home' | 'search' | 'new-post' | 'dm' | 'dm-chat' | 'pr
 export type ContactType = 'npc' | 'default';
 
 /**
+ * NPCとユーザーアカウント間の関係性情報（Firestore用）
+ * path: users/{userId}/socialAccounts/{accountId}/Relationships/{contactId}
+ */
+export interface SocialRelationship {
+  trust: number; // 信頼度 (0-100)
+  caution: number; // 警戒度 (0-100)
+  lastInteractionAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * AI応答の構造化されたレスポンス
+ */
+export interface SocialAIResponse {
+  responseText: string;
+  newTrust: number;
+  newCaution: number;
+}
+
+
+/**
  * エラータイプの列挙
  */
-export type SocialErrorType = 'rateLimit' | 'dbError' | 'networkError' | 'authError' | 'aiServiceError' | 'aiResponseError' | 'accountLimit' | 'accountDuplicate' | 'general';
+export type SocialErrorType = 'rateLimit' | 'dbError' | 'networkError' | 'authError' | 'aiServiceError' | 'aiResponseError' | 'accountDuplicate' | 'general';
 
 /**
  * デフォルトのソーシャルアカウントデータ（初回登録時用）
@@ -338,7 +359,6 @@ export const SOCIAL_ERROR_MESSAGES = {
   authError: "認証に失敗しました。再ログインしてください。",
   aiServiceError: "AIサービスが一時的に利用できません。しばらく待ってから再試行してください。",
   aiResponseError: "AI応答の処理中にエラーが発生しました。再試行してください。",
-  accountLimit: "アカウント数の上限（3個）に達しました。既存のアカウントを削除してから作成してください。",
   accountDuplicate: "このユーザーIDは既に使用されています。別のIDを選択してください。",
   general: "申し訳ありません。エラーが発生しました。"
 };
@@ -361,7 +381,7 @@ export function convertToUISocialPost(
   const diffMs = now.getTime() - post.timestamp.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
-  
+
   let timeString: string;
   if (diffDays > 0) {
     timeString = `${diffDays}日前`;
