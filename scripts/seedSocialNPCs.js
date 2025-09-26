@@ -79,6 +79,13 @@ function validateNPCData(npc) {
     }
   }
 
+  // エラーメッセージの検証（オプション）
+  if (npc.errorMessages) {
+    if (typeof npc.errorMessages !== 'object') {
+      throw new Error(`errorMessages フィールドはオブジェクトである必要があります`);
+    }
+  }
+
   // idはstable_idとして使用され、UUID形式であること
   if (typeof npc.id !== 'string' || npc.id.length < 10) {
     throw new Error(`id フィールドは stable_id として10文字以上である必要があります: ${npc.id}`);
@@ -124,13 +131,24 @@ async function registerNPC(npc) {
     }
 
     // Firestoreに登録
+    // NPCプロフィール情報から errorMessages を分離
+    const { errorMessages, ...npcProfile } = npc;
+
     await docRef.set({
-      ...npc,
+      ...npcProfile,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
     console.log(`[+] 登録成功: ${npc.id} - ${npc.name}`);
+
+    // エラーメッセージがある場合は config/errorMessages に保存
+    if (errorMessages) {
+      const errorMessagesDocRef = db.collection('socialNPCs').doc(npc.id).collection('config').doc('errorMessages');
+      await errorMessagesDocRef.set(errorMessages);
+      console.log(`[+] エラーメッセージ登録成功: ${npc.id}`);
+    }
+
     return { success: true, skipped: false };
   } catch (error) {
     console.error(`[-] 登録失敗: ${npc.id} - ${error.message}`);
@@ -174,7 +192,9 @@ async function main() {
     // 登録するデータのリスト表示
     console.log('\n[i] 登録するNPCキャラクター:');
     for (const npc of jsonData) {
-      console.log(`  - ${npc.id}: ${npc.name} (${npc.position || 'ポジション不明'})`);
+      const hasErrorMessages = !!npc.errorMessages;
+      const extras = hasErrorMessages ? ' + エラーメッセージ' : '';
+      console.log(`  - ${npc.id}: ${npc.name} (${npc.position || 'ポジション不明'})${extras}`);
     }
 
     // Firestoreへの登録

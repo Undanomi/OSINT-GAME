@@ -231,6 +231,8 @@ socialNPCs/
   {npcId}/
     posts/
       {postId}
+    config/
+      errorMessages
 
 socialNPCPosts/
   {postId}
@@ -443,8 +445,9 @@ messenger/
     └── config/          # 設定データサブコレクション
         ├── submissionQuestions    # 提出問題データ
         ├── submissionExplanation  # 解説データ
-        ├── systemPrompts         # システムプロンプト（既存）
-        └── introductionMessage   # イントロダクション（既存）
+        ├── errorMessages         # エラーメッセージデータ
+        ├── systemPrompts         # システムプロンプト
+        └── introductionMessage   # イントロダクションメッセージ
 ```
 
 #### submissionQuestions ドキュメント
@@ -476,6 +479,37 @@ messenger/
 ```javascript
 {
   "text": "解説文をここに記述\n\n複数行にわたる解説が可能\n最終的に成功シーンで表示される"
+}
+```
+
+#### errorMessages ドキュメント
+
+```javascript
+{
+  "rateLimit": "監視を避けるため、通信頻度を下げる必要がある。少し間を空けてくれ。",
+  "dbError": "組織のデータベースに一時的な障害が発生している。",
+  "networkError": "システムの異常を検知した。安全な接続を再確立している。",
+  "authError": "組織のセキュリティプロトコルにより、認証が無効化された。",
+  "aiServiceError": "組織の知識処理システムが一時的に利用できない。しばらく待ってくれ。",
+  "aiResponseError": "応答データの整合性チェックでエラーが検出された。",
+  "general": "通信エラーが発生した。セキュリティプロトコルを確認中..."
+}
+```
+
+#### systemPrompts ドキュメント
+
+```javascript
+{
+  "prompt": "あなたは「闇の組織」のエージェントです。プレイヤーに対して冷静かつ簡潔に応答してください。\n\nプレイヤーが質問をした場合は、以下のJSON形式で応答してください：\n{\n  \"responseText\": \"実際の返答内容\"\n}\n\n応答は必ずJSON形式で返してください。"
+}
+```
+
+#### introductionMessage ドキュメント
+
+```javascript
+{
+  "text": "こんにちは。私はダークオーガニゼーションのエージェントです。何かご用件がありますか？",
+  "fallbackText": "メッセージを受信しました。"
 }
 ```
 

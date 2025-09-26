@@ -53,6 +53,7 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
     isLoadingMoreMessages,
     loadMoreMessages,
     sendMessage,
+    isWaitingForAI,
     addNewContact,
     error,
     setError,
@@ -301,6 +302,7 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
             messagesLoading={messagesLoading}
             isLoadingMore={isLoadingMoreMessages}
             onLoadMore={loadMoreMessages}
+            isWaitingForAI={isWaitingForAI}
           />
         ) : (
           <div>連絡先が選択されていません。</div>

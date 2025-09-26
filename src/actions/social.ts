@@ -889,6 +889,26 @@ export async function getSocialNPC(npcId: string): Promise<SocialNPC | null> {
 }
 
 /**
+ * 指定されたNPCの全エラーメッセージを取得
+ */
+export async function getErrorMessage(npcId: string): Promise<Record<string, string> | null> {
+  try {
+    const docRef = doc(db, 'socialNPCs', npcId, 'config', 'errorMessages');
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data || null;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting error messages:', error);
+    return null;
+  }
+}
+
+/**
  * NPCプロフィールの投稿一覧を取得（ページング対応）
  */
 export async function getNPCPosts(

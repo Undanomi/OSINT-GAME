@@ -11,6 +11,7 @@ interface DMChatPageProps {
   messagesLoading: boolean;
   isLoadingMore: boolean;
   onLoadMore: () => void;
+  isWaitingForAI: boolean;
 }
 
 /**
@@ -23,14 +24,15 @@ export const DMChatPage: React.FC<DMChatPageProps> = ({
   onSendMessage,
   messagesLoading,
   isLoadingMore,
-  onLoadMore
+  onLoadMore,
+  isWaitingForAI
 }) => {
   const [inputText, setInputText] = useState('');
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
 
   const handleSendMessage = useCallback(async () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || isWaitingForAI) return;
 
     const currentInput = inputText;
     setInputText('');
@@ -40,7 +42,7 @@ export const DMChatPage: React.FC<DMChatPageProps> = ({
     } catch {
       setInputText(currentInput);
     }
-  }, [inputText, onSendMessage]);
+  }, [inputText, onSendMessage, isWaitingForAI]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.keyCode === 13 && !e.shiftKey) {
@@ -119,11 +121,12 @@ export const DMChatPage: React.FC<DMChatPageProps> = ({
             onChange={(e) => setInputText(e.target.value.substring(0, MAX_MESSAGE_LENGTH))}
             onKeyDown={handleKeyDown}
             maxLength={MAX_MESSAGE_LENGTH}
+            disabled={isWaitingForAI}
           />
           <button
             onClick={handleSendMessage}
             className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 disabled:bg-blue-300"
-            disabled={!inputText.trim()}
+            disabled={!inputText.trim() || isWaitingForAI}
           >
             <Send size={20} />
           </button>

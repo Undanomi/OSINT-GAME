@@ -13,9 +13,7 @@ import {
 import {
   SocialAccount,
   SocialAccountContextType,
-  SocialErrorType,
-  createDefaultSocialAccount,
-  getSocialErrorMessage
+  createDefaultSocialAccount
 } from '@/types/social';
 
 const SocialAccountContext = createContext<SocialAccountContextType | null>(null);
@@ -54,8 +52,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
       setActiveAccount(active);
     } catch (error) {
       console.error('Failed to load social accounts:', error);
-      const errorType = error instanceof Error ? error.message : 'general';
-      setError(getSocialErrorMessage(errorType as SocialErrorType));
+      setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
     } finally {
       setLoading(false);
     }
@@ -81,8 +78,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
       setActiveAccount(newActiveAccount);
     } catch (error) {
       console.error('Failed to switch account:', error);
-      const errorType = error instanceof Error ? error.message : 'general';
-      setError(getSocialErrorMessage(errorType as SocialErrorType));
+      setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
       throw error;
     }
   }, [user, accounts]);
@@ -114,8 +110,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
       return newAccount;
     } catch (error) {
       console.error('Failed to create account:', error);
-      const errorType = error instanceof Error ? error.message : 'general';
-      setError(getSocialErrorMessage(errorType as SocialErrorType));
+      setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
       throw error;
     }
   }, [user]);
@@ -146,8 +141,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
       }
     } catch (error) {
       console.error('Failed to update account:', error);
-      const errorType = error instanceof Error ? error.message : 'general';
-      setError(getSocialErrorMessage(errorType as SocialErrorType));
+      setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
       throw error;
     }
   }, [user, activeAccount]);
@@ -177,8 +171,7 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
       }
     } catch (error) {
       console.error('Failed to delete account:', error);
-      const errorType = error instanceof Error ? error.message : 'general';
-      setError(getSocialErrorMessage(errorType as SocialErrorType));
+      setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
       throw error;
     }
   }, [user, accounts, activeAccount]);

@@ -349,26 +349,6 @@ export const createDefaultSocialAccount = (
 ): SocialAccount => defaultSettings;
 
 
-/**
- * エラーメッセージの定数（固定）
- */
-export const SOCIAL_ERROR_MESSAGES = {
-  rateLimit: "しばらく待ってから再度お試しください。",
-  dbError: "データの保存に失敗しました。しばらく待ってから再試行してください。",
-  networkError: "ネットワーク接続に問題があります。接続を確認してください。",
-  authError: "認証に失敗しました。再ログインしてください。",
-  aiServiceError: "AIサービスが一時的に利用できません。しばらく待ってから再試行してください。",
-  aiResponseError: "AI応答の処理中にエラーが発生しました。再試行してください。",
-  accountDuplicate: "このユーザーIDは既に使用されています。別のIDを選択してください。",
-  general: "申し訳ありません。エラーが発生しました。"
-};
-
-/**
- * エラータイプに基づいてエラーメッセージを取得する
- */
-export function getSocialErrorMessage(errorType: SocialErrorType): string {
-  return SOCIAL_ERROR_MESSAGES[errorType];
-}
 
 /**
  * FirestoreのSocialPostをUI用のUISocialPostに変換する

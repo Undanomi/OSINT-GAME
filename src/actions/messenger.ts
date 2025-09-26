@@ -411,6 +411,26 @@ export async function getSystemPromptFromFirestore(npcType: string): Promise<Sys
 }
 
 /**
+ * 指定されたNPCの全エラーメッセージを取得
+ */
+export async function getErrorMessage(npcType: string): Promise<Record<string, string> | null> {
+  try {
+    const docRef = doc(db, 'messenger', npcType, 'config', 'errorMessages');
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data || null;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting error messages:', error);
+    return null;
+  }
+}
+
+/**
  * 提出問題を取得
  */
 export async function getSubmissionQuestions(npcType: string): Promise<SubmissionQuestion[]> {

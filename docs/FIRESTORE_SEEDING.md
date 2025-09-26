@@ -355,8 +355,17 @@ node scripts/seedDefaultAccounts.js data/default-social-accounts.json
   "followersCount": 2847,
   "followingCount": 1923,
   "canDM": true,
-  "systemPrompt": "あなたはAI研究者の...",
-  "isActive": true
+  "systemPrompt": "あなたはAI研究者のミラベル・テクノスです。量子機械学習の専門家として、技術的で知的な会話をします。\n\nプレイヤーが質問をした場合は、以下のJSON形式で応答してください：\n{\n  \"responseText\": \"実際の返答内容\",\n  \"newTrust\": 信頼度の値(0-100),\n  \"newCaution\": 警戒度の値(0-100)\n}\n\n応答は必ずJSON形式で返してください。",
+  "isActive": true,
+  "errorMessages": {
+    "rateLimit": "研究データの処理中です。しばらく待ってから再度お試しください。",
+    "dbError": "データベースシステムにエラーが発生しました。技術部門に連絡します。",
+    "networkError": "ネットワーク接続に問題が生じています。研究所のIT部門で確認中です。",
+    "authError": "認証システムでエラーが発生しました。セキュリティプロトコルを確認してください。",
+    "aiServiceError": "AIシステムが一時的に利用できません。メンテナンス中の可能性があります。",
+    "aiResponseError": "AI応答の処理中にエラーが発生しました。システムを再起動してください。",
+    "general": "システムエラーが発生しました。研究所の技術サポートにお問い合わせください。"
+  }
 }
 ```
 
@@ -422,24 +431,24 @@ NPCの投稿データを登録する際に「NPC not found」エラーが発生�
 IDが重複している場合は、各データファイル内でIDが一意になるよう修正してください。
 
 
-## メッセンジャー提出データの登録
+## メッセンジャー設定データの登録
 
 ### 概要
 
-メッセンジャーアプリの提出問題システム用のデータを自動登録するスクリプトです。
-`/submit` コマンドで表示される質問と解説データをFirestoreに登録します。
+メッセンジャーアプリの全設定データを自動登録するスクリプトです。
+提出問題、解説、エラーメッセージ、システムプロンプト、イントロダクションメッセージを一括で登録します。
 
 ### 使い方
 
 ```bash
 # 基本的な使い方
-node scripts/seedSubmissionData.js data/submission-questions.json
+node scripts/seedMessengerData.js data/messenger-config.json
 
 # 既存のドキュメントを上書きする
-node scripts/seedSubmissionData.js data/submission-questions.json --overwrite
+node scripts/seedMessengerData.js data/messenger-config.json --overwrite
 
 # 既存のドキュメントをスキップする
-node scripts/seedSubmissionData.js data/submission-questions.json --skip-existing
+node scripts/seedMessengerData.js data/messenger-config.json --skip-existing
 ```
 
 ### JSONファイルの形式
@@ -468,6 +477,22 @@ node scripts/seedSubmissionData.js data/submission-questions.json --skip-existin
     ],
     "explanation": {
       "text": "全問正解時の解説文をここに記述\n\n複数行での記述が可能"
+    },
+    "errorMessages": {
+      "rateLimit": "監視を避けるため、通信頻度を下げる必要がある。少し間を空けてくれ。",
+      "dbError": "組織のデータベースに一時的な障害が発生している。",
+      "networkError": "システムの異常を検知した。安全な接続を再確立している。",
+      "authError": "組織のセキュリティプロトコルにより、認証が無効化された。",
+      "aiServiceError": "組織の知識処理システムが一時的に利用できない。しばらく待ってくれ。",
+      "aiResponseError": "応答データの整合性チェックでエラーが検出された。",
+      "general": "通信エラーが発生した。セキュリティプロトコルを確認中..."
+    },
+    "systemPrompt": {
+      "prompt": "あなたはダークオーガニゼーションの連絡員です..."
+    },
+    "introductionMessage": {
+      "text": "こんにちは。私はダークオーガニゼーションのエージェントです。",
+      "fallbackText": "メッセージを受信しました。"
     }
   }
 }
@@ -486,6 +511,17 @@ node scripts/seedSubmissionData.js data/submission-questions.json --skip-existin
 **explanation オブジェクト**:
 - `text`: 全問正解時に表示される解説文
 
+**errorMessages オブジェクト** (オプション):
+- 各エラータイプに対応するカスタムエラーメッセージ
+- `rateLimit`, `dbError`, `networkError`, `authError`, `aiServiceError`, `aiResponseError`, `general`
+
+**systemPrompt オブジェクト** (オプション):
+- `prompt`: AI応答用のシステムプロンプト
+
+**introductionMessage オブジェクト** (オプション):
+- `text`: 初回メッセージ
+- `fallbackText`: フォールバックメッセージ
+
 ### 登録されるFirestore構造
 
 ```
@@ -493,43 +529,49 @@ messenger/
 ├── darkOrganization/
     └── config/
         ├── submissionQuestions     # 質問データ
-        └── submissionExplanation   # 解説データ
+        ├── submissionExplanation   # 解説データ
+        ├── errorMessages           # エラーメッセージデータ（オプション）
+        ├── systemPrompts           # システムプロンプト（オプション）
+        └── introductionMessage     # イントロダクションメッセージ（オプション）
 ```
 
 ### 実行例
 
 ```bash
-$ node scripts/seedSubmissionData.js data/submission-questions.json
+$ node scripts/seedMessengerData.js data/messenger-config.json
 
 ========================================
-  メッセンジャー提出データ自動登録
+  メッセンジャー設定データ自動登録
 ========================================
 
 [*] JSONファイルを読み込んでいます...
-    ファイルパス: /path/to/data/submission-questions.json
+    ファイルパス: /path/to/data/messenger-config.json
 
-[+] メッセンジャー提出データを読み込みました
+[+] メッセンジャー設定データを読み込みました
 
 [*] データを検証しています...
 [+] データ検証成功
 
 [i] 登録するNPCタイプ:
-  - darkOrganization: 3個の質問
+  - darkOrganization: 3個の質問, エラーメッセージ, システムプロンプト, イントロダクション
 
 [*] Firestore へのデータ登録を開始します...
 
 [+] 登録成功: darkOrganization/submissionQuestions (3個の質問)
 [+] 登録成功: darkOrganization/submissionExplanation
+[+] 登録成功: darkOrganization/errorMessages
+[+] 登録成功: darkOrganization/systemPrompts
+[+] 登録成功: darkOrganization/introductionMessage
 
 ========================================
-[!] メッセンジャー提出データ登録が完了しました！
-    成功: 2 件
+[!] メッセンジャー設定データ登録が完了しました！
+    成功: 5 件
     失敗: 0 件
 ========================================
 
 [i] 登録されたデータの確認:
   Firebase Console → Firestore Database → messenger コレクション
-  各NPCタイプ → config → submissionQuestions/submissionExplanation
+  各NPCタイプ → config → submissionQuestions/submissionExplanation/errorMessages/systemPrompts/introductionMessage
 ```
 
 ### 重要な注意事項
