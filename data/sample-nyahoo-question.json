@@ -1,0 +1,293 @@
+[
+  {
+    "id": "nyahoo_question_1",
+    "title": "プログラミング初心者です。どの言語から始めるべき？ - Nyahoo!無知袋",
+    "url": "https://nyahoo.com/question/programming-beginner",
+    "description": "プログラミング未経験者からの質問。おすすめの言語について。",
+    "template": "NyahooQuestionPage",
+    "content": {
+      "user_id": "nyahoo_user_001",
+      "date": "2024-01-15",
+      "content": "プログラミング初心者です。どの言語から始めるべきでしょうか？\n\n現在大学2年生で、将来はソフトウェアエンジニアになりたいと思っています。インターネットで調べると色々な言語があって、どれから始めればいいのか分からなくなってしまいました。\n\nPythonが初心者にはおすすめだと聞いたのですが、本当でしょうか？それとも他にもっと良い選択肢があるのでしょうか？\n\n経験者の方からのアドバイスをお願いします！",
+      "supplement": "補足：数学は得意な方ですが、プログラミングは全くの未経験です。",
+      "createdAt": "2024-01-15T10:30:00Z",
+      "updatedAt": "2024-01-15T10:30:00Z",
+      "tag": "プログラミング",
+      "likes": 45,
+      "reply_count": 3,
+      "ads": [
+        {
+          "text": "【期間限定】プログラミング学習サービス「コーダーブック」30日間無料体験実施中！",
+          "button": "詳細を見る"
+        }
+      ],
+      "trending_questions": [
+        {
+          "title": "プログラミング初心者におすすめの学習方法は？",
+          "replies": 8,
+          "category": "プログラミング"
+        },
+        {
+          "title": "Web開発で使うフレームワークは何がいい？",
+          "replies": 1,
+          "category": "プログラミング"
+        },
+        {
+          "title": "転職活動でアピールできるポートフォリオの作り方",
+          "replies": 3,
+          "category": "仕事"
+        },
+        {
+          "title": "データサイエンスの勉強を始めたいです",
+          "replies": 2,
+          "category": "学習"
+        },
+        {
+          "title": "副業でプログラミングを始める際の注意点",
+          "replies": 19,
+          "category": "仕事"
+        }
+      ],
+      "replies": [
+        {
+          "user_id": "nyahoo_user_002",
+          "content": "初心者なら間違いなくPythonがおすすめです！\n\n理由：\n- 文法がシンプルで読みやすい\n- エラーメッセージが分かりやすい\n- 機械学習やデータ分析など、応用分野が広い\n- 学習リソースが豊富\n\n私も最初はPythonから始めました。慣れてきたらJavaScriptやJavaに挑戦するのも良いと思います。",
+          "createdAt": "2024-01-15T11:15:00Z",
+          "updatedAt": "2024-01-15T11:15:00Z",
+          "likes": 2,
+          "bads": 1,
+          "thanks": 0,
+          "replies": [
+            {
+              "user_id": "nyahoo_user_001",
+              "content": "ありがとうございます！Pythonから始めてみます。おすすめの学習サイトはありますか？",
+              "createdAt": "2024-01-15T12:00:00Z",
+              "updatedAt": "2024-01-15T12:00:00Z",
+              "likes": 0,
+              "bads": 0,
+              "thanks": 1,
+              "replies": []
+            }
+          ]
+        },
+        {
+          "user_id": "nyahoo_user_003",
+          "content": "個人的にはJavaScriptをおすすめします。\n\nWebアプリケーションを作りたいなら、フロントエンドもバックエンドも両方できるようになるので実用的です。最近はNode.jsでサーバーサイドも書けますし、React Nativeでモバイルアプリまで作れます。\n\n何より、作ったものをブラウザですぐに確認できるのでモチベーションが保ちやすいです。",
+          "createdAt": "2024-01-15T13:20:00Z",
+          "updatedAt": "2024-01-15T13:20:00Z",
+          "likes": 3,
+          "bads": 3,
+          "thanks": 0,
+          "replies": []
+        },
+        {
+          "user_id": "nyahoo_user_004",
+          "content": "大学でコンピュータサイエンスを学ぶつもりなら、C言語から始めることをおすすめします。\n\nメモリ管理やポインタなど、コンピュータの仕組みをしっかり理解できるからです。最初は難しいかもしれませんが、後々他の言語を学ぶときに役立ちます。\n\nただし、とりあえずプログラミングの楽しさを知りたいなら、PythonやJavaScriptの方が良いかもしれません。",
+          "createdAt": "2024-01-15T14:45:00Z",
+          "updatedAt": "2024-01-15T14:45:00Z",
+          "likes": 12,
+          "bads": 1,
+          "thanks": 0,
+          "replies": []
+        }
+      ]
+    },
+    "keywords": ["無知袋", "プログラミング", "初心者", "Python", "JavaScript", "プログラミング言語", "学習"],
+    "domainStatus": "active",
+    "archivedDate": "2024-01-20"
+  },
+  {
+    "id": "nyahoo_question_2",
+    "title": "スマートフォンのバッテリーを長持ちさせる方法 - Nyahoo!無知袋",
+    "url": "https://nyahoo.com/question/smartphone-battery-tips",
+    "description": "スマートフォンのバッテリー寿命を延ばすコツについての質問。",
+    "template": "NyahooQuestionPage",
+    "content": {
+      "user_id": "nyahoo_user_005",
+      "date": "2024-02-08",
+      "content": "スマートフォンのバッテリーを長持ちさせる方法を教えてください。\n\n購入して1年ほど経ちますが、最近バッテリーの減りが早くなってきました。1日持たないこともあります。\n\n充電のやり方や設定で気をつけることがあれば教えてください。できれば具体的な方法をお願いします。",
+      "supplement": "機種：サンプルフォン X12（Android）",
+      "createdAt": "2024-02-08T09:15:00Z",
+      "updatedAt": "2024-02-08T09:15:00Z",
+      "tag": "スマートフォン",
+      "likes": 78,
+      "reply_count": 3,
+      "ads": [
+        {
+          "text": "【お得情報】スマートフォンアクセサリー専門店「モバイルパーク」全品20%OFF！",
+          "button": "今すぐチェック"
+        }
+      ],
+      "trending_questions": [
+        {
+          "title": "スマホのバッテリーを長持ちさせるコツ",
+          "replies": 12,
+          "category": "スマートフォン"
+        },
+        {
+          "title": "おすすめのスマホ保護フィルムは？",
+          "replies": 8,
+          "category": "スマートフォン"
+        },
+        {
+          "title": "格安SIMに乗り換えるメリット・デメリット",
+          "replies": 25,
+          "category": "スマートフォン"
+        },
+        {
+          "title": "スマホの容量不足を解決する方法",
+          "replies": 16,
+          "category": "スマートフォン"
+        },
+        {
+          "title": "機種変更のベストタイミングはいつ？",
+          "replies": 14,
+          "category": "スマートフォン"
+        }
+      ],
+      "replies": [
+        {
+          "user_id": "nyahoo_user_006",
+          "content": "バッテリーを長持ちさせるコツをいくつか紹介します：\n\n1. 画面の明るさを下げる（自動調整ON）\n2. 位置情報サービスを必要な時だけON\n3. バックグラウンドアプリの更新を制限\n4. Wi-FiやBluetoothを使わない時はOFF\n5. 省電力モードを活用\n\n充電についても、0%まで使い切らずに20-80%の範囲で充電すると良いです。",
+          "createdAt": "2024-02-08T10:30:00Z",
+          "updatedAt": "2024-02-08T10:30:00Z",
+          "likes": 45,
+          "bads": 2,
+          "thanks": 32,
+          "replies": [
+            {
+              "user_id": "nyahoo_user_005",
+              "content": "とても参考になりました！特に20-80%での充電は知りませんでした。ありがとうございます。",
+              "createdAt": "2024-02-08T11:00:00Z",
+              "updatedAt": "2024-02-08T11:00:00Z",
+              "likes": 8,
+              "bads": 0,
+              "thanks": 2,
+              "replies": []
+            }
+          ]
+        },
+        {
+          "user_id": "nyahoo_user_007",
+          "content": "アプリの設定も重要です。\n\n特に通知を頻繁に送ってくるアプリは、プッシュ通知をOFFにするか、同期間隔を長くすると効果的です。メールアプリやSNSアプリなどですね。\n\nあと、使っていないアプリは定期的に削除することも大切です。",
+          "createdAt": "2024-02-08T12:45:00Z",
+          "updatedAt": "2024-02-08T12:45:00Z",
+          "likes": 28,
+          "bads": 1,
+          "thanks": 18,
+          "replies": []
+        },
+        {
+          "user_id": "nyahoo_user_008",
+          "content": "1年でバッテリーが劣化しているなら、スマホケースを確認してみてください。\n\n厚いケースや熱がこもりやすいケースを使っていると、バッテリーの劣化が早くなります。充電中は特に熱くなりやすいので、ケースを外して充電するのもおすすめです。",
+          "createdAt": "2024-02-08T15:20:00Z",
+          "updatedAt": "2024-02-08T15:20:00Z",
+          "likes": 22,
+          "bads": 0,
+          "thanks": 15,
+          "replies": []
+        }
+      ]
+    },
+    "keywords": ["無知袋", "スマートフォン", "バッテリー", "節約", "長持ち", "Android", "充電"],
+    "domainStatus": "active",
+    "archivedDate": "2024-02-15"
+  },
+  {
+    "id": "nyahoo_question_3",
+    "title": "一人暮らしの料理初心者におすすめのレシピ - Nyahoo!無知袋",
+    "url": "https://nyahoo.com/question/cooking-beginner-recipes",
+    "description": "一人暮らしを始める人向けの簡単レシピについての質問。",
+    "template": "NyahooQuestionPage",
+    "content": {
+      "user_id": "nyahoo_user_009",
+      "date": "2024-03-12",
+      "content": "一人暮らしを始めることになりました。料理初心者におすすめの簡単レシピを教えてください。\n\n実家では全く料理をしたことがなく、包丁も満足に使えません。でも外食ばかりだとお金がかかるので、せめて簡単な料理は覚えたいと思っています。\n\n初心者でも失敗しにくくて、材料も手に入りやすいレシピがあれば教えてください。",
+      "supplement": "補足：電子レンジとコンロは使えます。オーブンはありません。",
+      "createdAt": "2024-03-12T14:20:00Z",
+      "updatedAt": "2024-03-12T14:20:00Z",
+      "tag": "料理",
+      "likes": 92,
+      "reply_count": 3,
+      "ads": [
+        {
+          "text": "【新サービス】料理レシピアプリ「クックメイト」初月無料！一人暮らし応援キャンペーン中",
+          "button": "アプリをダウンロード"
+        }
+      ],
+      "trending_questions": [
+        {
+          "title": "一人暮らし向けの簡単レシピ",
+          "replies": 15,
+          "category": "料理"
+        },
+        {
+          "title": "節約できる作り置きおかずのレシピ",
+          "replies": 22,
+          "category": "料理"
+        },
+        {
+          "title": "料理初心者が揃えるべき調理器具",
+          "replies": 18,
+          "category": "料理"
+        },
+        {
+          "title": "冷凍食品を美味しくアレンジする方法",
+          "replies": 11,
+          "category": "料理"
+        },
+        {
+          "title": "電子レンジだけで作れる簡単料理",
+          "replies": 28,
+          "category": "料理"
+        }
+      ],
+      "replies": [
+        {
+          "user_id": "nyahoo_user_010",
+          "content": "まずは基本の「卵かけご飯」からステップアップしていくのがおすすめです！\n\n簡単レシピ3選：\n\n1. 卵焼き：卵2個+砂糖少々+塩少々\n2. チャーハン：ご飯+卵+ネギ+調味料\n3. 野菜炒め：好きな野菜+肉+醤油\n\nどれも10分以内でできます。失敗しても食べられるので安心です。",
+          "createdAt": "2024-03-12T15:00:00Z",
+          "updatedAt": "2024-03-12T15:00:00Z",
+          "likes": 38,
+          "bads": 1,
+          "thanks": 28,
+          "replies": [
+            {
+              "user_id": "nyahoo_user_009",
+              "content": "卵焼きから始めてみます！砂糖の分量はどのくらいがちょうどいいですか？",
+              "createdAt": "2024-03-12T15:30:00Z",
+              "updatedAt": "2024-03-12T15:30:00Z",
+              "likes": 0,
+              "bads": 0,
+              "thanks": 0,
+              "replies": []
+            }
+          ]
+        },
+        {
+          "user_id": "nyahoo_user_011",
+          "content": "レンジを活用すれば包丁いらずの料理もたくさんできますよ！\n\nおすすめメニュー：\n- レンジ蒸し野菜（冷凍野菜+ラップ+3分）\n- レンジパスタ（パスタ+水+調味料+レンジ）\n- 温泉卵（卵+お湯+保温）\n\nフッフパッドで「レンジ 簡単」で検索すると山ほど出てきます。",
+          "createdAt": "2024-03-12T16:15:00Z",
+          "updatedAt": "2024-03-12T16:15:00Z",
+          "likes": 42,
+          "bads": 0,
+          "thanks": 35,
+          "replies": []
+        },
+        {
+          "user_id": "nyahoo_user_012",
+          "content": "まずは調味料を揃えることから始めましょう。\n\n必須調味料：\n- 醤油、みそ、砂糖、塩\n- 料理酒、みりん\n- サラダ油\n- コンソメ、だしの素\n\nこれだけあれば大抵の料理は作れます。あとはレトルトカレーに野菜を足すだけでも立派な料理になりますよ。",
+          "createdAt": "2024-03-12T17:30:00Z",
+          "updatedAt": "2024-03-12T17:30:00Z",
+          "likes": 26,
+          "bads": 2,
+          "thanks": 22,
+          "replies": []
+        }
+      ]
+    },
+    "keywords": ["無知袋", "料理", "初心者", "一人暮らし", "簡単", "レシピ", "節約"],
+    "domainStatus": "active",
+    "archivedDate": "2024-03-20"
+  }
+]
