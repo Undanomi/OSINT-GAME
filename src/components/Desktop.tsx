@@ -197,21 +197,51 @@ export const Desktop: React.FC = () => {
   /**
    * アプリレジストリの初期化処理
    * マウント完了後にアプリレジストリからシステムアプリと利用可能アプリを読み込み
-   * Zustandストアに一括でセットして初期化完了状態にする
+   * Firestoreから保存済みアプリを復元して表示
    */
   useEffect(() => {
-    if (mounted && !initialized) {
+    const initApps = async () => {
+      if (!mounted || initialized) return;
+
       // アプリレジストリから初期データを取得
       const { installedApps: systemApps, availableApps: availableAppsConfig } = initializeAppRegistry();
 
-      // アプリストアを一度に更新（パフォーマンス最適化）
-      useAppStore.setState(() => ({
-        installedApps: [...systemApps],
-        availableApps: [...availableAppsConfig]
-      }));
+      // Firestoreから保存済みアプリのIDを取得
+      try {
+        const { loadPersistedApps } = useAppStore.getState();
+        const savedAppIds = await loadPersistedApps();
+
+        // 保存済みIDにマッチするアプリを取得してインストール済みに設定
+        const restoredApps = availableAppsConfig
+          .filter(app => savedAppIds.includes(app.id))
+          .map(app => ({ ...app, isInstalled: true, installDate: new Date() }));
+
+        // 復元されたアプリIDのリスト
+        const restoredAppIds = restoredApps.map(app => app.id);
+
+        // 利用可能アプリから復元済みを除外
+        const remainingAvailableApps = availableAppsConfig.filter(
+          app => !restoredAppIds.includes(app.id)
+        );
+
+        // ストアを更新
+        useAppStore.setState(() => ({
+          installedApps: [...systemApps, ...restoredApps],
+          availableApps: remainingAvailableApps
+        }));
+      } catch (error) {
+        console.error('Failed to restore installed apps:', error);
+        // エラー時はデフォルト設定を使用
+        useAppStore.setState(() => ({
+          installedApps: [...systemApps],
+          availableApps: [...availableAppsConfig]
+        }));
+      }
 
       setInitialized(true);
-    }
+    };
+
+    initApps();
   }, [mounted, initialized]);
 
   /**
