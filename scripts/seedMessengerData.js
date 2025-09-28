@@ -1,14 +1,14 @@
 /**
- * メッセンジャー提出問題データ自動登録スクリプト
- * JSONファイルからメッセンジャーの提出問題データをFirestoreに登録
+ * メッセンジャー設定データ自動登録スクリプト
+ * JSONファイルからメッセンジャーの全設定データをFirestoreに登録
  *
  * 使い方:
- * node scripts/seedSubmissionData.js <JSONファイルパス> [オプション]
+ * node scripts/seedMessengerData.js <JSONファイルパス> [オプション]
  *
  * 例:
- * node scripts/seedSubmissionData.js data/submission-questions.json
- * node scripts/seedSubmissionData.js data/submission-questions.json --overwrite
- * node scripts/seedSubmissionData.js data/submission-questions.json --skip-existing
+ * node scripts/seedMessengerData.js data/messenger-config.json
+ * node scripts/seedMessengerData.js data/messenger-config.json --overwrite
+ * node scripts/seedMessengerData.js data/messenger-config.json --skip-existing
  */
 
 import admin from 'firebase-admin';
@@ -37,15 +37,15 @@ const jsonFilePath = args[0];
 if (!jsonFilePath) {
   console.error('[-] エラー: JSONファイルパスを指定してください');
   console.log('\n使い方:');
-  console.log('  node scripts/seedSubmissionData.js <JSONファイルパス> [オプション]');
+  console.log('  node scripts/seedMessengerData.js <JSONファイルパス> [オプション]');
   console.log('\n例:');
-  console.log('  node scripts/seedSubmissionData.js data/submission-questions.json');
-  console.log('  node scripts/seedSubmissionData.js data/submission-questions.json --overwrite');
-  console.log('  node scripts/seedSubmissionData.js data/submission-questions.json --skip-existing');
+  console.log('  node scripts/seedMessengerData.js data/messenger-config.json');
+  console.log('  node scripts/seedMessengerData.js data/messenger-config.json --overwrite');
+  console.log('  node scripts/seedMessengerData.js data/messenger-config.json --skip-existing');
   console.log('\nまたはnpmスクリプトを使用:');
-  console.log('  npm run seed:submission data/submission-questions.json');
-  console.log('  npm run seed:submission:overwrite data/submission-questions.json');
-  console.log('  npm run seed:submission:skip data/submission-questions.json');
+  console.log('  npm run seed:messenger data/messenger-config.json');
+  console.log('  npm run seed:messenger:overwrite data/messenger-config.json');
+  console.log('  npm run seed:messenger:skip data/messenger-config.json');
   process.exit(1);
 }
 const absolutePath = path.resolve(jsonFilePath);
@@ -58,7 +58,7 @@ if (!projectId) {
   console.log('[i] 以下のいずれかの方法で設定してください:');
   console.log('    1. .env.local に NEXT_PUBLIC_FIREBASE_PROJECT_ID を設定');
   console.log('    2. 環境変数 FIREBASE_PROJECT_ID を設定');
-  console.log('    3. コマンド実行時に指定: FIREBASE_PROJECT_ID=your-project-id node scripts/seedSubmissionData.js');
+  console.log('    3. コマンド実行時に指定: FIREBASE_PROJECT_ID=your-project-id node scripts/seedMessengerData.js');
   process.exit(1);
 }
 
@@ -113,6 +113,22 @@ const sampleStructure = {
     ],
     "explanation": {
       "text": "解説文をここに記述"
+    },
+    "errorMessages": {
+      "rateLimit": "アクセス頻度が高すぎます。しばらく待ってから再度お試しください。",
+      "dbError": "データベースエラーが発生しました。システム管理者にお問い合わせください。",
+      "networkError": "ネットワーク接続に問題があります。接続を確認してください。",
+      "authError": "認証に失敗しました。セッションがタイムアウトした可能性があります。",
+      "aiServiceError": "AIサービスが一時的に利用できません。しばらく待ってから再試行してください。",
+      "aiResponseError": "AI応答の処理中にエラーが発生しました。再試行してください。",
+      "general": "申し訳ありません。予期しないエラーが発生しました。"
+    },
+    "systemPrompt": {
+      "prompt": "あなたはダークオーガニゼーションの連絡員です..."
+    },
+    "introductionMessage": {
+      "text": "こんにちは。私はダークオーガニゼーションのエージェントです。",
+      "fallbackText": "メッセージを受信しました。"
     }
   }
 };
@@ -159,6 +175,27 @@ function validateData(data) {
     } else if (!npcData.explanation.text) {
       errors.push(`${npcType}: explanation.text フィールドが不足しています`);
     }
+
+    // エラーメッセージの検証（オプション）
+    if (npcData.errorMessages) {
+      if (typeof npcData.errorMessages !== 'object') {
+        errors.push(`${npcType}: errorMessages フィールドはオブジェクトである必要があります`);
+      }
+    }
+
+    // システムプロンプトの検証（オプション）
+    if (npcData.systemPrompt) {
+      if (typeof npcData.systemPrompt !== 'object' || !npcData.systemPrompt.prompt) {
+        errors.push(`${npcType}: systemPrompt フィールドは prompt プロパティを持つオブジェクトである必要があります`);
+      }
+    }
+
+    // イントロダクションメッセージの検証（オプション）
+    if (npcData.introductionMessage) {
+      if (typeof npcData.introductionMessage !== 'object' || !npcData.introductionMessage.text) {
+        errors.push(`${npcType}: introductionMessage フィールドは text プロパティを持つオブジェクトである必要があります`);
+      }
+    }
   });
 
   if (errors.length > 0) {
@@ -171,13 +208,13 @@ function validateData(data) {
 }
 
 // データをFirestoreに登録する関数
-async function seedSubmissionData() {
+async function seedMessengerData() {
   console.log('[*] JSONファイルを読み込んでいます...');
   console.log(`    ファイルパス: ${absolutePath}\n`);
 
   const data = loadJsonData(absolutePath);
 
-  console.log(`[+] メッセンジャー提出データを読み込みました\n`);
+  console.log(`[+] メッセンジャー設定データを読み込みました\n`);
 
   // データ検証
   console.log('[*] データを検証しています...');
@@ -191,7 +228,16 @@ async function seedSubmissionData() {
   console.log('[i] 登録するNPCタイプ:');
   Object.keys(data).forEach(npcType => {
     const questionCount = data[npcType].questions?.length || 0;
-    console.log(`  - ${npcType}: ${questionCount}個の質問`);
+    const hasErrorMessages = !!data[npcType].errorMessages;
+    const hasSystemPrompt = !!data[npcType].systemPrompt;
+    const hasIntroMessage = !!data[npcType].introductionMessage;
+
+    let configItems = [`${questionCount}個の質問`];
+    if (hasErrorMessages) configItems.push('エラーメッセージ');
+    if (hasSystemPrompt) configItems.push('システムプロンプト');
+    if (hasIntroMessage) configItems.push('イントロダクション');
+
+    console.log(`  - ${npcType}: ${configItems.join(', ')}`);
   });
   console.log();
 
@@ -249,6 +295,69 @@ async function seedSubmissionData() {
       console.log(`[+] 登録成功: ${npcType}/submissionExplanation`);
       successCount++;
 
+      // エラーメッセージデータの登録（オプション）
+      if (npcData.errorMessages) {
+        const errorMessagesDocRef = db.collection('messenger').doc(npcType).collection('config').doc('errorMessages');
+        const errorMessagesDoc = await errorMessagesDocRef.get();
+
+        if (errorMessagesDoc.exists && !allowOverwrite && !skipExisting) {
+          console.log(`[!] 警告: ${npcType}/errorMessages は既に存在します。上書きするには --overwrite オプションを使用してください`);
+        } else {
+          if (errorMessagesDoc.exists && skipExisting) {
+            console.log(`[*] スキップ（既存）: ${npcType}/errorMessages`);
+          } else {
+            if (errorMessagesDoc.exists && allowOverwrite) {
+              console.log(`[*] 上書き: ${npcType}/errorMessages`);
+            }
+            await errorMessagesDocRef.set(npcData.errorMessages);
+            console.log(`[+] 登録成功: ${npcType}/errorMessages`);
+            successCount++;
+          }
+        }
+      }
+
+      // システムプロンプトデータの登録（オプション）
+      if (npcData.systemPrompt) {
+        const systemPromptDocRef = db.collection('messenger').doc(npcType).collection('config').doc('systemPrompts');
+        const systemPromptDoc = await systemPromptDocRef.get();
+
+        if (systemPromptDoc.exists && !allowOverwrite && !skipExisting) {
+          console.log(`[!] 警告: ${npcType}/systemPrompts は既に存在します。上書きするには --overwrite オプションを使用してください`);
+        } else {
+          if (systemPromptDoc.exists && skipExisting) {
+            console.log(`[*] スキップ（既存）: ${npcType}/systemPrompts`);
+          } else {
+            if (systemPromptDoc.exists && allowOverwrite) {
+              console.log(`[*] 上書き: ${npcType}/systemPrompts`);
+            }
+            await systemPromptDocRef.set(npcData.systemPrompt);
+            console.log(`[+] 登録成功: ${npcType}/systemPrompts`);
+            successCount++;
+          }
+        }
+      }
+
+      // イントロダクションメッセージデータの登録（オプション）
+      if (npcData.introductionMessage) {
+        const introMessageDocRef = db.collection('messenger').doc(npcType).collection('config').doc('introductionMessage');
+        const introMessageDoc = await introMessageDocRef.get();
+
+        if (introMessageDoc.exists && !allowOverwrite && !skipExisting) {
+          console.log(`[!] 警告: ${npcType}/introductionMessage は既に存在します。上書きするには --overwrite オプションを使用してください`);
+        } else {
+          if (introMessageDoc.exists && skipExisting) {
+            console.log(`[*] スキップ（既存）: ${npcType}/introductionMessage`);
+          } else {
+            if (introMessageDoc.exists && allowOverwrite) {
+              console.log(`[*] 上書き: ${npcType}/introductionMessage`);
+            }
+            await introMessageDocRef.set(npcData.introductionMessage);
+            console.log(`[+] 登録成功: ${npcType}/introductionMessage`);
+            successCount++;
+          }
+        }
+      }
+
     } catch (error) {
       console.error(`[-] 登録失敗: ${npcType}`, error.message);
       failCount++;
@@ -256,7 +365,7 @@ async function seedSubmissionData() {
   }
 
   console.log('\n========================================');
-  console.log('[!] メッセンジャー提出データ登録が完了しました！');
+  console.log('[!] メッセンジャー設定データ登録が完了しました！');
   console.log(`    成功: ${successCount} 件`);
   console.log(`    失敗: ${failCount} 件`);
   console.log('========================================\n');
@@ -264,7 +373,7 @@ async function seedSubmissionData() {
   if (successCount > 0) {
     console.log('[i] 登録されたデータの確認:');
     console.log('  Firebase Console → Firestore Database → messenger コレクション');
-    console.log('  各NPCタイプ → config → submissionQuestions/submissionExplanation');
+    console.log('  各NPCタイプ → config → submissionQuestions/submissionExplanation/errorMessages/systemPrompts/introductionMessage');
   }
 
   process.exit(failCount > 0 ? 1 : 0);
@@ -272,7 +381,7 @@ async function seedSubmissionData() {
 
 // スクリプト実行
 console.log('========================================');
-console.log('  メッセンジャー提出データ自動登録');
+console.log('  メッセンジャー設定データ自動登録');
 console.log('========================================\n');
 
 if (allowOverwrite) {
@@ -283,7 +392,7 @@ if (allowOverwrite) {
   console.log('[i] 通常モード: 既存のドキュメントがある場合は警告を表示します\n');
 }
 
-seedSubmissionData().catch(error => {
+seedMessengerData().catch(error => {
   console.error('[E] エラーが発生しました:', error);
   process.exit(1);
 });

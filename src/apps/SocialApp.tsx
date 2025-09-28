@@ -53,6 +53,7 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
     isLoadingMoreMessages,
     loadMoreMessages,
     sendMessage,
+    isWaitingForAI,
     addNewContact,
     error,
     setError,
@@ -111,7 +112,8 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
               systemPrompt: '',
               isActive: false,
               createdAt: new Date(),
-              updatedAt: new Date()
+              updatedAt: new Date(),
+              isGameOverTarget: false,
             };
             setSelectedNPC(npcInfo);
             setCurrentView('npc-profile');
@@ -301,6 +303,7 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
             messagesLoading={messagesLoading}
             isLoadingMore={isLoadingMoreMessages}
             onLoadMore={loadMoreMessages}
+            isWaitingForAI={isWaitingForAI}
           />
         ) : (
           <div>連絡先が選択されていません。</div>

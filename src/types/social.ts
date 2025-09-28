@@ -46,6 +46,7 @@ export interface SocialNPC {
   canDM: boolean;
   systemPrompt: string; // DM用のシステムプロンプト
   isActive: boolean;
+  isGameOverTarget: boolean; // この NPCが信頼度・警戒度ゲームオーバーの対象かどうか
   createdAt: Date;
   updatedAt: Date;
 }
@@ -205,7 +206,6 @@ export interface PostsRequestParams {
  * キャッシュされたアカウント投稿データ
  */
 export interface CachedAccountPosts {
-  userId: string;
   accountId: string;
   posts: UISocialPost[];
   hasMore: boolean;
@@ -223,27 +223,26 @@ export interface CachedNPCPosts {
 }
 
 /**
- * ソーシャルストア（ローカルキャッシュ）の型定義
+ * ソーシャルストア（ローカルキャッシュ）の型定義（単一ユーザー用）
  */
 export interface SocialStore {
   timeline: {
-    [userId: string]: {
+    posts: UISocialPost[];
+    hasMore: boolean;
+    timestamp: number;
+  } | null;
+  accountPosts: {
+    [accountId: string]: {
+      accountId: string;
       posts: UISocialPost[];
       hasMore: boolean;
       timestamp: number;
     };
   };
-  accountPosts: {
-    [userId: string]: {
-      [accountId: string]: CachedAccountPosts;
-    };
-  };
   npcPosts: {
     [npcId: string]: CachedNPCPosts;
   };
-  accounts: {
-    [userId: string]: CachedSocialAccounts;
-  };
+  accounts: CachedSocialAccounts | null;
   npcs: CachedSocialNPCs | null;
   socialNPCPosts: {
     posts: UISocialPost[];
@@ -251,10 +250,10 @@ export interface SocialStore {
     timestamp: number;
   } | null;
   contacts: {
-    [key: string]: CachedSocialContacts; // key format: `${userId}_${accountId}`
+    [accountId: string]: CachedSocialContacts;
   };
   messages: {
-    [key: string]: CachedSocialMessages; // key format: `${userId}_${accountId}_${contactId}`
+    [key: string]: CachedSocialMessages; // key format: `${accountId}_${contactId}`
   };
 }
 
@@ -315,9 +314,30 @@ export type SocialView = 'home' | 'search' | 'new-post' | 'dm' | 'dm-chat' | 'pr
 export type ContactType = 'npc' | 'default';
 
 /**
+ * NPCとユーザーアカウント間の関係性情報（Firestore用）
+ * path: users/{userId}/socialAccounts/{accountId}/Relationships/{contactId}
+ */
+export interface SocialRelationship {
+  trust: number; // 信頼度 (0-100)
+  caution: number; // 警戒度 (0-100)
+  lastInteractionAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * AI応答の構造化されたレスポンス
+ */
+export interface SocialAIResponse {
+  responseText: string;
+  newTrust: number;
+  newCaution: number;
+}
+
+
+/**
  * エラータイプの列挙
  */
-export type SocialErrorType = 'rateLimit' | 'dbError' | 'networkError' | 'authError' | 'aiServiceError' | 'aiResponseError' | 'accountLimit' | 'accountDuplicate' | 'general';
+export type SocialErrorType = 'rateLimit' | 'dbError' | 'networkError' | 'authError' | 'aiServiceError' | 'aiResponseError' | 'accountDuplicate' | 'general';
 
 /**
  * デフォルトのソーシャルアカウントデータ（初回登録時用）
@@ -328,27 +348,6 @@ export const createDefaultSocialAccount = (
 ): SocialAccount => defaultSettings;
 
 
-/**
- * エラーメッセージの定数（固定）
- */
-export const SOCIAL_ERROR_MESSAGES = {
-  rateLimit: "しばらく待ってから再度お試しください。",
-  dbError: "データの保存に失敗しました。しばらく待ってから再試行してください。",
-  networkError: "ネットワーク接続に問題があります。接続を確認してください。",
-  authError: "認証に失敗しました。再ログインしてください。",
-  aiServiceError: "AIサービスが一時的に利用できません。しばらく待ってから再試行してください。",
-  aiResponseError: "AI応答の処理中にエラーが発生しました。再試行してください。",
-  accountLimit: "アカウント数の上限（3個）に達しました。既存のアカウントを削除してから作成してください。",
-  accountDuplicate: "このユーザーIDは既に使用されています。別のIDを選択してください。",
-  general: "申し訳ありません。エラーが発生しました。"
-};
-
-/**
- * エラータイプに基づいてエラーメッセージを取得する
- */
-export function getSocialErrorMessage(errorType: SocialErrorType): string {
-  return SOCIAL_ERROR_MESSAGES[errorType];
-}
 
 /**
  * FirestoreのSocialPostをUI用のUISocialPostに変換する
@@ -361,7 +360,7 @@ export function convertToUISocialPost(
   const diffMs = now.getTime() - post.timestamp.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
-  
+
   let timeString: string;
   if (diffDays > 0) {
     timeString = `${diffDays}日前`;

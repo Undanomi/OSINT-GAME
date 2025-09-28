@@ -9,8 +9,8 @@ import { DisclaimerLoading } from '@/components/DisclaimerLoading';
 import { ScenarioSelection } from '@/components/ScenarioSelection';
 import { ScenarioLoading } from '@/components/ScenarioLoading';
 import { NotificationSystem } from '@/components/NotificationSystem';
-import { SubmissionExplanation } from '@/components/SubmissionExplanation';
-import { SubmissionFailure } from '@/components/SubmissionFailure';
+import { MissionComplete } from '@/components/MissionComplete';
+import { GameOver } from '@/components/GameOver';
 import { useGameStore } from '@/store/gameStore';
 import { useWindowStore } from '@/store/windowStore';
 import { useAuthContext } from '@/providers/AuthProvider';
@@ -18,6 +18,7 @@ import { useAuthContext } from '@/providers/AuthProvider';
 export default function HomePage() {
   const {
     gamePhase,
+    gameOverState,
     startGame,
     setGamePhase,
     setSelectedScenario
@@ -43,12 +44,12 @@ export default function HomePage() {
     setGamePhase('game');
   };
 
-  const handleSubmissionExplanationComplete = () => {
-    // 解説完了後はゲーム画面に戻る
+  const handleMissionComplete = () => {
+    // ミッション完了後はゲーム画面に戻る
   };
 
-  const handleSubmissionFailureComplete = () => {
-    // 失敗シーン完了後の処理（既にシーン遷移済み）
+  const handleGameOverComplete = () => {
+    // ゲームオーバー処理（既にシーン遷移済み）
   };
 
   // フェーズに応じて適切なコンポーネントを表示
@@ -84,11 +85,11 @@ export default function HomePage() {
         </div>
       );
 
-    case 'submission-explanation':
-      return <SubmissionExplanation onComplete={handleSubmissionExplanationComplete} />;
+    case 'mission-complete':
+      return <MissionComplete onComplete={handleMissionComplete} />;
 
-    case 'submission-failure':
-      return <SubmissionFailure onComplete={handleSubmissionFailureComplete} />;
+    case 'game-over':
+      return <GameOver gameOverState={gameOverState} onComplete={handleGameOverComplete} />;
 
     default:
       return <TitleScreen onGameStart={handleGameStart} />;

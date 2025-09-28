@@ -5,8 +5,6 @@ import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
  * ページネーション設定、キャッシュ設定、制限値など
  */
 
-// アカウント関連
-export const MAX_SOCIAL_ACCOUNTS_PER_USER = 3;
 
 // ページネーション関連
 export const SOCIAL_POSTS_PER_PAGE = 15;
@@ -65,3 +63,6 @@ export const TIMELINE_REFRESH_INTERVAL_MS = 30 * 1000; // 30秒
 
 // エラー関連
 export const ERROR_DISPLAY_DURATION_MS = 5 * 1000; // 5秒
+
+// 警戒度の閾値設定（ゲームオーバー条件）
+export const CAUTION_GAME_OVER_THRESHOLD = 100; // 警戒度が100でゲームオーバー

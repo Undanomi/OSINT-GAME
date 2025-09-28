@@ -231,6 +231,8 @@ socialNPCs/
   {npcId}/
     posts/
       {postId}
+    config/
+      errorMessages
 
 socialNPCPosts/
   {postId}
@@ -323,6 +325,7 @@ interface SocialNPC {
   canDM: boolean;                // DM可能フラグ
   systemPrompt: string;          // AI応答用システムプロンプト
   isActive: boolean;             // アクティブフラグ
+  isGameOverTarget: boolean;     // ゲームオーバー対象フラグ（信頼度・警戒度によるゲームオーバー判定の対象かどうか）
 }
 ```
 
@@ -427,6 +430,78 @@ interface DefaultSocialAccountSetting extends SocialAccount {
 - **メッセージ取得**: 20件ずつページング
 - **カーソル**: 最後の投稿/メッセージのIDを使用
 
+## 信頼度・警戒度システム
+
+### 概要
+SNSアプリケーションには、NPCとユーザーの関係性を管理する信頼度・警戒度システムが実装されています。
+特定のNPCとの関係が悪化すると、ゲームオーバーになります。
+
+### データ構造
+
+#### 関係性情報 (`users/{userId}/socialAccounts/{accountId}/Relationships/{contactId}`)
+
+```typescript
+interface SocialRelationship {
+  trust: number;                 // 信頼度 (0-100)
+  caution: number;               // 警戒度 (0-100)
+  lastInteractionAt: Date;       // 最後のやり取り日時
+  updatedAt: Date;               // 更新日時
+}
+```
+
+### ゲームオーバー条件
+
+#### 閾値設定
+- **警戒度**: 100でゲームオーバー
+
+#### 対象NPC制御
+- `isGameOverTarget: true` のNPCのみがゲームオーバー判定の対象
+- 通常のNPCは関係性が悪化してもゲームオーバーにならない
+
+#### AI応答フロー
+1. プレイヤーがDMを送信
+2. AI応答生成時に新しい信頼度・警戒度を算出
+3. 関係性データをFirestoreに自動更新
+4. ゲームオーバー対象NPCの場合、閾値チェックを実行
+5. 閾値に達した場合、`triggerGameOver('social-relationship', details)`を呼び出し
+
+### ゲームオーバー後の処理
+
+#### 選択肢
+- **途中からやり直す**: ゲーム画面に戻る（`social-relationship`の場合は非表示）
+- **はじめからやり直す**: ユーザーの全データを削除してシナリオ選択画面に戻る
+
+#### データ削除処理
+「はじめからやり直す」を選択した場合、Cloud Functionにより以下のデータが完全削除されます：
+- `users/{userId}` ドキュメント（メインドキュメント）
+- 全てのサブコレクション（`socialAccounts`, `socialContacts`, `socialTimeline`, `messengerChats`, `notes`等）
+- ネストしたサブコレクション（`posts`, `history`, `Relationships`等）
+
+### システム設計
+
+#### AI応答形式
+```typescript
+interface SocialAIResponse {
+  responseText: string;          // AI応答テキスト
+  newTrust: number;              // 更新後の信頼度
+  newCaution: number;            // 更新後の警戒度
+}
+```
+
+#### ゲームオーバー状態
+```typescript
+interface GameOverState {
+  reason: 'submission-failure' | 'social-relationship';
+  details?: string;              // 詳細なエラーメッセージ
+}
+```
+
+### 実装のポイント
+- 信頼度・警戒度は0-100の範囲で管理
+- 初期値は信頼度30、警戒度70
+- ゲームオーバー時は関係性悪化の場合「途中からやり直す」ボタンを非表示
+- Cloud Function (`cleanupSubcollections`) がサブコレクションの再帰削除を自動実行
+
 
 ## メッセンジャー提出システム
 
@@ -443,8 +518,9 @@ messenger/
     └── config/          # 設定データサブコレクション
         ├── submissionQuestions    # 提出問題データ
         ├── submissionExplanation  # 解説データ
-        ├── systemPrompts         # システムプロンプト（既存）
-        └── introductionMessage   # イントロダクション（既存）
+        ├── errorMessages         # エラーメッセージデータ
+        ├── systemPrompts         # システムプロンプト
+        └── introductionMessage   # イントロダクションメッセージ
 ```
 
 #### submissionQuestions ドキュメント
@@ -476,6 +552,37 @@ messenger/
 ```javascript
 {
   "text": "解説文をここに記述\n\n複数行にわたる解説が可能\n最終的に成功シーンで表示される"
+}
+```
+
+#### errorMessages ドキュメント
+
+```javascript
+{
+  "rateLimit": "監視を避けるため、通信頻度を下げる必要がある。少し間を空けてくれ。",
+  "dbError": "組織のデータベースに一時的な障害が発生している。",
+  "networkError": "システムの異常を検知した。安全な接続を再確立している。",
+  "authError": "組織のセキュリティプロトコルにより、認証が無効化された。",
+  "aiServiceError": "組織の知識処理システムが一時的に利用できない。しばらく待ってくれ。",
+  "aiResponseError": "応答データの整合性チェックでエラーが検出された。",
+  "general": "通信エラーが発生した。セキュリティプロトコルを確認中..."
+}
+```
+
+#### systemPrompts ドキュメント
+
+```javascript
+{
+  "prompt": "あなたは「闇の組織」のエージェントです。プレイヤーに対して冷静かつ簡潔に応答してください。\n\nプレイヤーが質問をした場合は、以下のJSON形式で応答してください：\n{\n  \"responseText\": \"実際の返答内容\"\n}\n\n応答は必ずJSON形式で返してください。"
+}
+```
+
+#### introductionMessage ドキュメント
+
+```javascript
+{
+  "text": "こんにちは。私はダークオーガニゼーションのエージェントです。何かご用件がありますか？",
+  "fallbackText": "メッセージを受信しました。"
 }
 ```
 

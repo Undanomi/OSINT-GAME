@@ -4,10 +4,10 @@ import React, { useState, useRef, useEffect, useCallback, UIEvent } from 'react'
 import { AppProps } from '@/types/app';
 import { BaseApp } from '@/components/BaseApp';
 import { Send } from 'lucide-react';
-import { addMessage, generateAIResponse, getSubmissionQuestions, validateSubmission } from '@/actions/messenger';
+import { addMessage, generateAIResponse, getSubmissionQuestions, validateSubmission, getErrorMessage } from '@/actions/messenger';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useMessenger } from '@/hooks/useMessenger';
-import { UIMessage, ErrorType, selectErrorMessage, SubmissionQuestion } from '@/types/messenger';
+import { UIMessage, ErrorType, SubmissionQuestion } from '@/types/messenger';
 import { useGameStore } from '@/store/gameStore';
 import { useSubmissionStore } from '@/store/submissionStore';
 
@@ -42,12 +42,12 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     hasMore,
     loadMoreMessages,
     addMessageToState,
-    removeMessageFromState,
     addTemporaryMessage,
   } = useMessenger();
 
   const [inputText, setInputText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isWaitingForAI, setIsWaitingForAI] = useState(false);
   const [submissionQuestions, setSubmissionQuestions] = useState<SubmissionQuestion[]>([]);
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
@@ -86,7 +86,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   }, [selectedContact, setSubmissionMode, addTemporaryMessage]);
 
   const handleSendMessage = useCallback(async () => {
-    if (!inputText.trim() || !selectedContact || !user || inputText.trim().length > 500) return;
+    if (!inputText.trim() || !selectedContact || !user || inputText.trim().length > 500 || isWaitingForAI) return;
 
     const currentInput = inputText;
     const userTimestamp = new Date();
@@ -168,8 +168,11 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     }
 
     // 通常のAI応答処理
+    setIsWaitingForAI(true);
     addMessageToState(userMessage);
+
     try {
+      // ユーザーメッセージ保存
       await addMessage(selectedContact.id, {
         id: messageId,
         sender: 'user',
@@ -177,6 +180,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         timestamp: userMessage.timestamp,
       });
 
+      // AI応答生成
       const aiText = await generateAIResponse(currentInput, messages, selectedContact.type);
 
       const aiTimestamp = new Date();
@@ -189,6 +193,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         timestamp: aiTimestamp,
       };
 
+      // AI応答保存
       await addMessage(selectedContact.id, {
         id: aiMessageId,
         sender: 'npc',
@@ -198,11 +203,13 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       addMessageToState(aiMessage);
 
     } catch (error) {
-      removeMessageFromState(messageId);
-      setInputText(currentInput);
-
+      // エラーメッセージをFirestoreから取得
       const errorType = error instanceof Error ? error.message as ErrorType : 'general';
-      const errorText = selectErrorMessage(errorType, selectedContact.type);
+      const errorMessages = await getErrorMessage(selectedContact.type);
+      const customErrorText = errorMessages?.[errorType];
+
+      // Firestoreからの取得に失敗した場合はgeneral固定メッセージを使用
+      const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
 
       const errorTimestamp = new Date();
       const errorMessage: UIMessage = {
@@ -212,9 +219,20 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
         timestamp: errorTimestamp,
       };
+
+      // NPCエラーメッセージを保存・表示
+      await addMessage(selectedContact.id, {
+        id: errorMessage.id,
+        sender: 'npc',
+        text: errorText,
+        timestamp: errorMessage.timestamp,
+      });
       addMessageToState(errorMessage);
+
+    } finally {
+      setIsWaitingForAI(false);
     }
-  }, [inputText, selectedContact, user, submissionState, submissionQuestions, addMessageToState, removeMessageFromState, addTemporaryMessage, startSubmissionMode, addSubmissionAnswer, setSubmissionQuestion, setSubmissionResult, completeSubmission, messages]);
+  }, [inputText, selectedContact, user, submissionState, submissionQuestions, addMessageToState, addTemporaryMessage, startSubmissionMode, addSubmissionAnswer, setSubmissionQuestion, setSubmissionResult, completeSubmission, messages, isWaitingForAI]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.keyCode === 13 && !e.shiftKey) {
@@ -279,10 +297,10 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
                 value={inputText}
                 onChange={e => setInputText(e.target.value.substring(0, 500))}
                 onKeyDown={handleKeyDown}
-                disabled={!selectedContact}
+                disabled={!selectedContact || isWaitingForAI}
                 maxLength={500}
               />
-              <button onClick={handleSendMessage} disabled={!inputText.trim() || !selectedContact} className="bg-blue-500 text-white p-3 rounded-lg disabled:bg-blue-300">
+              <button onClick={handleSendMessage} disabled={!inputText.trim() || !selectedContact || isWaitingForAI} className="bg-blue-500 text-white p-3 rounded-lg disabled:bg-blue-300">
                 <Send size={20} />
               </button>
             </div>

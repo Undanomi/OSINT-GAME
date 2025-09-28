@@ -12,43 +12,42 @@ import {
 
 interface SocialStore extends SocialStoreType {
   // アクション
-  setUserTimeline: (userId: string, posts: UISocialPost[], hasMore: boolean) => void;
-  appendUserTimeline: (userId: string, posts: UISocialPost[], hasMore: boolean) => void;
-  setAccountPosts: (userId: string, accountId: string, posts: UISocialPost[], hasMore: boolean) => void;
-  appendAccountPosts: (userId: string, accountId: string, posts: UISocialPost[], hasMore: boolean) => void;
+  setTimeline: (posts: UISocialPost[], hasMore: boolean) => void;
+  appendTimeline: (posts: UISocialPost[], hasMore: boolean) => void;
+  setAccountPosts: (accountId: string, posts: UISocialPost[], hasMore: boolean) => void;
+  appendAccountPosts: (accountId: string, posts: UISocialPost[], hasMore: boolean) => void;
   setNPCPosts: (npcId: string, posts: UISocialPost[], hasMore: boolean) => void;
   appendNPCPosts: (npcId: string, posts: UISocialPost[], hasMore: boolean) => void;
-  setUserAccounts: (userId: string, accounts: SocialAccount[]) => void;
+  setAccounts: (accounts: SocialAccount[]) => void;
   setNPCs: (npcs: SocialNPC[]) => void;
   setSocialNPCPosts: (posts: UISocialPost[], hasMore: boolean) => void;
   appendSocialNPCPosts: (posts: UISocialPost[], hasMore: boolean) => void;
-  setUserContacts: (userId: string, accountId: string, contacts: SocialContact[]) => void;
-  setUserMessages: (userId: string, accountId: string, contactId: string, messages: UISocialDMMessage[], hasMore: boolean) => void;
-  appendUserMessages: (userId: string, accountId: string, contactId: string, messages: UISocialDMMessage[], hasMore: boolean) => void;
-  addUserMessage: (userId: string, accountId: string, contactId: string, message: UISocialDMMessage) => void;
-
+  setContacts: (accountId: string, contacts: SocialContact[]) => void;
+  setMessages: (accountId: string, contactId: string, messages: UISocialDMMessage[], hasMore: boolean) => void;
+  appendMessages: (accountId: string, contactId: string, messages: UISocialDMMessage[], hasMore: boolean) => void;
+  addMessage: (accountId: string, contactId: string, message: UISocialDMMessage) => void;
 
   // ユーティリティ
-  clearUserData: (userId: string) => void;
-  clearAccountData: (userId: string, accountId: string) => void;
+  clearAllData: () => void;
+  clearAccountData: (accountId: string) => void;
   getCurrentTimestamp: () => number;
 }
 
 
 export const useSocialStore = create<SocialStore>()((set) => ({
       // 初期状態
-      timeline: {},
+      timeline: null,
       accountPosts: {},
       npcPosts: {},
-      accounts: {},
+      accounts: null,
       npcs: null,
       socialNPCPosts: null,
       contacts: {},
       messages: {},
 
       // タイムライン管理
-      setUserTimeline: (userId, posts, hasMore) => {
-        set((state) => {
+      setTimeline: (posts, hasMore) => {
+        set(() => {
           // 重複を除去（IDベース）
           const uniquePosts = posts.filter((post, index, self) =>
             index === self.findIndex(p => p.id === post.id)
@@ -56,20 +55,17 @@ export const useSocialStore = create<SocialStore>()((set) => ({
 
           return {
             timeline: {
-              ...state.timeline,
-              [userId]: {
-                posts: uniquePosts,
-                hasMore,
-                timestamp: Date.now()
-              }
+              posts: uniquePosts,
+              hasMore,
+              timestamp: Date.now()
             }
           };
         });
       },
 
-      appendUserTimeline: (userId, posts, hasMore) => {
+      appendTimeline: (posts, hasMore) => {
         set((state) => {
-          const existing = state.timeline[userId];
+          const existing = state.timeline;
           const existingPosts = existing ? existing.posts : [];
           const combinedPosts = [...existingPosts, ...posts];
 
@@ -80,51 +76,40 @@ export const useSocialStore = create<SocialStore>()((set) => ({
 
           return {
             timeline: {
-              ...state.timeline,
-              [userId]: {
-                posts: uniquePosts,
-                hasMore,
-                timestamp: Date.now()
-              }
+              posts: uniquePosts,
+              hasMore,
+              timestamp: Date.now()
             }
           };
         });
       },
 
       // アカウント投稿管理
-      setAccountPosts: (userId, accountId, posts, hasMore) => {
+      setAccountPosts: (accountId, posts, hasMore) => {
         set((state) => ({
           accountPosts: {
             ...state.accountPosts,
-            [userId]: {
-              ...state.accountPosts[userId],
-              [accountId]: {
-                userId,
-                accountId,
-                posts,
-                hasMore,
-                timestamp: Date.now()
-              }
+            [accountId]: {
+              accountId,
+              posts,
+              hasMore,
+              timestamp: Date.now()
             }
           }
         }));
       },
 
-      appendAccountPosts: (userId, accountId, posts, hasMore) => {
+      appendAccountPosts: (accountId, posts, hasMore) => {
         set((state) => {
-          const existing = state.accountPosts[userId]?.[accountId];
+          const existing = state.accountPosts[accountId];
           return {
             accountPosts: {
               ...state.accountPosts,
-              [userId]: {
-                ...state.accountPosts[userId],
-                [accountId]: {
-                  userId,
-                  accountId,
-                  posts: existing ? [...existing.posts, ...posts] : posts,
-                  hasMore,
-                  timestamp: Date.now()
-                }
+              [accountId]: {
+                accountId,
+                posts: existing ? [...existing.posts, ...posts] : posts,
+                hasMore,
+                timestamp: Date.now()
               }
             }
           };
@@ -164,16 +149,13 @@ export const useSocialStore = create<SocialStore>()((set) => ({
       },
 
       // アカウント管理
-      setUserAccounts: (userId, accounts) => {
-        set((state) => ({
+      setAccounts: (accounts) => {
+        set({
           accounts: {
-            ...state.accounts,
-            [userId]: {
-              accounts,
-              timestamp: Date.now()
-            }
+            accounts,
+            timestamp: Date.now()
           }
-        }));
+        });
       },
 
       // NPC管理
@@ -211,11 +193,11 @@ export const useSocialStore = create<SocialStore>()((set) => ({
       },
 
       // 連絡先管理
-      setUserContacts: (userId, accountId, contacts) => {
+      setContacts: (accountId, contacts) => {
         set((state) => ({
           contacts: {
             ...state.contacts,
-            [`${userId}_${accountId}`]: {
+            [accountId]: {
               contacts,
               timestamp: Date.now()
             }
@@ -224,11 +206,11 @@ export const useSocialStore = create<SocialStore>()((set) => ({
       },
 
       // メッセージ管理
-      setUserMessages: (userId, accountId, contactId, messages, hasMore) => {
+      setMessages: (accountId, contactId, messages, hasMore) => {
         set((state) => ({
           messages: {
             ...state.messages,
-            [`${userId}_${accountId}_${contactId}`]: {
+            [`${accountId}_${contactId}`]: {
               messages,
               hasMore,
               timestamp: Date.now()
@@ -237,9 +219,9 @@ export const useSocialStore = create<SocialStore>()((set) => ({
         }));
       },
 
-      appendUserMessages: (userId, accountId, contactId, messages, hasMore) => {
+      appendMessages: (accountId, contactId, messages, hasMore) => {
         set((state) => {
-          const key = `${userId}_${accountId}_${contactId}`;
+          const key = `${accountId}_${contactId}`;
           const existing = state.messages[key];
           return {
             messages: {
@@ -254,9 +236,9 @@ export const useSocialStore = create<SocialStore>()((set) => ({
         });
       },
 
-      addUserMessage: (userId, accountId, contactId, message) => {
+      addMessage: (accountId, contactId, message) => {
         set((state) => {
-          const key = `${userId}_${accountId}_${contactId}`;
+          const key = `${accountId}_${contactId}`;
           const existing = state.messages[key];
           return {
             messages: {
@@ -273,50 +255,35 @@ export const useSocialStore = create<SocialStore>()((set) => ({
 
 
       // ユーティリティ
-      clearUserData: (userId) => {
-        set((state) => {
-          const newState = { ...state };
-
-          // ユーザー固有のデータを削除
-          delete newState.timeline[userId];
-          delete newState.accountPosts[userId];
-          delete newState.accounts[userId];
-
-          // 連絡先とメッセージからユーザー関連のキーを削除
-          Object.keys(newState.contacts).forEach(key => {
-            if (key.startsWith(`${userId}_`)) {
-              delete newState.contacts[key];
-            }
-          });
-
-          Object.keys(newState.messages).forEach(key => {
-            if (key.startsWith(`${userId}_`)) {
-              delete newState.messages[key];
-            }
-          });
-
-          return newState;
+      clearAllData: () => {
+        set({
+          timeline: null,
+          accountPosts: {},
+          npcPosts: {},
+          accounts: null,
+          npcs: null,
+          socialNPCPosts: null,
+          contacts: {},
+          messages: {},
         });
       },
 
-      clearAccountData: (userId, accountId) => {
+      clearAccountData: (accountId) => {
         set((state) => {
           const newState = { ...state };
 
           // アカウント固有のデータを削除
-          if (newState.accountPosts[userId]) {
-            delete newState.accountPosts[userId][accountId];
-          }
+          delete newState.accountPosts[accountId];
 
           // 連絡先とメッセージからアカウント関連のキーを削除
           Object.keys(newState.contacts).forEach(key => {
-            if (key.startsWith(`${userId}_${accountId}`)) {
+            if (key === accountId) {
               delete newState.contacts[key];
             }
           });
 
           Object.keys(newState.messages).forEach(key => {
-            if (key.startsWith(`${userId}_${accountId}`)) {
+            if (key.startsWith(`${accountId}_`)) {
               delete newState.messages[key];
             }
           });

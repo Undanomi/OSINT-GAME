@@ -273,7 +273,7 @@ export const generateAIResponse = requireAuth(async (
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash",
       systemInstruction: systemPromptData.prompt,
     });
 
@@ -304,7 +304,13 @@ export const generateAIResponse = requireAuth(async (
         const responseText = result.response.text();
 
         // JSON応答のパースと検証
-        responseObject = JSON.parse(responseText);
+        if (responseText.startsWith("```json") && responseText.endsWith("```")) {
+          // コードブロックを除去
+          const jsonString = responseText.slice(7, -3).trim();
+          responseObject = JSON.parse(jsonString);
+        } else {
+          responseObject = JSON.parse(responseText);
+        }
         break; // 成功した場合はループを抜ける
       } catch (jsonError) {
         retryCount++;
@@ -407,6 +413,26 @@ export async function getSystemPromptFromFirestore(npcType: string): Promise<Sys
   } catch (error) {
     console.error('Error getting system prompt:', error);
     throw error;
+  }
+}
+
+/**
+ * 指定されたNPCの全エラーメッセージを取得
+ */
+export async function getErrorMessage(npcType: string): Promise<Record<string, string> | null> {
+  try {
+    const docRef = doc(db, 'messenger', npcType, 'config', 'errorMessages');
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data || null;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting error messages:', error);
+    return null;
   }
 }
 
