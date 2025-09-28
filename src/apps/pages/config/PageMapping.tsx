@@ -6,6 +6,7 @@ import { ChiitaPage } from '../ChiitaPage';
 import { NyahooNewsPage } from '../NyahooNewsPage';
 import { NyahooQuestionPage } from '../NyahooQuestionPage';
 import { UsopediaPage } from '../UsopediaPage';
+import { NittaBlogPage } from '../NittaBlogPage';
 import { GogglesMail } from '../goggles-mail/GogglesMailPage';
 import { PlaybackMachinePage } from '../PlaybackMachinePage';
 import { UnifiedSearchResult } from '@/types/search';
@@ -43,4 +44,6 @@ export const dynamicPageComponentMap: Record<string, (documentId: string, initia
     <NyahooQuestionPage documentId={documentId} initialData={initialData} />,
   'UsopediaPage': (documentId, initialData) =>
     <UsopediaPage documentId={documentId} initialData={initialData} />,
+  'NittaBlogPage': (documentId, initialData) =>
+    <NittaBlogPage documentId={documentId} initialData={initialData} />,
 };
