@@ -1251,6 +1251,9 @@ export const generateSocialAIResponse = requireAuth(async (
       try {
         const result = await chat.sendMessage(promptForModel);
         const responseText = result.response.text();
+        if (process.env.NODE_ENV === 'development') {
+          console.log('AI Raw Response:', responseText);
+        }
         let parsedResponse = null;
         // JSON応答のパースと検証
         if (responseText.startsWith("```json") && responseText.endsWith("```")) {
