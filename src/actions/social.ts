@@ -1224,7 +1224,7 @@ export const generateSocialAIResponse = requireAuth(async (
 
     // AI モデルの設定（拡張されたシステムプロンプトを使用）
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash",
       systemInstruction: npc.systemPrompt + dynamicPrompt,
     });
 
@@ -1251,9 +1251,15 @@ export const generateSocialAIResponse = requireAuth(async (
       try {
         const result = await chat.sendMessage(promptForModel);
         const responseText = result.response.text();
-
-        const parsedResponse = JSON.parse(responseText.trim());
-
+        let parsedResponse = null;
+        // JSON応答のパースと検証
+        if (responseText.startsWith("```json") && responseText.endsWith("```")) {
+          // コードブロックを除去
+          const jsonString = responseText.slice(7, -3).trim();
+          parsedResponse = JSON.parse(jsonString);
+        } else {
+          parsedResponse = JSON.parse(responseText);
+        }
         // 応答の検証
         if (!parsedResponse.responseText ||
             typeof parsedResponse.newTrust !== 'number' ||
@@ -1270,7 +1276,6 @@ export const generateSocialAIResponse = requireAuth(async (
         break;
       } catch (apiError) {
         console.error(`AI API call attempt ${retryCount + 1} failed:`, apiError);
-
         retryCount++;
         if (retryCount >= MAX_SOCIAL_AI_RETRY_ATTEMPTS) {
           throw new Error('AI応答の形式が無効です');

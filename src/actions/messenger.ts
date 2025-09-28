@@ -273,7 +273,7 @@ export const generateAIResponse = requireAuth(async (
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash",
       systemInstruction: systemPromptData.prompt,
     });
 
@@ -304,7 +304,13 @@ export const generateAIResponse = requireAuth(async (
         const responseText = result.response.text();
 
         // JSON応答のパースと検証
-        responseObject = JSON.parse(responseText);
+        if (responseText.startsWith("```json") && responseText.endsWith("```")) {
+          // コードブロックを除去
+          const jsonString = responseText.slice(7, -3).trim();
+          responseObject = JSON.parse(jsonString);
+        } else {
+          responseObject = JSON.parse(responseText);
+        }
         break; // 成功した場合はループを抜ける
       } catch (jsonError) {
         retryCount++;

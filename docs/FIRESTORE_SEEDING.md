@@ -436,8 +436,7 @@ node scripts/seedDefaultAccounts.js data/default-social-accounts.json
 ```
 
 #### 閾値設定
-- **信頼度**: 10以下でゲームオーバー
-- **警戒度**: 90以上でゲームオーバー
+- **警戒度**: 100でゲームオーバー
 
 #### systemPromptの記述
 `isGameOverTarget: true` のNPCには、AI応答時に信頼度・警戒度を含むJSON形式で返すようにsystemPromptを設定してください：

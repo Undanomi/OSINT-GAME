@@ -206,7 +206,6 @@ export interface PostsRequestParams {
  * キャッシュされたアカウント投稿データ
  */
 export interface CachedAccountPosts {
-  userId: string;
   accountId: string;
   posts: UISocialPost[];
   hasMore: boolean;
@@ -224,27 +223,26 @@ export interface CachedNPCPosts {
 }
 
 /**
- * ソーシャルストア（ローカルキャッシュ）の型定義
+ * ソーシャルストア（ローカルキャッシュ）の型定義（単一ユーザー用）
  */
 export interface SocialStore {
   timeline: {
-    [userId: string]: {
+    posts: UISocialPost[];
+    hasMore: boolean;
+    timestamp: number;
+  } | null;
+  accountPosts: {
+    [accountId: string]: {
+      accountId: string;
       posts: UISocialPost[];
       hasMore: boolean;
       timestamp: number;
     };
   };
-  accountPosts: {
-    [userId: string]: {
-      [accountId: string]: CachedAccountPosts;
-    };
-  };
   npcPosts: {
     [npcId: string]: CachedNPCPosts;
   };
-  accounts: {
-    [userId: string]: CachedSocialAccounts;
-  };
+  accounts: CachedSocialAccounts | null;
   npcs: CachedSocialNPCs | null;
   socialNPCPosts: {
     posts: UISocialPost[];
@@ -252,10 +250,10 @@ export interface SocialStore {
     timestamp: number;
   } | null;
   contacts: {
-    [key: string]: CachedSocialContacts; // key format: `${userId}_${accountId}`
+    [accountId: string]: CachedSocialContacts;
   };
   messages: {
-    [key: string]: CachedSocialMessages; // key format: `${userId}_${accountId}_${contactId}`
+    [key: string]: CachedSocialMessages; // key format: `${accountId}_${contactId}`
   };
 }
 

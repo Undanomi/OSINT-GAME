@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { useSubmissionStore } from '@/store/submissionStore';
 import { useAuthContext } from '@/providers/AuthProvider';
-import { resetUserData } from '@/actions/user';
+import { resetGameData } from '@/lib/gameReset';
 
 type GameOverReason = 'submission-failure' | 'social-relationship';
 
@@ -43,9 +43,8 @@ export const GameOver: React.FC<GameOverProps> = ({ gameOverState, onComplete })
 
     try {
       setIsDeleting(true);
-      await resetUserData();
+      await resetGameData();
 
-      resetSubmission();
       setGamePhase('scenario-selection');
       onComplete();
     } catch {
