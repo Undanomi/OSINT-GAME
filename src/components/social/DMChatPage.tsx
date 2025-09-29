@@ -44,7 +44,7 @@ export const DMChatPage: React.FC<DMChatPageProps> = ({
     }
   }, [inputText, onSendMessage, isWaitingForAI]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.keyCode === 13 && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -100,7 +100,7 @@ export const DMChatPage: React.FC<DMChatPageProps> = ({
                 ? 'bg-blue-500 text-white rounded-br-none'
                 : 'bg-white text-gray-800 rounded-bl-none'
             }`}>
-              <p className="whitespace-pre-wrap">{message.text}</p>
+              <p className="whitespace-pre-wrap">{message.text.replace(/\\n/g, '\n')}</p>
               <p className={`text-xs mt-1 text-right ${
                 message.sender === 'me' ? 'text-blue-200' : 'text-gray-500'
               }`}>
@@ -113,15 +113,15 @@ export const DMChatPage: React.FC<DMChatPageProps> = ({
 
       <div className="flex-shrink-0 p-4 border-t bg-white">
         <div className="flex items-center space-x-3">
-          <input
-            type="text"
+          <textarea
             placeholder="メッセージを入力..."
-            className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             value={inputText}
             onChange={(e) => setInputText(e.target.value.substring(0, MAX_MESSAGE_LENGTH))}
             onKeyDown={handleKeyDown}
             maxLength={MAX_MESSAGE_LENGTH}
             disabled={isWaitingForAI}
+            rows={1}
           />
           <button
             onClick={handleSendMessage}
