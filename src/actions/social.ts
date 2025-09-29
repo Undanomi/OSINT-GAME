@@ -1250,6 +1250,7 @@ export const generateSocialAIResponse = requireAuth(async (
         const result = await chat.sendMessage(promptForModel);
         const responseText = result.response.text();
         if (process.env.NODE_ENV === 'development') {
+          console.log('Raw Prompt:', promptForModel);
           console.log('AI Raw Response:', responseText);
         }
         let parsedResponse = null;

@@ -38,6 +38,11 @@ export const DMChatPage: React.FC<DMChatPageProps> = ({
     const currentInput = inputText;
     setInputText('');
 
+    // textareaの高さをリセット
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
     try {
       await onSendMessage(currentInput);
     } catch {

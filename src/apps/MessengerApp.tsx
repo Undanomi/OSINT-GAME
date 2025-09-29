@@ -102,6 +102,11 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
     setInputText('');
 
+    // textareaの高さをリセット
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
     // /submit コマンドの検知
     if (currentInput.trim() === '/submit' && selectedContact.type === 'darkOrganization') {
       addTemporaryMessage(userMessage);
