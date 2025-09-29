@@ -51,6 +51,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [submissionQuestions, setSubmissionQuestions] = useState<SubmissionQuestion[]>([]);
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const startSubmissionMode = useCallback(async () => {
     if (!selectedContact || selectedContact.type !== 'darkOrganization') return;
@@ -100,6 +101,11 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     };
 
     setInputText('');
+
+    // textareaの高さをリセット
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
 
     // /submit コマンドの検知
     if (currentInput.trim() === '/submit' && selectedContact.type === 'darkOrganization') {
@@ -234,10 +240,23 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     }
   }, [inputText, selectedContact, user, submissionState, submissionQuestions, addMessageToState, addTemporaryMessage, startSubmissionMode, addSubmissionAnswer, setSubmissionQuestion, setSubmissionResult, completeSubmission, messages, isWaitingForAI]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.keyCode === 13 && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value.substring(0, 500);
+    setInputText(value);
+
+    // 高さ自動調整
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      const maxHeight = window.innerHeight * 0.25; // アプリ画面の25%（縦幅半分の半分程度）
+      textareaRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
     }
   };
 
@@ -282,7 +301,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
             {messages.map(message => (
               <div key={message.id} className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-md p-3 rounded-lg text-sm ${message.sender === 'me' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
-                  <p className="whitespace-pre-wrap">{message.text}</p>
+                  <p className="whitespace-pre-wrap">{message.text.replace(/\\n/g, '\n')}</p>
                   <p className={`text-xs mt-1 text-right ${message.sender === 'me' ? 'text-blue-200' : 'text-gray-500'}`}>{message.time}</p>
                 </div>
               </div>
@@ -290,15 +309,16 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           </div>
           <div className="p-4 border-t">
             <div className="flex items-center space-x-3">
-              <input
-                type="text"
+              <textarea
+                ref={textareaRef}
                 placeholder="メッセージを入力..."
-                className="flex-1 p-3 border rounded-lg"
+                className="flex-1 p-3 border rounded-lg resize-none overflow-y-auto"
                 value={inputText}
-                onChange={e => setInputText(e.target.value.substring(0, 500))}
+                onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 disabled={!selectedContact || isWaitingForAI}
                 maxLength={500}
+                rows={1}
               />
               <button onClick={handleSendMessage} disabled={!inputText.trim() || !selectedContact || isWaitingForAI} className="bg-blue-500 text-white p-3 rounded-lg disabled:bg-blue-300">
                 <Send size={20} />

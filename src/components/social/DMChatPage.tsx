@@ -30,12 +30,18 @@ export const DMChatPage: React.FC<DMChatPageProps> = ({
   const [inputText, setInputText] = useState('');
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSendMessage = useCallback(async () => {
     if (!inputText.trim() || isWaitingForAI) return;
 
     const currentInput = inputText;
     setInputText('');
+
+    // textareaの高さをリセット
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
 
     try {
       await onSendMessage(currentInput);
@@ -44,10 +50,23 @@ export const DMChatPage: React.FC<DMChatPageProps> = ({
     }
   }, [inputText, onSendMessage, isWaitingForAI]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.keyCode === 13 && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value.substring(0, MAX_MESSAGE_LENGTH);
+    setInputText(value);
+
+    // 高さ自動調整
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      const maxHeight = window.innerHeight * 0.25; // アプリ画面の25%（縦幅半分の半分程度）
+      textareaRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
     }
   };
 
@@ -100,7 +119,7 @@ export const DMChatPage: React.FC<DMChatPageProps> = ({
                 ? 'bg-blue-500 text-white rounded-br-none'
                 : 'bg-white text-gray-800 rounded-bl-none'
             }`}>
-              <p className="whitespace-pre-wrap">{message.text}</p>
+              <p className="whitespace-pre-wrap">{message.text.replace(/\\n/g, '\n')}</p>
               <p className={`text-xs mt-1 text-right ${
                 message.sender === 'me' ? 'text-blue-200' : 'text-gray-500'
               }`}>
@@ -113,15 +132,16 @@ export const DMChatPage: React.FC<DMChatPageProps> = ({
 
       <div className="flex-shrink-0 p-4 border-t bg-white">
         <div className="flex items-center space-x-3">
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
             placeholder="メッセージを入力..."
-            className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-y-auto"
             value={inputText}
-            onChange={(e) => setInputText(e.target.value.substring(0, MAX_MESSAGE_LENGTH))}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             maxLength={MAX_MESSAGE_LENGTH}
             disabled={isWaitingForAI}
+            rows={1}
           />
           <button
             onClick={handleSendMessage}

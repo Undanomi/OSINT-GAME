@@ -1202,37 +1202,35 @@ export const generateSocialAIResponse = requireAuth(async (
 
     const sanitizedInput = message.trim().substring(0, 500);
 
-    // 動的プロンプトの構築
-    const dynamicPrompt = `
-
-# 現在の対話相手情報
-* **ユーザー名:** ${userProfile.name}
-* **プロフィール:** ${userProfile.bio || '未設定'}
-* **職業:** ${userProfile.position || '不明'}
-* **会社:** ${userProfile.company || '不明'}
-* **学歴:** ${userProfile.education || '不明'}
-* **誕生日:** ${userProfile.birthday || '不明'}
-* **居住地:** ${userProfile.location || '不明'}
-
-# 現在の関係性状態
-* **現在の信頼度:** ${currentTrust}
-* **現在の警戒度:** ${currentCaution}
-`;
-
     // Google Generative AI インスタンス
     const genAI = new GoogleGenerativeAI(apiKey);
 
     // AI モデルの設定（拡張されたシステムプロンプトを使用）
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
-      systemInstruction: npc.systemPrompt + dynamicPrompt,
+      systemInstruction: npc.systemPrompt,
     });
 
     // 会話履歴の最適化（サイズベース制限含む）
     const optimizedHistory = optimizeConversationHistory(chatHistory);
 
     // プロンプトの構築（信頼度・警戒度の現在値を含む）
-    const promptForModel = `[現在の状態] 信頼度: ${currentTrust}, 警戒度: ${currentCaution}\n[プレイヤーの入力] ${sanitizedInput}`;
+    const promptForModel = `
+    # 現在の対話相手情報
+    * **ユーザー名:** ${userProfile.name}
+    * **プロフィール:** ${userProfile.bio || '未設定'}
+    * **職業:** ${userProfile.position || '不明'}
+    * **会社:** ${userProfile.company || '不明'}
+    * **学歴:** ${userProfile.education || '不明'}
+    * **誕生日:** ${userProfile.birthday || '不明'}
+    * **居住地:** ${userProfile.location || '不明'}
+
+    # 現在の関係性状態
+    * **現在の信頼度:** ${currentTrust}
+    * **現在の警戒度:** ${currentCaution}
+    # プレイヤーの入力
+    ${sanitizedInput}
+    `;
 
     // AI応答の生成
     const chat = model.startChat({
@@ -1252,6 +1250,7 @@ export const generateSocialAIResponse = requireAuth(async (
         const result = await chat.sendMessage(promptForModel);
         const responseText = result.response.text();
         if (process.env.NODE_ENV === 'development') {
+          console.log('Raw Prompt:', promptForModel);
           console.log('AI Raw Response:', responseText);
         }
         let parsedResponse = null;

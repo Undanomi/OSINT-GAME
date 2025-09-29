@@ -511,7 +511,7 @@ export const useSocial = (
         // 警戒度の閾値チェック
         if (aiResponse.newCaution >= CAUTION_GAME_OVER_THRESHOLD) {
           setTimeout(() => {
-            triggerGameOver('social-relationship', `警戒度が${CAUTION_GAME_OVER_THRESHOLD}以上に上昇しました。ターゲットに完全に警戒され、これ以上の情報収集が不可能になりました。`)
+            triggerGameOver('social-relationship', `ターゲットに完全に警戒され、これ以上の情報収集が不可能になりました。`)
           }, 3000);
           return;
         }
