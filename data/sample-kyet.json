@@ -1,0 +1,194 @@
+[
+  {
+    "id": "kyet_homepage",
+    "title": "KYET - アウトドアツアー&イベント企画",
+    "url": "https://kyet.adventure",
+    "description": "自然と共に生きる喜びを発見。KYETは関西を中心に、アウトドアツアーとイベント企画を手がける専門企業です。",
+    "template": "KyetPage",
+    "content": {
+      "companyInfo": {
+        "name": "KYET（イエット）",
+        "mission": "自然と人をつなぎ、心豊かな体験を提供する",
+        "vision": "すべての人が自然の中で新しい自分を発見できる世界を創る",
+        "foundedYear": 2023,
+        "location": "大阪府大阪市X区",
+        "contactInfo": {
+          "phone": "AB4-D6FG-H1J3",
+          "email": "kyet.info@kyet.adventure",
+          "address": "〒XXX-YYYY 大阪府大阪市X区梅田A-B-C KYET事務所"
+        }
+      },
+      "featuredTours": [
+        {
+          "id": "kumano-kodo-tour",
+          "title": "狗古道 スピリチュアルハイキング",
+          "description": "世界遺産狗古道を歩き、パワースポットを巡る2泊3日の旅。ガイド付きで初心者も安心です。",
+          "duration": "2泊3日",
+          "difficulty": "beginner",
+          "price": 45000,
+          "location": "和歌山県XX市",
+          "images": [
+            "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_3.jpeg"
+          ],
+          "startDate": "2024-04-15",
+          "endDate": "2024-04-17",
+          "maxParticipants": 12,
+          "currentParticipants": 8
+        },
+        {
+          "id": "yoshino-cherry-trek",
+          "title": "奏山 雲の上トレッキング",
+          "description": "奏山を専門ガイドと共に歩く1日ツアー。雲の上から日の出が見れるプログラムです。",
+          "duration": "1日",
+          "difficulty": "intermediate",
+          "price": 12000,
+          "location": "奈良県YY町",
+          "images": [
+            "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_4.jpeg"
+          ],
+          "startDate": "2024-04-05",
+          "endDate": "2024-04-05",
+          "maxParticipants": 20,
+          "currentParticipants": 15
+        },
+        {
+          "id": "rokko-night-hiking",
+          "title": "銃甲山系 崖っぷちハイキング",
+          "description": "神戸の崖から海を一望できる銃甲山でのハイキング。崖での登山技術も学べます。",
+          "duration": "半日",
+          "difficulty": "advanced",
+          "price": 38000,
+          "location": "兵庫県II市",
+          "images": [
+            "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_2.jpeg"
+          ],
+          "maxParticipants": 15,
+          "currentParticipants": 4
+        }
+      ],
+      "upcomingEvents": [
+        {
+          "id": "outdoor-cooking-workshop",
+          "title": "アウトドアクッキング ワークショップ",
+          "description": "キャンプ場でのアウトドア料理の基本を学ぶワークショップ。火起こしから本格的なキャンプ飯まで実践的に学べます。",
+          "eventType": "workshop",
+          "date": "2025-10-28",
+          "time": "10:00-16:00",
+          "location": "滋賀県高島市 琵琶湖",
+          "price": 15000,
+          "images": [
+            "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_7.jpeg"
+          ],
+          "maxParticipants": 16,
+          "currentParticipants": 12
+        },
+        {
+          "id": "team-building-rafting",
+          "title": "チームビルディング ラフティング体験",
+          "description": "企業向けのチームビルディングプログラム。保津川でのラフティングを通じて、チームワークと信頼関係を深めます。",
+          "eventType": "team_building",
+          "date": "2025-10-29",
+          "time": "09:00-17:00",
+          "location": "京都府亀岡市 保津川",
+          "price": 25000,
+          "images": [
+            "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_5.jpeg"
+          ],
+          "maxParticipants": 24,
+          "currentParticipants": 18
+        }
+      ],
+      "staff": [
+        {
+          "name": "橋本 薫",
+          "role": "代表取締役・広報部長",
+          "bio": "元THE SOUTH FAKE社員から独立。アウトドア業界で大きな野望を持ち、KYETのビジョンとミッションを牽引しています。",
+          "image": "https://picsum.photos/300/300?random=501",
+          "specialties": []
+        },
+        {
+          "name": "佐藤 美咲",
+          "role": "ツアープランナー・ガイド",
+          "bio": "アウトドアスポーツインストラクター資格保有。特に女性向けのアウトドア体験プログラムの企画が得意です。",
+          "image": "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/sato.jpeg",
+          "specialties": []
+        },
+        {
+          "name": "山田 隆志",
+          "role": "イベント企画・安全管理",
+          "bio": "元消防士の経験を活かし、安全管理のスペシャリストとして活動。企業向けプログラムの企画・運営を担当しています。",
+          "image": "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/yamada.jpeg",
+          "specialties": []
+        }
+      ],
+      "reviews": [
+        {
+          "customerName": "鈴木 太郎",
+          "rating": 5,
+          "comment": "熊野古道ツアーに参加しました。ガイドの田中さんの知識が豊富で、歴史や自然について多くのことを学べました。初心者でも安心して参加できる素晴らしいツアーでした。",
+          "date": "2024-03-15",
+          "tourOrEventTitle": "熊野古道 スピリチュアルハイキング"
+        },
+        {
+          "customerName": "高橋 花子",
+          "rating": 5,
+          "comment": "アウトドアクッキングワークショップに参加。佐藤さんの指導がとても分かりやすく、キャンプ料理のレパートリーが一気に増えました！次はファミリーで参加したいです。",
+          "date": "2024-03-08",
+          "tourOrEventTitle": "アウトドアクッキング ワークショップ"
+        },
+        {
+          "customerName": "株式会社テックソリューション 人事部",
+          "rating": 4,
+          "comment": "社員研修でラフティング体験を利用させていただきました。チームの結束が格段に高まり、その後の業務効率も向上しています。山田さんの安全管理も完璧でした。",
+          "date": "2024-02-28",
+          "tourOrEventTitle": "チームビルディング ラフティング体験"
+        },
+        {
+          "customerName": "中村 一郎",
+          "rating": 5,
+          "comment": "六甲山ナイトハイキングは忘れられない経験になりました。神戸の夜景の美しさに感動！夜間登山の技術も身につけることができて一石二鳥でした。",
+          "date": "2024-02-20",
+          "tourOrEventTitle": "六甲山系 ナイトハイキング"
+        }
+      ],
+      "heroImage": "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/hero_section.jpeg",
+      "aboutText": "KYETは2023年に設立されたアウトドアツアー&イベント企画の専門企業です。日本の山紫水明な自然を舞台に、初心者から上級者まで楽しめる多彩なプログラムを提供しています。経験豊富なガイドが安全で質の高い体験をお約束します。自然との触れ合いを通じて、新しい自分を発見してみませんか？",
+      "rollingImages": [
+        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_1.jpeg",
+        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_2.jpeg",
+        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_3.jpeg",
+        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_4.jpeg",
+        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_5.jpeg",
+        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_6.jpeg",
+        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/company.jpeg",
+        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_7.jpeg"
+      ],
+      "achievements": [
+        {
+          "title": "1000名以上の参加者",
+          "description": "2023年の設立以来、1000名を超える方々にご参加いただいています。",
+          "icon": "👥"
+        },
+        {
+          "title": "安全実績100%",
+          "description": "厳格な安全管理により、これまで重大な事故は一度もありません。",
+          "icon": "🛡️"
+        },
+        {
+          "title": "全国50箇所以上",
+          "description": "全国の山々から川、海まで50箇所以上のフィールドでツアーを実施。",
+          "icon": "🗾"
+        },
+        {
+          "title": "企業研修実績",
+          "description": "30社以上の企業研修・チームビルディングプログラムを実施。",
+          "icon": "🏢"
+        }
+      ],
+      "socialLinks": {}
+    },
+    "keywords": ["KYET", "アウトドア", "ツアー", "イベント", "橋本薫"],
+    "domainStatus": "active",
+    "archivedDate": "2025-10-27"
+  }
+]

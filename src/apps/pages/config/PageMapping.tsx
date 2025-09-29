@@ -7,13 +7,14 @@ import { NyahooNewsPage } from '../NyahooNewsPage';
 import { NyahooQuestionPage } from '../NyahooQuestionPage';
 import { UsopediaPage } from '../UsopediaPage';
 import { NittaBlogPage } from '../NittaBlogPage';
+import { KyetPage } from '../KyetPage';
 import { GogglesMail } from '../goggles-mail/GogglesMailPage';
 import { PlaybackMachinePage } from '../PlaybackMachinePage';
 import { UnifiedSearchResult } from '@/types/search';
 
 /**
  * 静的ページのマッピング
- * NOTE: Firebase に保保存されないページの表示用
+ * NOTE: Firebase に保存されないページの表示用
  */
 export const staticPages: { [key: string]: React.ReactElement | ((currentUrl: string, onNavigate?: (url: string) => void) => React.ReactElement) } = {
   // Goggles Mail - メインページとログインページのみ
@@ -46,4 +47,6 @@ export const dynamicPageComponentMap: Record<string, (documentId: string, initia
     <UsopediaPage documentId={documentId} initialData={initialData} />,
   'NittaBlogPage': (documentId, initialData) =>
     <NittaBlogPage documentId={documentId} initialData={initialData} />,
+  'KyetPage': (documentId, initialData) =>
+    <KyetPage documentId={documentId} initialData={initialData} />,
 };
