@@ -459,7 +459,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
                     </div>
                     <div className="flex space-x-4">
                       <span>{post.comments}件のコメント</span>
-                      {post.shares && <span>{post.shares}件のシェア</span>}
+                      {post.shares !== undefined && <span>{post.shares}件のシェア</span>}
                     </div>
                   </div>
                 </div>
