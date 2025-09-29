@@ -3,6 +3,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { useWindowStore } from '@/store/windowStore';
 import { useAppStore } from '@/store/appStore';
+import { X } from 'lucide-react';
 
 /**
  * タスクバーコンポーネンツ - デスクトップ環境の下部に表示されるタスク管理バー
@@ -19,7 +20,7 @@ import { useAppStore } from '@/store/appStore';
  */
 export const Taskbar: React.FC = React.memo(() => {
   // ウィンドウストアからウィンドウ状態と操作関数を取得
-  const { windows, focusWindowOnInteraction, minimizeWindow } = useWindowStore();
+  const { windows, focusWindowOnInteraction, minimizeWindow, closeWindow } = useWindowStore();
   // アプリストアからアプリメタデータ取得関数を取得
   const { getAppById } = useAppStore();
 
@@ -49,6 +50,18 @@ export const Taskbar: React.FC = React.memo(() => {
     }
   }, [focusWindowOnInteraction, minimizeWindow]);
 
+  /**
+   * 閉じるボタンクリック時の処理
+   * イベントの伝播を停止してウィンドウを閉じる
+   *
+   * @param e - クリックイベント
+   * @param windowId - 操作対象ウィンドウのID
+   */
+  const handleCloseClick = useCallback((e: React.MouseEvent, windowId: string) => {
+    e.stopPropagation(); // 親のクリックイベントを防ぐ
+    closeWindow(windowId);
+  }, [closeWindow]);
+
   return (
     /* タスクバー本体 - 画面下部に固定表示 */
     <div className="fixed bottom-0 left-0 right-0 h-12 bg-gray-800 border-t border-gray-700 flex items-center px-4 z-50">
@@ -60,11 +73,10 @@ export const Taskbar: React.FC = React.memo(() => {
           const Icon = appMetadata?.icon;
 
           return (
-            <button
+            <div
               key={window.id}
-              onClick={() => handleTaskbarItemClick(window.id, window.isMinimized)}
               className={`
-                taskbar-item flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                taskbar-item flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors relative group
                 ${window.isMinimized
                   ? 'bg-gray-600 text-gray-300'           // 最小化時のスタイル
                   : 'bg-blue-600 text-white hover:bg-blue-700'  // アクティブ時のスタイル
@@ -72,11 +84,24 @@ export const Taskbar: React.FC = React.memo(() => {
               `}
               title={window.title} // ツールチップでフルタイトルを表示
             >
-              {/* アプリケーションアイコン */}
-              {Icon && <Icon size={16} />}
-              {/* ウィンドウタイトル（長い場合は省略） */}
-              <span className="max-w-32 truncate">{window.title}</span>
-            </button>
+              <button
+                onClick={() => handleTaskbarItemClick(window.id, window.isMinimized)}
+                className="flex items-center space-x-2"
+              >
+                {/* アプリケーションアイコン */}
+                {Icon && <Icon size={16} />}
+                {/* ウィンドウタイトル（長い場合は省略） */}
+                <span className="max-w-24 truncate">{window.title}</span>
+              </button>
+              {/* 閉じるボタン - ホバー時のみ表示 */}
+              <button
+                onClick={(e) => handleCloseClick(e, window.id)}
+                className="ml-1 p-0.5 rounded hover:bg-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                title="閉じる"
+              >
+                <X size={14} />
+              </button>
+            </div>
           );
         })}
       </div>
