@@ -93,10 +93,10 @@ export const Taskbar: React.FC = React.memo(() => {
                 {/* ウィンドウタイトル（長い場合は省略） */}
                 <span className="max-w-24 truncate">{window.title}</span>
               </button>
-              {/* 閉じるボタン - ホバー時のみ表示 */}
+              {/* 閉じるボタン */}
               <button
                 onClick={(e) => handleCloseClick(e, window.id)}
-                className="ml-1 p-0.5 rounded hover:bg-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                className="ml-1 p-0.5 rounded hover:bg-red-500 transition-colors"
                 title="閉じる"
               >
                 <X size={14} />
