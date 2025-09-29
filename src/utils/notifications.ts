@@ -80,7 +80,7 @@ function sanitizeString(input: string): string {
   }
 
   // HTMLタグを除去
-  const withoutTags = input.replace(/<[^>]*>/g, '');
+  const withoutTags = input.replace(/<[^>]*>/g, '').replace(/\\n/g, '');
 
   // 特殊文字をエスケープ
   const escaped = withoutTags

@@ -51,6 +51,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [submissionQuestions, setSubmissionQuestions] = useState<SubmissionQuestion[]>([]);
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const startSubmissionMode = useCallback(async () => {
     if (!selectedContact || selectedContact.type !== 'darkOrganization') return;
@@ -241,6 +242,19 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value.substring(0, 500);
+    setInputText(value);
+
+    // 高さ自動調整
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      const maxHeight = window.innerHeight * 0.25; // アプリ画面の25%（縦幅半分の半分程度）
+      textareaRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+    }
+  };
+
   const handleScroll = (e: UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     if (scrollTop < 50 && hasMore && !isLoadingMore) {
@@ -291,10 +305,11 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           <div className="p-4 border-t">
             <div className="flex items-center space-x-3">
               <textarea
+                ref={textareaRef}
                 placeholder="メッセージを入力..."
-                className="flex-1 p-3 border rounded-lg resize-none"
+                className="flex-1 p-3 border rounded-lg resize-none overflow-y-auto"
                 value={inputText}
-                onChange={e => setInputText(e.target.value.substring(0, 500))}
+                onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 disabled={!selectedContact || isWaitingForAI}
                 maxLength={500}
