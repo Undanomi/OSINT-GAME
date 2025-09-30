@@ -100,10 +100,17 @@ export const filterSearchResults = async (
   // 静的な結果とFirebaseの結果を結合
   const allResults = [...staticResults, ...filteredResults];
 
-  console.log('検索結果:', allResults);
-  console.log('検索結果数:', allResults.length);
+  // 検索結果をシャッフル（Fisher-Yatesアルゴリズム）
+  const shuffledResults = [...allResults];
+  for (let i = shuffledResults.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledResults[i], shuffledResults[j]] = [shuffledResults[j], shuffledResults[i]];
+  }
 
-  return allResults;
+  console.log('検索結果:', shuffledResults);
+  console.log('検索結果数:', shuffledResults.length);
+
+  return shuffledResults;
 };
 
 /**
