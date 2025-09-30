@@ -137,132 +137,129 @@ export const CalculatorApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   return (
     <BaseApp windowId={windowId} isActive={isActive} statusBar={statusBar}>
-      <div className="h-full bg-gray-100 p-4">
-        {/* 計算機本体のコンテナ - iOS風のデザイン */}
-        <div className="max-w-xs mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* ディスプレイエリア - 黒い背景に白い文字 */}
-          <div className="bg-black p-4">
-            <div className="text-right text-white text-2xl font-mono min-h-[40px] flex items-center justify-end">
-              {display}
-            </div>
+      <div className="h-full flex flex-col bg-gray-100">
+        {/* ディスプレイエリア - 白い背景に黒い文字 */}
+        <div className="bg-white p-6 border-b border-gray-300">
+          <div className="text-right text-gray-800 text-3xl font-mono min-h-[50px] flex items-center justify-end">
+            {display}
           </div>
+        </div>
 
-          {/* ボタングリッド - 4列のグリッドレイアウト */}
-          <div className="grid grid-cols-4 gap-1 p-2">
-            {/* 第1行: クリア、割り算、掛け算 */}
-            <button
-              onClick={clear}
-              className="col-span-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded transition-colors flex items-center justify-center"
-            >
-              <Delete size={18} className="mr-1" />
-              C
-            </button>
-            <button
-              onClick={() => inputOperator('÷')}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded transition-colors flex items-center justify-center"
-            >
-              <Divide size={18} />
-            </button>
-            <button
-              onClick={() => inputOperator('×')}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded transition-colors flex items-center justify-center"
-            >
-              <X size={18} />
-            </button>
+        {/* ボタングリッド - 4列のグリッドレイアウト */}
+        <div className="flex-1 grid grid-cols-4 gap-2 p-4">
+          {/* 第1行: クリア、割り算、掛け算 */}
+          <button
+            onClick={clear}
+            className="col-span-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-4 rounded transition-colors flex items-center justify-center"
+          >
+            <Delete size={18} className="mr-1" />
+            C
+          </button>
+          <button
+            onClick={() => inputOperator('÷')}
+            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 rounded transition-colors flex items-center justify-center"
+          >
+            <Divide size={18} />
+          </button>
+          <button
+            onClick={() => inputOperator('×')}
+            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 rounded transition-colors flex items-center justify-center"
+          >
+            <X size={18} />
+          </button>
 
-            {/* 第2行: 7, 8, 9, 引き算 */}
-            <button
-              onClick={() => inputNumber('7')}
-              className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-3 px-4 rounded transition-colors"
-            >
-              7
-            </button>
-            <button
-              onClick={() => inputNumber('8')}
-              className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-3 px-4 rounded transition-colors"
-            >
-              8
-            </button>
-            <button
-              onClick={() => inputNumber('9')}
-              className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-3 px-4 rounded transition-colors"
-            >
-              9
-            </button>
-            <button
-              onClick={() => inputOperator('-')}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded transition-colors flex items-center justify-center"
-            >
-              <Minus size={18} />
-            </button>
+          {/* 第2行: 7, 8, 9, 引き算 */}
+          <button
+            onClick={() => inputNumber('7')}
+            className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 rounded transition-colors border border-gray-300"
+          >
+            7
+          </button>
+          <button
+            onClick={() => inputNumber('8')}
+            className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 rounded transition-colors border border-gray-300"
+          >
+            8
+          </button>
+          <button
+            onClick={() => inputNumber('9')}
+            className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 rounded transition-colors border border-gray-300"
+          >
+            9
+          </button>
+          <button
+            onClick={() => inputOperator('-')}
+            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 rounded transition-colors flex items-center justify-center"
+          >
+            <Minus size={18} />
+          </button>
 
-            {/* 第3行: 4, 5, 6, 足し算 */}
-            <button
-              onClick={() => inputNumber('4')}
-              className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-3 px-4 rounded transition-colors"
-            >
-              4
-            </button>
-            <button
-              onClick={() => inputNumber('5')}
-              className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-3 px-4 rounded transition-colors"
-            >
-              5
-            </button>
-            <button
-              onClick={() => inputNumber('6')}
-              className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-3 px-4 rounded transition-colors"
-            >
-              6
-            </button>
-            <button
-              onClick={() => inputOperator('+')}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded transition-colors flex items-center justify-center"
-            >
-              <Plus size={18} />
-            </button>
+          {/* 第3行: 4, 5, 6, 足し算 */}
+          <button
+            onClick={() => inputNumber('4')}
+            className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 rounded transition-colors border border-gray-300"
+          >
+            4
+          </button>
+          <button
+            onClick={() => inputNumber('5')}
+            className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 rounded transition-colors border border-gray-300"
+          >
+            5
+          </button>
+          <button
+            onClick={() => inputNumber('6')}
+            className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 rounded transition-colors border border-gray-300"
+          >
+            6
+          </button>
+          <button
+            onClick={() => inputOperator('+')}
+            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 rounded transition-colors flex items-center justify-center"
+          >
+            <Plus size={18} />
+          </button>
 
-            {/* 第4-5行: 1, 2, 3, イコール（2行分） */}
-            <button
-              onClick={() => inputNumber('1')}
-              className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-3 px-4 rounded transition-colors"
-            >
-              1
-            </button>
-            <button
-              onClick={() => inputNumber('2')}
-              className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-3 px-4 rounded transition-colors"
-            >
-              2
-            </button>
-            <button
-              onClick={() => inputNumber('3')}
-              className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-3 px-4 rounded transition-colors"
-            >
-              3
-            </button>
-            {/* イコールボタン - 2行にわたって表示 */}
-            <button
-              onClick={performCalculation}
-              className="row-span-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded transition-colors flex items-center justify-center"
-            >
-              <Equal size={18} />
-            </button>
+          {/* 第4-5行: 1, 2, 3, イコール（2行分） */}
+          <button
+            onClick={() => inputNumber('1')}
+            className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 rounded transition-colors border border-gray-300"
+          >
+            1
+          </button>
+          <button
+            onClick={() => inputNumber('2')}
+            className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 rounded transition-colors border border-gray-300"
+          >
+            2
+          </button>
+          <button
+            onClick={() => inputNumber('3')}
+            className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 rounded transition-colors border border-gray-300"
+          >
+            3
+          </button>
+          {/* イコールボタン - 2行にわたって表示 */}
+          <button
+            onClick={performCalculation}
+            className="row-span-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded transition-colors flex items-center justify-center"
+          >
+            <Equal size={18} />
+          </button>
 
-            {/* 最下行: 0（2列分）, 小数点 */}
-            <button
-              onClick={() => inputNumber('0')}
-              className="col-span-2 bg-gray-300 hover:bg-gray-400 text-black font-semibold py-3 px-4 rounded transition-colors"
-            >
-              0
-            </button>
-            <button
-              onClick={inputDecimal}
-              className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-3 px-4 rounded transition-colors"
-            >
-              .
-            </button>
-          </div>
+          {/* 最下行: 0（2列分）, 小数点 */}
+          <button
+            onClick={() => inputNumber('0')}
+            className="col-span-2 bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 rounded transition-colors border border-gray-300"
+          >
+            0
+          </button>
+          <button
+            onClick={inputDecimal}
+            className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 rounded transition-colors border border-gray-300"
+          >
+            .
+          </button>
         </div>
       </div>
     </BaseApp>

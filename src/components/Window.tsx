@@ -182,20 +182,20 @@ export const Window: React.FC<WindowProps> = React.memo(({ windowId }) => {
     >
       {/* ウィンドウ本体 */}
       <div
-        className={`h-full w-full rounded-lg overflow-hidden border-2 flex flex-col transition-colors ${
-          isActiveWindow ? 'border-blue-900/20' : 'border-blue-900/10'
+        className={`h-full w-full rounded-lg overflow-hidden border flex flex-col transition-colors ${
+          isActiveWindow ? 'border-gray-400' : 'border-gray-300'
         }`}
         onClick={handleFocus}
       >
         {/* タイトルバー */}
         <div
           className={`window-drag-handle flex-shrink-0 px-4 py-2 flex items-center justify-between cursor-move transition-colors ${
-            isActiveWindow ? 'bg-[#080a0d] text-blue-400' : 'bg-[#080a0d] text-blue-500/70'
+            isActiveWindow ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700'
           }`}
         >
           {/* タイトル */}
           <div className="flex items-center space-x-2">
-            <div className="font-medium">{targetWindow.title}</div>
+            <div className="font-medium text-sm">{targetWindow.title}</div>
           </div>
 
           {/* コントロールボタン（最小化、閉じる） */}
@@ -203,19 +203,23 @@ export const Window: React.FC<WindowProps> = React.memo(({ windowId }) => {
             {/* 最小化ボタン */}
             <button
               onClick={handleMinimize}
-              className="window-control-button w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 bg-blue-500/30 hover:bg-blue-400/50"
+              className={`window-control-button w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
+                isActiveWindow ? 'bg-white/20 hover:bg-white/30' : 'bg-gray-400/30 hover:bg-gray-400/50'
+              }`}
               title="最小化"
             >
-              <Minus size={10} className="text-blue-300" />
+              <Minus size={10} />
             </button>
 
             {/* 閉じるボタン */}
             <button
               onClick={handleClose}
-              className="window-control-button w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 bg-blue-500/30 hover:bg-blue-400/50"
+              className={`window-control-button w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
+                isActiveWindow ? 'bg-white/20 hover:bg-white/30' : 'bg-gray-400/30 hover:bg-gray-400/50'
+              }`}
               title="閉じる"
             >
-              <X size={10} className="text-blue-300" />
+              <X size={10} />
             </button>
           </div>
         </div>
