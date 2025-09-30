@@ -92,7 +92,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
         });
 
         // 友達のプロフィール画像URL変換（並列）
-        data.friends.forEach((friend, index) => {
+        data.friends.forEach((friend) => {
           if (friend.profileImage?.startsWith('gs://')) {
             urlConversionPromises.push(
               getDownloadURL(ref(storage, friend.profileImage)).then(url => {
