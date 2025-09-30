@@ -66,6 +66,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           text: firstQuestion.text,
           time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
           timestamp: questionTimestamp,
+          isSubmissionMessage: true,
         };
         addTemporaryMessage(questionMessage);
       }
@@ -130,6 +131,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
               text: nextQuestion.text,
               time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
               timestamp: questionTimestamp,
+              isSubmissionMessage: true,
             };
             addTemporaryMessage(questionMessage);
           }
@@ -144,6 +146,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
             text: `検証中...`,
             time: validationTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
             timestamp: validationTimestamp,
+            isSubmissionMessage: true,
           };
           addTemporaryMessage(resultMessage);
 
@@ -285,9 +288,17 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
             {isLoadingMore && <p className="text-center text-sm text-gray-500">さらに読み込み中...</p>}
             {messages.map(message => (
               <div key={message.id} className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-md px-4 py-2.5 rounded-2xl text-sm ${message.sender === 'me' ? 'bg-[#2a2a2c] text-gray-200' : 'bg-gradient-to-br from-blue-950/80 to-blue-900/60 text-gray-100 shadow-lg shadow-blue-900/20'}`}>
+                <div className={`max-w-md px-4 py-2.5 rounded-2xl text-sm ${
+                  message.isSubmissionMessage
+                    ? 'bg-slate-800/90 text-slate-300 shadow-lg border border-slate-600/50 font-mono'
+                    : 'bg-gradient-to-br from-blue-950/80 to-blue-900/60 text-gray-100 shadow-lg shadow-blue-900/20'
+                }`}>
                   <p className="whitespace-pre-wrap">{message.text.replace(/\\n/g, '\n')}</p>
-                  <p className={`text-xs mt-1 text-right ${message.sender === 'me' ? 'text-gray-500' : 'text-blue-300/60'}`}>{message.time}</p>
+                  <p className={`text-xs mt-1 text-right ${
+                    message.isSubmissionMessage
+                      ? 'text-slate-500 font-mono'
+                      : 'text-blue-300/60'
+                  }`}>{message.time}</p>
                 </div>
               </div>
             ))}
