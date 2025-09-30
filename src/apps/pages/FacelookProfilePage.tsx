@@ -179,12 +179,12 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
       }
     ],
     friends: [
-      { name: 'サンプル 花子', profileImage: 'https://via.placeholder.com/40', mutualFriends: 12 },
-      { name: 'テスト 一郎', profileImage: 'https://via.placeholder.com/40', mutualFriends: 8 },
-      { name: 'ダミー 美咲', profileImage: 'https://via.placeholder.com/40', mutualFriends: 23 },
-      { name: 'サンプル 健太', profileImage: 'https://via.placeholder.com/40', mutualFriends: 5 },
-      { name: 'テスト さくら', profileImage: 'https://via.placeholder.com/40', mutualFriends: 15 },
-      { name: 'ダミー 大輔', profileImage: 'https://via.placeholder.com/40', mutualFriends: 7 }
+      { name: 'サンプル 花子', profileImage: 'https://via.placeholder.com/40' },
+      { name: 'テスト 一郎', profileImage: 'https://via.placeholder.com/40' },
+      { name: 'ダミー 美咲', profileImage: 'https://via.placeholder.com/40' },
+      { name: 'サンプル 健太', profileImage: 'https://via.placeholder.com/40' },
+      { name: 'テスト さくら', profileImage: 'https://via.placeholder.com/40' },
+      { name: 'ダミー 大輔', profileImage: 'https://via.placeholder.com/40' }
     ],
     photos: [
       'https://via.placeholder.com/200',
@@ -409,8 +409,8 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {userData.photos.slice(0, 9).map((photo, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     className="relative h-24"
                     onClick={() => handlePhotoClick(photo)}
                   >
@@ -421,6 +421,32 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
                       className="object-cover rounded-lg cursor-pointer hover:opacity-90"
                       unoptimized
                     />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Friends Card */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">友達</h2>
+                <span className="text-[#1877f2] cursor-default">すべて見る</span>
+              </div>
+              <div className="space-y-3">
+                {userData.friends.slice(0, 9).map((friend, idx) => (
+                  <div key={idx} className="flex items-center space-x-3">
+                    <div className="w-10 h-10 relative flex-shrink-0">
+                      <Image
+                        src={friend.profileImage}
+                        alt={friend.name}
+                        fill
+                        className="object-cover rounded-full"
+                        unoptimized
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{friend.name}</p>
+                    </div>
                   </div>
                 ))}
               </div>
