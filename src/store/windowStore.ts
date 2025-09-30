@@ -1,6 +1,17 @@
 import { create } from 'zustand';
 
 /**
+ * レイアウト関連の定数
+ */
+const TASKBAR_HEIGHT = 48; // タスクバーの高さ (h-12 = 48px)
+const TOP_MARGIN = 50; // ウィンドウの上部余白
+const LEFT_MARGIN = 100; // ウィンドウの左部余白（デスクトップアイコンとの重なりを避けるため大きめ）
+const BOTTOM_MARGIN = 20; // ウィンドウの下部余白（タスクバー以外）
+const RIGHT_MARGIN = 20; // ウィンドウの右部余白（画面端からの最小マージン）
+const DEFAULT_VIEWPORT_WIDTH = 1920; // デフォルトのビューポート幅 (FHD)
+const DEFAULT_VIEWPORT_HEIGHT = 1080; // デフォルトのビューポート高さ (FHD)
+
+/**
  * ウィンドウの状態を表すインターフェース
  */
 export interface WindowState {
@@ -63,16 +74,39 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
 
     const newZIndex = get().maxZIndex + 1;
     const isHidden = appConfig.isHidden || false;
+
+    // 画面サイズを取得（ブラウザ環境でない場合はデフォルト値を使用）
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : DEFAULT_VIEWPORT_HEIGHT;
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : DEFAULT_VIEWPORT_WIDTH;
+
+    // 利用可能な領域を計算
+    const availableHeight = viewportHeight - TASKBAR_HEIGHT - TOP_MARGIN - BOTTOM_MARGIN;
+    const availableWidth = viewportWidth - LEFT_MARGIN - RIGHT_MARGIN;
+
+    // ウィンドウサイズを利用可能な領域に収まるように調整
+    const defaultWidth = appConfig.defaultWidth || 800;
+    const defaultHeight = appConfig.defaultHeight || 600;
+
+    const windowWidth = Math.min(defaultWidth, availableWidth);
+    const windowHeight = Math.min(defaultHeight, availableHeight);
+
+    // ランダムな位置を計算（ウィンドウがタスクバーに重ならない範囲内）
+    const maxX = viewportWidth - windowWidth - RIGHT_MARGIN;
+    const maxY = viewportHeight - TASKBAR_HEIGHT - windowHeight - BOTTOM_MARGIN;
+
+    const randomX = LEFT_MARGIN + Math.random() * Math.max(0, maxX - LEFT_MARGIN);
+    const randomY = TOP_MARGIN + Math.random() * Math.max(0, maxY - TOP_MARGIN);
+
     const newWindow: WindowState = {
       id: appConfig.id,
       title: appConfig.title,
       isOpen: true,
       isMinimized: false,
       isHidden: isHidden,
-      x: 100 + Math.random() * 200,
-      y: 100 + Math.random() * 100,
-      width: appConfig.defaultWidth || 800,
-      height: appConfig.defaultHeight || 600,
+      x: randomX,
+      y: randomY,
+      width: windowWidth,
+      height: windowHeight,
       zIndex: newZIndex,
       appType: appConfig.appType,
     };
@@ -195,15 +229,41 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
 
   // ウィンドウ位置の更新
   updateWindowPosition: (id, x, y) => {
+    const targetWindow = get().windows.find(w => w.id === id);
+    if (!targetWindow) return;
+
+    // 画面サイズを取得
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : DEFAULT_VIEWPORT_HEIGHT;
+
+    // Y座標がタスクバーに重ならないように制限
+    const maxY = viewportHeight - TASKBAR_HEIGHT - targetWindow.height;
+    const constrainedY = Math.min(y, maxY);
+    const constrainedX = Math.max(0, x);
+
     set(state => ({
       windows: state.windows.map(w =>
-        w.id === id ? { ...w, x, y } : w
+        w.id === id ? { ...w, x: constrainedX, y: constrainedY } : w
       ),
     }));
   },
 
   // ウィンドウサイズの更新
   updateWindowSize: (id, width, height) => {
+    const targetWindow = get().windows.find(w => w.id === id);
+    if (!targetWindow) return;
+
+    // 画面サイズを取得
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : DEFAULT_VIEWPORT_HEIGHT;
+
+    // リサイズ後にウィンドウの下端がタスクバーに重なるかチェック
+    const windowBottom = targetWindow.y + height;
+    const taskbarTop = viewportHeight - TASKBAR_HEIGHT;
+
+    // タスクバーに重なる場合はリサイズをキャンセル（元のサイズを維持）
+    if (windowBottom > taskbarTop) {
+      return;
+    }
+
     set(state => ({
       windows: state.windows.map(w =>
         w.id === id ? { ...w, width, height } : w
