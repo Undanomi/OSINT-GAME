@@ -22,9 +22,9 @@ export const systemApps: AppMetadata[] = [
   },
   {
     id: 'social',
-    name: 'SNS',
+    name: 'Z',
     version: '1.0.0',
-    description: 'ソーシャルメディアプラットフォーム。ユーザーの投稿やプロフィールを確認できます',
+    description: 'ソーシャルメディアプラットフォーム',
     category: 'communication',
     keywords: ['SNS', 'ソーシャル', '投稿', 'プロフィール'],
     author: 'System',
@@ -40,9 +40,9 @@ export const systemApps: AppMetadata[] = [
   },
   {
     id: 'messenger',
-    name: 'メッセージ',
+    name: 'Beacon',
     version: '1.0.0',
-    description: 'リアルタイムメッセージングアプリケーション。チャット機能と自動応答システム',
+    description: 'リアルタイムメッセージングアプリケーション。すべての通信内容がEnd-to-Endで暗号化されるため、非常に高いセキュリティを持つ。',
     category: 'communication',
     keywords: ['チャット', 'メッセージ', 'コミュニケーション'],
     author: 'System',
