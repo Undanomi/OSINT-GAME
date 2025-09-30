@@ -179,8 +179,7 @@ npm run seed:skip data/sample.json
   "friends": [  // 必須（空配列でも可）
     {
       "name": "サンプル花子",
-      "profileImage": "プロフィール画像URL",
-      "mutualFriends": 10
+      "profileImage": "プロフィール画像URL"
     }
   ],
   "photos": ["写真URL1", "写真URL2"]  // 必須（空配列でも可）

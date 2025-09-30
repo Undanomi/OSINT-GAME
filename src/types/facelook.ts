@@ -10,7 +10,6 @@ export interface FacelookPost {
 export interface FacelookFriend {
   name: string;
   profileImage: string;
-  mutualFriends?: number;
 }
 
 export interface FacelookUser {
@@ -59,7 +58,6 @@ export interface FacelookContent {
   friends: Array<{
     name: string;
     profileImage: string;
-    mutualFriends: number;
   }>;
   photos: string[];
 }

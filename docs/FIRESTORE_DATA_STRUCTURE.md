@@ -58,8 +58,7 @@
     "friends": [
       {
         "name": "サンプル 花子",
-        "profileImage": "gs://...",
-        "mutualFriends": 12
+        "profileImage": "gs://..."
       }
     ],
     "photos": ["gs://...", "gs://..."]
@@ -99,7 +98,6 @@ interface FacelookContent {
   friends: Array<{
     name: string;
     profileImage: string;
-    mutualFriends: number;
   }>;
   photos: string[];
 }

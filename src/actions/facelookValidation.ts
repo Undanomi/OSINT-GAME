@@ -16,7 +16,6 @@ const FacelookPostSchema = z.object({
 const FacelookFriendSchema = z.object({
   name: z.string(),
   profileImage: z.string(),
-  mutualFriends: z.number(),
 });
 
 const FacelookContentSchema = z.object({
