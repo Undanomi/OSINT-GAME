@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, UIEvent } from 'react';
 import { SocialNPC, UISocialPost, getDisplayUserId } from '@/types/social';
 import { PostComponent } from './PostComponent';
 import { getNPCPosts } from '@/actions/social';
@@ -31,29 +31,24 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
 }) => {
   const [posts, setPosts] = useState<UISocialPost[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [cursor, setCursor] = useState<string | undefined>();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // タイムスタンプフォーマット関数
-  const formatTimestamp = (timestamp: Date): string => {
-    const now = new Date();
-    const diffMs = now.getTime() - timestamp.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffHours < 1) return '1時間未満前';
-    if (diffHours < 24) return `${diffHours}時間前`;
-    if (diffDays < 7) return `${diffDays}日前`;
-    return timestamp.toLocaleDateString('ja-JP');
-  };
 
   const loadNPCPostsRef = useRef<((reset?: boolean) => Promise<void>) | null>(null);
 
   // NPC投稿を読み込む関数
   const loadNPCPosts = useCallback(async (reset = false) => {
-    if (loading || (!hasMore && !reset)) return;
+    if ((reset ? loading : isLoadingMore) || (!hasMore && !reset)) return;
 
-    setLoading(true);
+    if (reset) {
+      setLoading(true);
+    } else {
+      setIsLoadingMore(true);
+    }
+
     try {
       const result = await getNPCPosts(
         npc.id,
@@ -61,16 +56,7 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
         reset ? undefined : cursor
       );
 
-      const uiPosts: UISocialPost[] = result.items.map(post => ({
-        ...post,
-        timeString: formatTimestamp(post.timestamp),
-        author: {
-          id: npc.id,
-          account_id: npc.account_id,
-          name: npc.name,
-          avatar: npc.avatar,
-        }
-      }));
+      const uiPosts = result.items;
 
       if (reset) {
         setPosts(uiPosts);
@@ -92,9 +78,13 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
       setHasMore(false);
       setCursor(undefined);
     } finally {
-      setLoading(false);
+      if (reset) {
+        setLoading(false);
+      } else {
+        setIsLoadingMore(false);
+      }
     }
-  }, [npc.id, npc.account_id, npc.name, npc.avatar, loading, hasMore, cursor]);
+  }, [npc.id, loading, isLoadingMore, hasMore, cursor]);
 
   // refに最新の関数を保存
   loadNPCPostsRef.current = loadNPCPosts;
@@ -106,10 +96,14 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
     }
   }, [npc.id]);
 
-  // さらに読み込むボタンのハンドラ
-  const handleLoadMore = () => {
-    loadNPCPosts(false);
-  };
+  // 無限スクロール処理
+  const handleScroll = useCallback((e: UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop - clientHeight < 100 && hasMore && !isLoadingMore) {
+      loadNPCPosts(false);
+    }
+  }, [hasMore, isLoadingMore, loadNPCPosts]);
+
 
   if (!npc) return <div className="p-6">プロフィールが見つかりません。</div>;
 
@@ -124,7 +118,7 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" ref={scrollContainerRef} onScroll={handleScroll}>
         <div className="bg-white border-b border-gray-200 p-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-4">
@@ -193,22 +187,10 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
               {posts.map(post => (
                 <PostComponent key={post.id} post={post} onUserSelect={onUserSelect} />
               ))}
-              {hasMore && (
+              {isLoadingMore && (
                 <div className="p-4 text-center">
-                  <button
-                    onClick={handleLoadMore}
-                    disabled={loading}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mx-auto"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin mr-2" />
-                        読み込み中...
-                      </>
-                    ) : (
-                      'さらに読み込む'
-                    )}
-                  </button>
+                  <Loader2 size={16} className="animate-spin mx-auto text-gray-400" />
+                  <p className="text-gray-500 mt-2">さらに読み込み中...</p>
                 </div>
               )}
             </>

@@ -204,6 +204,35 @@ export const useSocial = (
   }, [user, getAuthorInfo, store]);
 
   /**
+   * タイムスタンプを更新（キャッシュは保持）
+   */
+  const refreshTimeline = useCallback(() => {
+    if (!user || !store.timeline) return;
+
+    // 現在のタイムラインの投稿に対してタイムスタンプのみを再計算
+    const updatedPosts = store.timeline.posts.map(post => {
+      // SocialPostの形に戻してからconvertToUISocialPostで再変換
+      const socialPost = {
+        id: post.id,
+        authorId: post.authorId,
+        authorType: post.authorType,
+        content: post.content,
+        timestamp: post.timestamp,
+        likes: post.likes,
+        comments: post.comments,
+        shares: post.shares,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
+      };
+
+      return convertToUISocialPost(socialPost, post.author);
+    });
+
+    // ストアを更新
+    store.setTimeline(updatedPosts, store.timeline.hasMore);
+  }, [user, store]);
+
+  /**
    * タイムラインの追加読み込み（無限スクロール）
    */
   const loadMorePosts = useCallback(async () => {
@@ -754,7 +783,7 @@ export const useSocial = (
     searchPosts,
 
     // リフレッシュ
-    refreshTimeline: loadInitialTimeline,
+    refreshTimeline,
     refreshContacts: loadContacts,
   };
 };

@@ -23,7 +23,18 @@ export const ProfileEditPage: React.FC<ProfileEditPageProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: SocialAccount) => ({ ...prev, [name]: value }));
+
+    // 名前が変更された場合、アバターも自動更新
+    if (name === 'name') {
+      const firstChar = value.trim().charAt(0).toUpperCase() || 'U';
+      setFormData((prev: SocialAccount) => ({
+        ...prev,
+        [name]: value,
+        avatar: firstChar
+      }));
+    } else {
+      setFormData((prev: SocialAccount) => ({ ...prev, [name]: value }));
+    }
 
     // クライアントサイドでの基本バリデーションのみ
     if (name === 'account_id' || name === 'name') {
