@@ -82,18 +82,6 @@ export const DisclaimerLoading: React.FC<DisclaimerLoadingProps> = ({ onComplete
           <div className="w-3 h-3 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
           <div className="w-3 h-3 bg-white rounded-full animate-bounce"></div>
         </div>
-
-        {/* ステップインジケーター */}
-        <div className="flex justify-center space-x-2 mt-8">
-          {steps.map((_, index) => (
-            <div
-              key={index}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index <= currentStep ? 'bg-cyan-400' : 'bg-white/30'
-              }`}
-            />
-          ))}
-        </div>
       </div>
     </div>
   );
