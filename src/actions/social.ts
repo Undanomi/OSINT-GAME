@@ -14,8 +14,7 @@ import {
   limit as firestoreLimit,
   startAfter,
   writeBatch,
-  Timestamp,
-  documentId
+  Timestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAuthenticatedUserId } from '@/lib/auth/server';
@@ -29,7 +28,9 @@ import {
   TimelineParams,
   DMHistoryParams,
   SocialRelationship,
-  SocialAIResponse
+  SocialAIResponse,
+  UISocialPost,
+  convertToUISocialPost
 } from '@/types/social';
 import {
   SOCIAL_POSTS_PER_PAGE,
@@ -155,58 +156,7 @@ function generateTimestampId(timestamp: Date): string {
   return `${timeString}_${randomSuffix}`;
 }
 
-/**
- * タイムスタンプからドキュメントID範囲を生成
- */
-function getDocumentIdRange(startTimestamp: Date, endTimestamp: Date) {
-  const startId = startTimestamp.toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_';
-  const endId = endTimestamp.toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_\uf8ff';
-  return { startId, endId };
-}
 
-/**
- * タイムラインメタデータを取得
- */
-async function getTimelineMetadata(userId: string) {
-  try {
-    const metadataRef = doc(db, 'users', userId, 'socialTimelineMetadata', 'sync');
-    const metadataDoc = await getDoc(metadataRef);
-
-    if (!metadataDoc.exists()) {
-      return null;
-    }
-
-    const data = metadataDoc.data();
-    return {
-      lastSyncedNPCTimestamp: data.lastSyncedNPCTimestamp?.toDate() || null,
-      lastSyncedAt: data.lastSyncedAt?.toDate() || null,
-      totalNPCPostsSynced: data.totalNPCPostsSynced || 0
-    };
-  } catch (error) {
-    console.error('Failed to get timeline metadata:', error);
-    return null;
-  }
-}
-
-/**
- * タイムラインメタデータを更新
- */
-async function updateTimelineMetadata(
-  userId: string,
-  lastSyncedNPCTimestamp: Date,
-  additionalPostsCount: number
-) {
-  try {
-    const metadataRef = doc(db, 'users', userId, 'socialTimelineMetadata', 'sync');
-    await setDoc(metadataRef, {
-      lastSyncedNPCTimestamp: Timestamp.fromDate(lastSyncedNPCTimestamp),
-      lastSyncedAt: Timestamp.fromDate(new Date()),
-      totalNPCPostsSynced: additionalPostsCount
-    }, { merge: true });
-  } catch (error) {
-    console.error('Failed to update timeline metadata:', error);
-  }
-}
 
 // =====================================
 // デフォルト設定管理
@@ -504,13 +454,20 @@ export async function getUserAccountPosts(
   accountId: string,
   pageLimit: number = SOCIAL_POSTS_PER_PAGE,
   cursor?: string
-): Promise<PaginatedResult<SocialPost>> {
+): Promise<PaginatedResult<UISocialPost>> {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     throw new Error('認証が必要です');
   }
 
   try {
+    // アカウント情報を取得
+    const accountDoc = await getDoc(doc(db, 'users', userId, 'socialAccounts', accountId));
+    if (!accountDoc.exists()) {
+      throw new Error('アカウントが見つかりません');
+    }
+    const account = accountDoc.data() as SocialAccount;
+
     const postsRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'posts');
     let postsQuery = query(
       postsRef,
@@ -533,14 +490,23 @@ export async function getUserAccountPosts(
     const snapshot = await getDocs(postsQuery);
     const posts = snapshot.docs.map(doc => {
       const data = doc.data();
-      return {
+      const post: SocialPost = {
         id: doc.id,
         ...data,
         timestamp: data.timestamp?.toDate() || new Date(),
         createdAt: data.createdAt?.toDate?.() || new Date(),
         updatedAt: data.updatedAt?.toDate?.() || new Date(),
+      } as SocialPost;
+
+      const author = {
+        id: account.id,
+        account_id: account.account_id,
+        name: account.name,
+        avatar: account.avatar,
       };
-    }) as SocialPost[];
+
+      return convertToUISocialPost(post, author);
+    });
 
     return {
       items: posts,
@@ -666,64 +632,36 @@ export async function removeFromAllTimelines(postId: string): Promise<void> {
 
 
 /**
- * 効率的なNPC投稿検索（タイムスタンプベースID使用）
+ * NPC投稿検索（timestampフィールド使用）
  */
-async function searchNPCPostsEfficiently(
+async function searchNPCPosts(
   beforeTimestamp: Date,
-  afterTimestamp: Date | null,
   limit: number
 ): Promise<SocialPost[]> {
   try {
     const npcPostsRef = collection(db, 'socialNPCPosts');
 
-    if (afterTimestamp) {
-      // 範囲指定での効率的な検索
-      const { startId, endId } = getDocumentIdRange(afterTimestamp, beforeTimestamp);
+    const timestampQuery = query(
+      npcPostsRef,
+      where('timestamp', '<', Timestamp.fromDate(beforeTimestamp)),
+      orderBy('timestamp', 'desc'),
+      firestoreLimit(limit)
+    );
 
-      const efficientQuery = query(
-        npcPostsRef,
-        where(documentId(), '>=', startId),
-        where(documentId(), '<', endId),
-        orderBy(documentId(), 'desc'),
-        firestoreLimit(limit)
-      );
+    const snapshot = await getDocs(timestampQuery);
 
-      const snapshot = await getDocs(efficientQuery);
-      return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          timestamp: data.timestamp?.toDate() || new Date(),
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-          updatedAt: data.updatedAt?.toDate?.() || new Date(),
-        };
-      }) as SocialPost[];
-    } else {
-      // 単一タイムスタンプ以前の検索
-      const beforeId = beforeTimestamp.toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_\uf8ff';
-
-      const fallbackQuery = query(
-        npcPostsRef,
-        where(documentId(), '<', beforeId),
-        orderBy(documentId(), 'desc'),
-        firestoreLimit(limit)
-      );
-
-      const snapshot = await getDocs(fallbackQuery);
-      return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          timestamp: data.timestamp?.toDate() || new Date(),
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-          updatedAt: data.updatedAt?.toDate?.() || new Date(),
-        };
-      }) as SocialPost[];
-    }
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        timestamp: data.timestamp?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+        updatedAt: data.updatedAt?.toDate?.() || new Date(),
+      };
+    }) as SocialPost[];
   } catch (error) {
-    console.error('Failed to search NPC posts efficiently:', error);
+    console.error('Failed to search NPC posts:', error);
     return [];
   }
 }
@@ -771,18 +709,26 @@ export async function getTimeline(params: TimelineParams): Promise<PaginatedResu
     let allPosts = timelinePosts;
     if (timelinePosts.length < pageLimit) {
       const remainingLimit = pageLimit - timelinePosts.length;
-      const lastTimestamp = timelinePosts.length > 0
-        ? timelinePosts[timelinePosts.length - 1].timestamp
-        : new Date();
 
-      // メタデータを取得して効率的な検索範囲を決定
-      const metadata = await getTimelineMetadata(userId);
-      const afterTimestamp = metadata?.lastSyncedNPCTimestamp || null;
+      // カーソル使用時は、カーソルドキュメントのタイムスタンプを取得
+      let lastTimestamp: Date;
+      if (cursor && timelinePosts.length === 0) {
+        const cursorDoc = await getDoc(doc(timelineRef, cursor));
+        if (cursorDoc.exists()) {
+          const cursorData = cursorDoc.data();
+          lastTimestamp = cursorData.timestamp?.toDate() || new Date();
+        } else {
+          lastTimestamp = new Date();
+        }
+      } else {
+        lastTimestamp = timelinePosts.length > 0
+          ? timelinePosts[timelinePosts.length - 1].timestamp
+          : new Date();
+      }
 
-      // 効率的なNPC投稿検索
-      const npcPosts = await searchNPCPostsEfficiently(
+      // NPC投稿検索
+      const npcPosts = await searchNPCPosts(
         lastTimestamp,
-        afterTimestamp,
         remainingLimit
       );
 
@@ -802,14 +748,6 @@ export async function getTimeline(params: TimelineParams): Promise<PaginatedResu
         }
 
         await batch.commit();
-
-        // メタデータを更新
-        const newLastSyncedTimestamp = npcPosts[npcPosts.length - 1].timestamp;
-        await updateTimelineMetadata(
-          userId,
-          newLastSyncedTimestamp,
-          (metadata?.totalNPCPostsSynced || 0) + npcPosts.length
-        );
       }
 
       // 重複を除去してからタイムスタンプでソート
@@ -915,8 +853,15 @@ export async function getNPCPosts(
   npcId: string,
   pageLimit: number = SOCIAL_POSTS_PER_PAGE,
   cursor?: string
-): Promise<PaginatedResult<SocialPost>> {
+): Promise<PaginatedResult<UISocialPost>> {
   try {
+    // NPC情報を取得
+    const npcDoc = await getDoc(doc(db, 'socialNPCs', npcId));
+    if (!npcDoc.exists()) {
+      throw new Error('NPCが見つかりません');
+    }
+    const npc = npcDoc.data() as SocialNPC;
+
     const postsRef = collection(db, 'socialNPCs', npcId, 'posts');
     let postsQuery = query(
       postsRef,
@@ -939,14 +884,23 @@ export async function getNPCPosts(
     const snapshot = await getDocs(postsQuery);
     const posts = snapshot.docs.map(doc => {
       const data = doc.data();
-      return {
+      const post: SocialPost = {
         id: doc.id,
         ...data,
         timestamp: data.timestamp?.toDate() || new Date(),
         createdAt: data.createdAt?.toDate?.() || new Date(),
         updatedAt: data.updatedAt?.toDate?.() || new Date(),
+      } as SocialPost;
+
+      const author = {
+        id: npc.id,
+        account_id: npc.account_id,
+        name: npc.name,
+        avatar: npc.avatar,
       };
-    }) as SocialPost[];
+
+      return convertToUISocialPost(post, author);
+    });
 
     return {
       items: posts,

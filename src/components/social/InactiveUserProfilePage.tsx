@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, UIEvent } from 'react';
 import { SocialAccount, UISocialPost, getDisplayUserId } from '@/types/social';
 import { PostComponent } from './PostComponent';
 import { getUserAccountPosts } from '@/actions/social';
@@ -28,29 +28,24 @@ export const InactiveUserProfilePage: React.FC<InactiveUserProfilePageProps> = (
 }) => {
   const [posts, setPosts] = useState<UISocialPost[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [cursor, setCursor] = useState<string | undefined>();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // タイムスタンプフォーマット関数
-  const formatTimestamp = (timestamp: Date): string => {
-    const now = new Date();
-    const diffMs = now.getTime() - timestamp.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffHours < 1) return '1時間未満前';
-    if (diffHours < 24) return `${diffHours}時間前`;
-    if (diffDays < 7) return `${diffDays}日前`;
-    return timestamp.toLocaleDateString('ja-JP');
-  };
 
   const loadUserPostsRef = useRef<((reset?: boolean) => Promise<void>) | null>(null);
 
   // ユーザー投稿を読み込む関数
   const loadUserPosts = useCallback(async (reset = false) => {
-    if (loading || (!hasMore && !reset)) return;
+    if ((reset ? loading : isLoadingMore) || (!hasMore && !reset)) return;
 
-    setLoading(true);
+    if (reset) {
+      setLoading(true);
+    } else {
+      setIsLoadingMore(true);
+    }
+
     try {
       const result = await getUserAccountPosts(
         account.id,
@@ -58,16 +53,7 @@ export const InactiveUserProfilePage: React.FC<InactiveUserProfilePageProps> = (
         reset ? undefined : cursor
       );
 
-      const uiPosts: UISocialPost[] = result.items.map(post => ({
-        ...post,
-        timeString: formatTimestamp(post.timestamp),
-        author: {
-          id: account.id,
-          account_id: account.account_id,
-          name: account.name,
-          avatar: account.avatar,
-        }
-      }));
+      const uiPosts = result.items;
 
       if (reset) {
         setPosts(uiPosts);
@@ -89,9 +75,13 @@ export const InactiveUserProfilePage: React.FC<InactiveUserProfilePageProps> = (
       setHasMore(false);
       setCursor(undefined);
     } finally {
-      setLoading(false);
+      if (reset) {
+        setLoading(false);
+      } else {
+        setIsLoadingMore(false);
+      }
     }
-  }, [account.id, account.account_id, account.name, account.avatar, loading, hasMore, cursor]);
+  }, [account.id, loading, isLoadingMore, hasMore, cursor]);
 
   // refに最新の関数を保存
   loadUserPostsRef.current = loadUserPosts;
@@ -103,10 +93,14 @@ export const InactiveUserProfilePage: React.FC<InactiveUserProfilePageProps> = (
     }
   }, [account.id]);
 
-  // さらに読み込むボタンのハンドラ
-  const handleLoadMore = () => {
-    loadUserPosts(false);
-  };
+  // 無限スクロール処理
+  const handleScroll = useCallback((e: UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop - clientHeight < 100 && hasMore && !isLoadingMore) {
+      loadUserPosts(false);
+    }
+  }, [hasMore, isLoadingMore, loadUserPosts]);
+
 
   if (!account) return <div className="p-6">プロフィールが見つかりません。</div>;
 
@@ -121,7 +115,7 @@ export const InactiveUserProfilePage: React.FC<InactiveUserProfilePageProps> = (
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" ref={scrollContainerRef} onScroll={handleScroll}>
         <div className="bg-white border-b border-gray-200 p-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-4">
@@ -182,22 +176,10 @@ export const InactiveUserProfilePage: React.FC<InactiveUserProfilePageProps> = (
               {posts.map(post => (
                 <PostComponent key={post.id} post={post} onUserSelect={onUserSelect} />
               ))}
-              {hasMore && (
+              {isLoadingMore && (
                 <div className="p-4 text-center">
-                  <button
-                    onClick={handleLoadMore}
-                    disabled={loading}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mx-auto"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin mr-2" />
-                        読み込み中...
-                      </>
-                    ) : (
-                      'さらに読み込む'
-                    )}
-                  </button>
+                  <Loader2 size={16} className="animate-spin mx-auto text-gray-400" />
+                  <p className="text-gray-500 mt-2">さらに読み込み中...</p>
                 </div>
               )}
             </>

@@ -60,6 +60,7 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
     npcs,
     getNPCById,
     searchPosts,
+    refreshTimeline,
   } = useSocial(activeAccount, accounts, updateAccount);
 
   const [currentView, setCurrentView] = useState<SocialView>('home');
@@ -276,8 +277,6 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
         return (
           <ProfilePage
             activeAccount={activeAccount}
-            onStartDM={handleStartDM}
-            isMyProfile={true}
             onUserSelect={handleUserSelect}
             onEditProfile={() => setCurrentView('edit-profile')}
           />
@@ -396,7 +395,17 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
           {/* 下部ナビゲーション */}
           <div className="h-16 bg-white border-t flex justify-around items-center flex-shrink-0">
             <button
-              onClick={() => setCurrentView('home')}
+              onClick={() => {
+                if (currentView === 'home') {
+                  // ホームにいる場合は、スクロールをトップに戻してタイムスタンプを更新
+                  if (timelineRef.current) {
+                    timelineRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                  refreshTimeline();
+                } else {
+                  setCurrentView('home');
+                }
+              }}
               className={`p-2 rounded-full transition-colors ${
                 currentView === 'home' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:bg-gray-100'
               }`}

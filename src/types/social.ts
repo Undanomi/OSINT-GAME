@@ -362,7 +362,14 @@ export function convertToUISocialPost(
   const diffDays = Math.floor(diffHours / 24);
 
   let timeString: string;
-  if (diffDays > 0) {
+  if (diffDays > 30) {
+    // 1ヶ月を超える場合は投稿日を表示
+    timeString = post.timestamp.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    });
+  } else if (diffDays > 0) {
     timeString = `${diffDays}日前`;
   } else if (diffHours > 0) {
     timeString = `${diffHours}時間前`;
