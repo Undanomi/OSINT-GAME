@@ -55,13 +55,24 @@ export const ChiitaPage: React.FC<ChiitaPageProps> = ({ documentId, initialData 
         const data = await validateChiitaContent(searchResult.content);
         console.log('Validated data from Firestore:', data);
 
-        // 画像URL変換（Firebase Storage対応）
-        for (const chapter of data.content.chapters) {
+        // gs:// URLをHTTPS URLに並列変換
+        const urlConversionPromises: Promise<void>[] = [];
+
+        // 各章の画像URL変換（並列）
+        data.content.chapters.forEach((chapter, index) => {
           if (chapter.image?.startsWith('gs://')) {
             console.log('Converting chapter image:', chapter.image);
-            chapter.image = await getDownloadURL(ref(storage, chapter.image));
+            urlConversionPromises.push(
+              getDownloadURL(ref(storage, chapter.image)).then(url => {
+                chapter.image = url;
+                console.log(`Converted chapter ${index} image to:`, url);
+              })
+            );
           }
-        }
+        });
+
+        // すべてのURL変換を並列実行
+        await Promise.all(urlConversionPromises);
 
         console.log('Final data after URL conversion:', data);
         setArticleData(data);
