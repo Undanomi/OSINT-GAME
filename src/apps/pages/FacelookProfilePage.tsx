@@ -53,40 +53,70 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
         const data = await convertFacelookContentToUser(facelookContent, documentId);
         console.log('Raw data from Firestore:', data);
         
-        // gs:// URLをHTTPS URLに変換
+        // gs:// URLをHTTPS URLに並列変換
+        const urlConversionPromises: Promise<void>[] = [];
+
+        // プロフィール画像
         if (data.profileImage?.startsWith('gs://')) {
           console.log('Converting profile image:', data.profileImage);
-          data.profileImage = await getDownloadURL(ref(storage, data.profileImage));
-          console.log('Converted to:', data.profileImage);
+          urlConversionPromises.push(
+            getDownloadURL(ref(storage, data.profileImage)).then(url => {
+              data.profileImage = url;
+              console.log('Converted profile image to:', url);
+            })
+          );
         }
+
+        // カバー画像
         if (data.coverImage?.startsWith('gs://')) {
           console.log('Converting cover image:', data.coverImage);
-          data.coverImage = await getDownloadURL(ref(storage, data.coverImage));
-          console.log('Converted to:', data.coverImage);
+          urlConversionPromises.push(
+            getDownloadURL(ref(storage, data.coverImage)).then(url => {
+              data.coverImage = url;
+              console.log('Converted cover image to:', url);
+            })
+          );
         }
-        
-        // 投稿画像のURL変換
-        for (const post of data.posts) {
+
+        // 投稿画像のURL変換（並列）
+        data.posts.forEach((post, index) => {
           if (post.image?.startsWith('gs://')) {
             console.log('Converting post image:', post.image);
-            post.image = await getDownloadURL(ref(storage, post.image));
-            console.log('Converted to:', post.image);
+            urlConversionPromises.push(
+              getDownloadURL(ref(storage, post.image)).then(url => {
+                post.image = url;
+                console.log(`Converted post ${index} image to:`, url);
+              })
+            );
           }
-        }
-        
-        // 友達のプロフィール画像URL変換
-        for (const friend of data.friends) {
+        });
+
+        // 友達のプロフィール画像URL変換（並列）
+        data.friends.forEach((friend) => {
           if (friend.profileImage?.startsWith('gs://')) {
-            friend.profileImage = await getDownloadURL(ref(storage, friend.profileImage));
+            urlConversionPromises.push(
+              getDownloadURL(ref(storage, friend.profileImage)).then(url => {
+                friend.profileImage = url;
+              })
+            );
           }
-        }
-        
-        // フォトギャラリーのURL変換
-        for (let i = 0; i < data.photos.length; i++) {
-          if (data.photos[i]?.startsWith('gs://')) {
-            data.photos[i] = await getDownloadURL(ref(storage, data.photos[i]));
+        });
+
+        // フォトギャラリーのURL変換（並列）
+        data.photos.forEach((photo, index) => {
+          if (photo?.startsWith('gs://')) {
+            urlConversionPromises.push(
+              getDownloadURL(ref(storage, photo)).then(url => {
+                data.photos[index] = url;
+              })
+            );
           }
-        }
+        });
+
+        // すべてのURL変換を並列実行
+        console.log(`Starting parallel conversion of ${urlConversionPromises.length} images...`);
+        await Promise.all(urlConversionPromises);
+        console.log('All URL conversions completed');
         
         console.log('Final data after URL conversion:', data);
         setUserData(data);
