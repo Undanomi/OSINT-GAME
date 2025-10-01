@@ -47,7 +47,7 @@ export const GogglesHomePage: React.FC<GogglesHomePageProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
-            onKeyUp={onKeyPress}
+            onKeyDown={onKeyPress}
             className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-full shadow-sm hover:shadow-md focus:shadow-md focus:border-blue-400 focus:outline-none transition-all duration-200"
             placeholder="検索"
             autoFocus
