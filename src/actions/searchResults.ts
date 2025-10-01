@@ -39,19 +39,26 @@ export const getSearchResults = async (): Promise<UnifiedSearchResult[]> => {
 
 /**
  * キャッシュされたsearch_resultsに対して部分一致検索を実行する
+ * 複数のキーワードをスペース、「OR」、「|」で区切って指定した場合、OR検索を実行する
  * @param cache - 検索対象のUnifiedSearchResultの配列
- * @param query - 検索クエリ
+ * @param query - 検索クエリ（スペース、「OR」、「|」で区切って複数キーワード指定可能）
  * @returns Promise<SearchResult[]> - フィルタリングされた検索結果
  */
 export const filterSearchResults = async (
   cache: UnifiedSearchResult[],
   query: string
 ): Promise<SearchResult[]> => {
-  const queryLower = query.toLowerCase();
+  // クエリを全角・半角スペース、「OR」、「|」で分割してキーワード配列を作成
+  const keywords = query
+    .split(/\s*(?:OR|\|)\s*|[\s　]+/)  // OR、|（前後の空白含む）、またはスペースで分割
+    .map(k => k.toLowerCase().trim())
+    .filter(k => k.length > 0);
 
   // Playback Machine関連の検索キーワード
   const playbackKeywords = ['playback', 'archive', 'アーカイブ', 'wayback', '過去', 'キャッシュ', 'cache'];
-  const isPlaybackSearch = playbackKeywords.some(keyword => queryLower.includes(keyword));
+  const isPlaybackSearch = keywords.some(keyword =>
+    playbackKeywords.some(playbackKeyword => keyword.includes(playbackKeyword))
+  );
 
   // Playback Machineを検索結果に追加
   const staticResults: SearchResult[] = [];
@@ -66,6 +73,7 @@ export const filterSearchResults = async (
   }
 
   // キャッシュから部分一致で検索（expired状態のドメインは除外）
+  // いずれかのキーワードにマッチする結果を返す（OR検索）
   const filteredItems = cache.filter(item => {
     console.log('Filtering item:', item);
 
@@ -75,21 +83,26 @@ export const filterSearchResults = async (
       return false;
     }
 
-    // キーワードでの部分一致
-    const matchesKeywords = item.keywords?.some(keyword => {
-      const match = keyword.toLowerCase().includes(queryLower);
-      console.log(`Keyword "${keyword}" includes "${query}":`, match);
-      return match;
+    // いずれかのキーワードがマッチするかチェック（OR検索）
+    const anyKeywordMatches = keywords.some(keyword => {
+      // キーワードフィールドでの部分一致
+      const matchesKeywords = item.keywords?.some(k =>
+        k.toLowerCase().includes(keyword)
+      );
+
+      // タイトルでの部分一致
+      const matchesTitle = item.title.toLowerCase().includes(keyword);
+
+      // 説明文での部分一致
+      const matchesDescription = item.description.toLowerCase().includes(keyword);
+
+      const matches = matchesKeywords || matchesTitle || matchesDescription;
+      console.log(`Keyword "${keyword}" matches:`, matches);
+      return matches;
     });
 
-    // タイトルでの部分一致
-    const matchesTitle = item.title.toLowerCase().includes(queryLower);
-
-    // 説明文での部分一致
-    const matchesDescription = item.description.toLowerCase().includes(queryLower);
-
-    console.log('Matches - keywords:', matchesKeywords, 'title:', matchesTitle, 'description:', matchesDescription);
-    return matchesKeywords || matchesTitle || matchesDescription;
+    console.log('Any keyword matches:', anyKeywordMatches);
+    return anyKeywordMatches;
   });
 
   // 非同期変換処理

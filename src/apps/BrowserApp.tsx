@@ -40,7 +40,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   
   // ページネーション関連の状態
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 10;
 
   // ブラウザのナビゲーション履歴を管理
   const [history, setHistory] = useState<string[]>([VIEW_HOME]);
@@ -210,10 +210,10 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   /**
    * 検索入力フィールドのEnterキーイベント処理
-   * Enterキーで検索を実行
+   * Enterキーで検索を実行（IME変換中は無視）
    */
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
       performSearch();
     }
   };
@@ -424,7 +424,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyUp={handleKeyPress}
+          onKeyDown={handleKeyPress}
           className="flex-1 bg-white border rounded-md px-3 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="検索キーワードを入力"
         />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { SearchResult } from '@/actions/searchResults';
 
@@ -17,6 +17,12 @@ export const GogglesSearchResultsPage: React.FC<GogglesSearchResultsPageProps> =
   onResultClick,
   onPageChange,
 }) => {
+  const topRef = useRef<HTMLDivElement>(null);
+
+  // ページ変更時に上部にスクロール
+  useEffect(() => {
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [currentPage]);
   /**
    * 検索結果のタイプに応じたアイコンを返す関数
    */
@@ -39,7 +45,7 @@ export const GogglesSearchResultsPage: React.FC<GogglesSearchResultsPageProps> =
   const currentResults = searchResults.slice(startIndex, endIndex);
 
   return (
-    <div className="p-4">
+    <div ref={topRef} className="p-4">
       {/* 検索結果の統計情報 */}
       {totalResults > 0 && (
         <div className="mb-4 pb-3 border-b">
