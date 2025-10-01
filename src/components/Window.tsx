@@ -183,7 +183,7 @@ export const Window: React.FC<WindowProps> = React.memo(({ windowId }) => {
       {/* ウィンドウ本体 */}
       <div
         className={`h-full w-full rounded-lg overflow-hidden border flex flex-col transition-colors ${
-          isActiveWindow ? 'border-gray-400' : 'border-gray-300'
+          isActiveWindow ? 'border-blue-500/40' : 'border-gray-700/60'
         }`}
         onClick={handleFocus}
       >

@@ -283,7 +283,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
               <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#1c1f26]" ref={chatAreaRef} onScroll={handleScroll}>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#1c1f26] dark-scrollbar" ref={chatAreaRef} onScroll={handleScroll}>
             {messagesLoading && <p className="text-center text-sm text-gray-500">メッセージを読み込み中...</p>}
             {isLoadingMore && <p className="text-center text-sm text-gray-500">さらに読み込み中...</p>}
             {messages.map(message => (
