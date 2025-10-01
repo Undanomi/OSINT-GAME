@@ -7,7 +7,6 @@ import { RankedOnContent, RankedOnUser } from '@/types/rankedon';
 const ExperienceSchema = z.object({
   title: z.string(),
   company: z.string(),
-  companyLogo: z.string().optional(),
   employmentType: z.string().optional(),
   location: z.string().optional(),
   startDate: z.string(),
@@ -19,7 +18,6 @@ const ExperienceSchema = z.object({
 
 const EducationSchema = z.object({
   school: z.string(),
-  schoolLogo: z.string().optional(),
   degree: z.string().optional(),
   fieldOfStudy: z.string().optional(),
   startYear: z.string(),
@@ -82,8 +80,6 @@ const RankedOnContentSchema = z.object({
   industry: z.string().optional(),
   summary: z.string().optional(),
   connectionsCount: z.number(),
-  profileViews: z.number().optional(),
-  searchAppearances: z.number().optional(),
   experience: z.array(ExperienceSchema),
   education: z.array(EducationSchema),
   skills: z.array(SkillSchema),
@@ -91,10 +87,6 @@ const RankedOnContentSchema = z.object({
   posts: z.array(RankedOnPostSchema),
   recommendations: z.array(RecommendationSchema).optional(),
   languages: z.array(LanguageSchema).optional(),
-  email: z.string().optional(),
-  phone: z.string().optional(),
-  website: z.string().optional(),
-  rankedonUrl: z.string().optional(),
 });
 
 /**
@@ -128,8 +120,6 @@ export async function convertRankedOnContentToUser(
     industry: rankedOnContent.industry,
     summary: rankedOnContent.summary,
     connectionsCount: rankedOnContent.connectionsCount,
-    profileViews: rankedOnContent.profileViews,
-    searchAppearances: rankedOnContent.searchAppearances,
     experience: rankedOnContent.experience || [],
     education: rankedOnContent.education || [],
     skills: rankedOnContent.skills || [],
@@ -137,11 +127,7 @@ export async function convertRankedOnContentToUser(
     posts: rankedOnContent.posts || [],
     recommendations: rankedOnContent.recommendations,
     languages: rankedOnContent.languages,
-    email: rankedOnContent.email,
-    phone: rankedOnContent.phone,
-    website: rankedOnContent.website,
-    rankedonUrl: rankedOnContent.rankedonUrl
   };
-  
+
   return data;
 }
