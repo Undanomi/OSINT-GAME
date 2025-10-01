@@ -39,16 +39,16 @@ const DesktopIcon: React.FC<DesktopIconProps> = ({ app, onClick }) => {
   return (
     /* アイコン全体のコンテナ - 縦方向レイアウトとホバー効果 */
     <div
-      className="flex flex-col items-center cursor-pointer p-2 rounded-lg hover:bg-white/20 transition-colors group"
+      className="flex flex-col items-center cursor-pointer p-2 rounded-lg hover:bg-blue-500/10 transition-colors group"
       onClick={onClick}
       onDoubleClick={onClick}
     >
       {/* アイコン画像のコンテナ - 固定サイズとホバー時の背景変化 */}
-      <div className="w-16 h-16 flex items-center justify-center bg-white/10 rounded-lg group-hover:bg-white/20 transition-colors">
-        <Icon size={32} className="text-white" />
+      <div className="w-16 h-16 flex items-center justify-center bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors border border-blue-500/20">
+        <Icon size={32} className="text-blue-400" />
       </div>
       {/* アプリケーション名ラベル */}
-      <span className="text-white text-sm mt-2 text-center leading-tight">
+      <span className="text-blue-300 text-sm mt-2 text-center leading-tight">
         {app.name}
       </span>
     </div>
@@ -110,7 +110,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onOpenAppStore
     /* メインのメニューコンテナ - 固定位置とドロップシャドウ */
     <div
       ref={menuRef}
-      className="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[200px] z-50"
+      className="fixed bg-[#1a1d24] border border-blue-500/30 rounded-lg shadow-xl py-2 min-w-[200px] z-50"
       style={{ left: x, top: y }}
     >
       {/* アプリストアを開くボタン */}
@@ -119,7 +119,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onOpenAppStore
           onOpenAppStore();
           onClose();
         }}
-        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+        className="w-full px-4 py-2 text-left hover:bg-blue-500/10 flex items-center space-x-2 text-blue-300"
       >
         <Package size={16} />
         <span>アプリストアを開く</span>
@@ -127,17 +127,17 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onOpenAppStore
       {/* デスクトップ更新ボタン（現在は見た目のみ） */}
       <button
         onClick={onClose}
-        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+        className="w-full px-4 py-2 text-left hover:bg-blue-500/10 flex items-center space-x-2 text-blue-300"
       >
         <RefreshCw size={16} />
         <span>デスクトップを更新</span>
       </button>
       {/* メニュー区切り線 */}
-      <hr className="my-1" />
+      <hr className="my-1 border-blue-500/20" />
       {/* デスクトップ設定ボタン（現在は見た目のみ） */}
       <button
         onClick={onClose}
-        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+        className="w-full px-4 py-2 text-left hover:bg-blue-500/10 flex items-center space-x-2 text-blue-300"
       >
         <Settings size={16} />
         <span>デスクトップ設定</span>
@@ -145,7 +145,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onOpenAppStore
       {/* システム情報ボタン（現在は見た目のみ） */}
       <button
         onClick={onClose}
-        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+        className="w-full px-4 py-2 text-left hover:bg-blue-500/10 flex items-center space-x-2 text-blue-300"
       >
         <Info size={16} />
         <span>システム情報</span>
@@ -351,12 +351,12 @@ export const Desktop: React.FC = () => {
   };
 
   return (
-    /* デスクトップのメインコンテナ - グラデーション背景とドット模様 */
+    /* デスクトップのメインコンテナ - Kali Linux風のダークグラデーション背景 */
     <div
-      className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-700 relative"
+      className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 relative"
       style={{
-        // SVGベースの微細なドット模様をオーバーレイとして配置
-        backgroundImage: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="1"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+        // SVGベースの微細なグリッド模様をオーバーレイとして配置
+        backgroundImage: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%233b82f6" fill-opacity="0.08"%3E%3Ccircle cx="30" cy="30" r="1"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
       }}
       onContextMenu={handleContextMenu} // 右クリックでコンテキストメニュー表示
       onClick={() => setContextMenu(null)} // 左クリックでメニュー非表示

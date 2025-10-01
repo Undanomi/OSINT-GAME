@@ -146,7 +146,7 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
 
   if (isLoading) {
     return (
-      <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 flex items-center justify-center">
+      <div className="w-screen h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 flex items-center justify-center overflow-hidden">
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-3 border-white border-t-transparent rounded-full mx-auto mb-6"></div>
           <h2 className="text-2xl font-bold text-white mb-4">シナリオを準備中...</h2>
@@ -157,7 +157,7 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
   }
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 overflow-y-auto relative">
+    <div className="w-screen h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 overflow-y-auto overflow-x-hidden relative">
       {/* 背景アニメーション */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute w-96 h-96 rounded-full bg-blue-500 blur-3xl -top-48 -left-48 animate-pulse"></div>

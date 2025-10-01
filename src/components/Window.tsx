@@ -182,20 +182,20 @@ export const Window: React.FC<WindowProps> = React.memo(({ windowId }) => {
     >
       {/* ウィンドウ本体 */}
       <div
-        className={`h-full w-full bg-white rounded-lg overflow-hidden border-2 flex flex-col transition-colors ${
-          isActiveWindow ? 'border-blue-500' : 'border-gray-300'
+        className={`h-full w-full rounded-lg overflow-hidden border flex flex-col transition-colors ${
+          isActiveWindow ? 'border-blue-500/40' : 'border-gray-700/60'
         }`}
         onClick={handleFocus}
       >
         {/* タイトルバー */}
         <div
           className={`window-drag-handle flex-shrink-0 px-4 py-2 flex items-center justify-between cursor-move transition-colors ${
-            isActiveWindow ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'
+            isActiveWindow ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700'
           }`}
         >
           {/* タイトル */}
           <div className="flex items-center space-x-2">
-            <div className="font-medium">{targetWindow.title}</div>
+            <div className="font-medium text-sm">{targetWindow.title}</div>
           </div>
 
           {/* コントロールボタン（最小化、閉じる） */}
@@ -204,22 +204,22 @@ export const Window: React.FC<WindowProps> = React.memo(({ windowId }) => {
             <button
               onClick={handleMinimize}
               className={`window-control-button w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
-                isActiveWindow ? 'bg-yellow-400 hover:bg-yellow-300' : 'bg-gray-400 hover:bg-yellow-400'
+                isActiveWindow ? 'bg-white/20 hover:bg-white/30' : 'bg-gray-400/30 hover:bg-gray-400/50'
               }`}
               title="最小化"
             >
-              <Minus size={10} className="text-gray-800" />
+              <Minus size={10} />
             </button>
 
             {/* 閉じるボタン */}
             <button
               onClick={handleClose}
               className={`window-control-button w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
-                isActiveWindow ? 'bg-red-400 hover:bg-red-300' : 'bg-gray-400 hover:bg-red-400'
+                isActiveWindow ? 'bg-white/20 hover:bg-white/30' : 'bg-gray-400/30 hover:bg-gray-400/50'
               }`}
               title="閉じる"
             >
-              <X size={10} className="text-gray-800" />
+              <X size={10} />
             </button>
           </div>
         </div>

@@ -327,11 +327,11 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
   };
 
   const toolbar = (
-    <div className="flex items-center gap-2 p-2">
+    <div className="flex items-center gap-2 p-2 bg-white border-b border-gray-200">
       <Button
         onClick={handleCreateNote}
         size="sm"
-        className="flex items-center gap-1"
+        className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white"
       >
         <PlusIcon className="w-4 h-4" />
         新規メモ
@@ -343,7 +343,7 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
           placeholder="メモを検索..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="h-8"
+          className="h-8 bg-white border-gray-300 text-gray-800 placeholder-gray-400"
         />
       </div>
       <div className="flex items-center gap-1">
@@ -377,8 +377,8 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
       toolbar={toolbar}
       statusBar={statusBar}
     >
-      <div className="flex h-full">
-        <div className="w-64 border-r border-gray-200 overflow-y-auto bg-gray-50">
+      <div className="flex h-full bg-gray-50">
+        <div className="w-64 border-r border-gray-200 overflow-y-auto bg-white">
           <div className="p-2">
             {filteredNotes.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
@@ -393,7 +393,7 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
                     initial={{ opacity: 0, scale: 0.8, y: -20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.8, x: 100 }}
-                    transition={{ 
+                    transition={{
                       type: "spring",
                       stiffness: 300,
                       damping: 25
@@ -401,10 +401,10 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
                     onClick={async () => {
                     // 現在選択中のメモが空の「新しいメモ」（まだ保存されていない）なら削除
                     // ただし、クリックしたメモが現在選択中のメモと同じ場合は削除しない
-                    if (selectedNote && 
-                        selectedNote.id !== note.id && 
-                        !selectedNote.userId && 
-                        selectedNote.title === '新しいメモ' && 
+                    if (selectedNote &&
+                        selectedNote.id !== note.id &&
+                        !selectedNote.userId &&
+                        selectedNote.title === '新しいメモ' &&
                         selectedNote.content === '') {
                       // ローカルから削除（Firestoreには保存されていないので削除不要）
                       setNotes(prev => prev.filter(n => n.id !== selectedNote.id));
@@ -412,16 +412,16 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
                       // selectedNoteをnullにリセットして、削除されたメモの入力画面が残らないようにする
                       setSelectedNote(null);
                     }
-                    
+
                     // キャッシュから取得を試みる
                     const cachedNote = noteCacheRef.current.get(note.id);
-                    
+
                     // キャッシュにあり、更新日時が同じならキャッシュを使用
                     if (cachedNote && cachedNote.updatedAt.getTime() === note.updatedAt.getTime()) {
                       setSelectedNote(cachedNote);
                       return;
                     }
-                    
+
                     // 新規作成したローカルメモ（userIdがない）はサーバーに存在しない
                     const isLocalOnlyNote = !note.userId;
                     if (isLocalOnlyNote) {
@@ -430,7 +430,7 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
                       noteCacheRef.current.set(note.id, note);
                       return;
                     }
-                    
+
                     // サーバーに保存済みのメモのみサーバーから取得
                     try {
                       const fullNote = await getNote(note.id);
@@ -448,17 +448,17 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
                   }}
                   className={`p-3 mb-2 rounded cursor-pointer transition-colors ${
                     selectedNote?.id === note.id
-                      ? 'bg-blue-100 border-blue-300 border'
-                      : 'bg-white hover:bg-gray-100 border border-gray-200'
+                      ? 'bg-blue-50 border-blue-200 border'
+                      : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
                   }`}
                 >
-                  <div className="font-medium text-sm truncate">
+                  <div className="font-medium text-sm truncate text-gray-800">
                     {note.title}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1 truncate">
+                  <div className="text-xs text-gray-600 mt-1 truncate">
                     {note.content || '内容なし'}
                   </div>
-                  <div className="text-xs text-gray-400 mt-2">
+                  <div className="text-xs text-gray-500 mt-2">
                     {formatDate(note.updatedAt)}
                   </div>
                 </motion.div>
@@ -468,19 +468,19 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col bg-white">
           {selectedNote ? (
             <>
-              <div className="flex items-center justify-between p-3 border-b border-gray-200">
+              <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
                 <div className="flex-1 mr-2">
                   <Input
                     type="text"
                     value={selectedNote.title}
                     onChange={(e) => handleUpdateNote(selectedNote.id, e.target.value, selectedNote.content)}
-                    className="text-lg font-semibold w-full"
+                    className="text-lg font-semibold w-full bg-white border-gray-300 text-gray-800"
                     maxLength={NOTES_LIMITS.MAX_TITLE_LENGTH}
                   />
-                  <div className="text-xs text-gray-400 mt-1 text-right">
+                  <div className="text-xs text-gray-500 mt-1 text-right">
                     {selectedNote.title.length} / {NOTES_LIMITS.MAX_TITLE_LENGTH} 文字
                   </div>
                 </div>
@@ -489,27 +489,28 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
                     onClick={() => handleDeleteNote(selectedNote.id)}
                     size="sm"
                     variant="destructive"
+                    className="bg-red-600 hover:bg-red-700"
                   >
                     <TrashIcon className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-              <div className="flex-1 p-3 overflow-auto flex flex-col">
+              <div className="flex-1 p-3 overflow-auto flex flex-col bg-white">
                 <Textarea
                   value={selectedNote.content}
                   onChange={(e) => handleUpdateNote(selectedNote.id, selectedNote.title, e.target.value)}
-                  className="w-full flex-1 resize-none border-none focus:ring-0 whitespace-pre-wrap break-words"
+                  className="w-full flex-1 resize-none border-none focus:ring-0 whitespace-pre-wrap break-words bg-white text-gray-800"
                   placeholder="メモを入力..."
                   maxLength={NOTES_LIMITS.MAX_CONTENT_LENGTH}
                   style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                 />
-                <div className="text-xs text-gray-400 mt-2 text-right">
+                <div className="text-xs text-gray-500 mt-2 text-right">
                   {selectedNote.content.length} / {NOTES_LIMITS.MAX_CONTENT_LENGTH} 文字
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-400">
+            <div className="flex-1 flex items-center justify-center text-gray-500 bg-white">
               <div className="text-center">
                 <div className="text-lg mb-2">メモを選択してください</div>
                 <div className="text-sm">左のリストからメモを選択するか、新規メモを作成してください</div>

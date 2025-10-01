@@ -1,4 +1,4 @@
-import { Globe, MessageCircle, Users, Settings, Package, Calculator, StickyNote, Bell } from 'lucide-react';
+import { Globe, MessageCircle, Users, Package, Calculator, StickyNote, Bell } from 'lucide-react';
 import { AppMetadata } from '@/store/appStore';
 
 export const systemApps: AppMetadata[] = [
@@ -22,9 +22,9 @@ export const systemApps: AppMetadata[] = [
   },
   {
     id: 'social',
-    name: 'SNS',
+    name: 'Z',
     version: '1.0.0',
-    description: 'ソーシャルメディアプラットフォーム。ユーザーの投稿やプロフィールを確認できます',
+    description: 'ソーシャルメディアプラットフォーム',
     category: 'communication',
     keywords: ['SNS', 'ソーシャル', '投稿', 'プロフィール'],
     author: 'System',
@@ -40,9 +40,9 @@ export const systemApps: AppMetadata[] = [
   },
   {
     id: 'messenger',
-    name: 'メッセージ',
+    name: 'Beacon',
     version: '1.0.0',
-    description: 'リアルタイムメッセージングアプリケーション。チャット機能と自動応答システム',
+    description: 'リアルタイムメッセージングアプリケーション。すべての通信内容がEnd-to-Endで暗号化されるため、非常に高いセキュリティを持つ。',
     category: 'communication',
     keywords: ['チャット', 'メッセージ', 'コミュニケーション'],
     author: 'System',
@@ -102,10 +102,10 @@ export const availableApps: AppMetadata[] = [
     keywords: ['計算', '電卓', '数学'],
     author: 'Third Party',
     icon: Calculator,
-    defaultWidth: 300,
-    defaultHeight: 450,
-    minWidth: 280,
-    minHeight: 380,
+    defaultWidth: 350,
+    defaultHeight: 500,
+    minWidth: 300,
+    minHeight: 450,
     isInstalled: false,
     usageCount: 0
   },
@@ -118,22 +118,6 @@ export const availableApps: AppMetadata[] = [
     keywords: ['メモ', 'ノート', '記録', 'テキスト'],
     author: 'System',
     icon: StickyNote,
-    defaultWidth: 700,
-    defaultHeight: 500,
-    minWidth: 500,
-    minHeight: 400,
-    isInstalled: false,
-    usageCount: 0
-  },
-  {
-    id: 'settings',
-    name: '設定',
-    version: '1.0.0',
-    description: 'システム設定とアプリケーション設定を管理します',
-    category: 'system',
-    keywords: ['設定', 'システム', '管理'],
-    author: 'System',
-    icon: Settings,
     defaultWidth: 700,
     defaultHeight: 500,
     minWidth: 500,

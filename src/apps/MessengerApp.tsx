@@ -32,10 +32,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   } = useSubmissionStore();
 
   const {
-    contacts,
-    contactsLoading,
     selectedContact,
-    setSelectedContact,
     messages,
     messagesLoading,
     isLoadingMore,
@@ -46,7 +43,6 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   } = useMessenger();
 
   const [inputText, setInputText] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [isWaitingForAI, setIsWaitingForAI] = useState(false);
   const [submissionQuestions, setSubmissionQuestions] = useState<SubmissionQuestion[]>([]);
   const chatAreaRef = useRef<HTMLDivElement>(null);
@@ -70,6 +66,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           text: firstQuestion.text,
           time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
           timestamp: questionTimestamp,
+          isSubmissionMessage: true,
         };
         addTemporaryMessage(questionMessage);
       }
@@ -134,6 +131,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
               text: nextQuestion.text,
               time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
               timestamp: questionTimestamp,
+              isSubmissionMessage: true,
             };
             addTemporaryMessage(questionMessage);
           }
@@ -148,6 +146,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
             text: `検証中...`,
             time: validationTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
             timestamp: validationTimestamp,
+            isSubmissionMessage: true,
           };
           addTemporaryMessage(resultMessage);
 
@@ -276,43 +275,40 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   return (
     <BaseApp windowId={windowId} isActive={isActive} statusBar={selectedContact?.name || 'メッセンジャー'}>
-      <div className="flex h-full bg-white">
-        <div className="w-72 border-r flex flex-col">
-          <div className="p-3 border-b">
-            <input type="text" placeholder="検索" className="w-full pl-8 pr-3 py-1.5 border rounded-lg text-sm" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {contactsLoading ? <p className="p-3 text-sm text-gray-500">読み込み中...</p> :
-              contacts.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase())).map(contact => (
-                <div key={contact.id} onClick={() => setSelectedContact(contact)} className={`p-3 cursor-pointer ${selectedContact?.id === contact.id ? 'bg-blue-100' : 'hover:bg-gray-50'}`}>
-                  <h4 className="font-semibold">{contact.name}</h4>
-                </div>
-            ))}
-          </div>
-        </div>
-
+      <div className="flex h-full bg-[#2a2d35]">
         <div className="flex-1 flex flex-col">
-          <div className="p-3 border-b flex items-center justify-between">
-            <h3 className="font-semibold">{selectedContact?.name || '連絡先を選択'}</h3>
+          <div className="p-4 bg-[#2a2d35] flex items-center justify-between shadow-lg">
+            <h3 className="font-medium text-blue-400">{selectedContact?.name || '暗号化通信'}</h3>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={chatAreaRef} onScroll={handleScroll}>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#1c1f26] dark-scrollbar" ref={chatAreaRef} onScroll={handleScroll}>
             {messagesLoading && <p className="text-center text-sm text-gray-500">メッセージを読み込み中...</p>}
             {isLoadingMore && <p className="text-center text-sm text-gray-500">さらに読み込み中...</p>}
             {messages.map(message => (
               <div key={message.id} className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-md p-3 rounded-lg text-sm ${message.sender === 'me' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
+                <div className={`max-w-md px-4 py-2.5 rounded-2xl text-sm ${
+                  message.isSubmissionMessage
+                    ? 'bg-slate-800/90 text-slate-300 shadow-lg border border-slate-600/50 font-mono'
+                    : 'bg-gradient-to-br from-blue-950/80 to-blue-900/60 text-gray-100 shadow-lg shadow-blue-900/20'
+                }`}>
                   <p className="whitespace-pre-wrap">{message.text.replace(/\\n/g, '\n')}</p>
-                  <p className={`text-xs mt-1 text-right ${message.sender === 'me' ? 'text-blue-200' : 'text-gray-500'}`}>{message.time}</p>
+                  <p className={`text-xs mt-1 text-right ${
+                    message.isSubmissionMessage
+                      ? 'text-slate-500 font-mono'
+                      : 'text-blue-300/60'
+                  }`}>{message.time}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="p-4 border-t">
-            <div className="flex items-center space-x-3">
+          <div className="p-4 bg-[#2a2d35] border-t border-blue-900/20">
+            <div className="flex items-end space-x-2">
               <textarea
                 ref={textareaRef}
                 placeholder="メッセージを入力..."
-                className="flex-1 p-3 border rounded-lg resize-none overflow-y-auto"
+                className="flex-1 p-3 rounded-2xl resize-none overflow-y-auto bg-[#353841] text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 value={inputText}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
@@ -320,7 +316,7 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
                 maxLength={500}
                 rows={1}
               />
-              <button onClick={handleSendMessage} disabled={!inputText.trim() || !selectedContact || isWaitingForAI} className="bg-blue-500 text-white p-3 rounded-lg disabled:bg-blue-300">
+              <button onClick={handleSendMessage} disabled={!inputText.trim() || !selectedContact || isWaitingForAI} className="bg-gradient-to-br from-blue-700 to-blue-800 text-white p-3 rounded-full disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg">
                 <Send size={20} />
               </button>
             </div>

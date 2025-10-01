@@ -34,12 +34,11 @@ interface BaseAppProps extends AppProps {
 export const BaseApp: React.FC<BaseAppProps> = ({
   children,
   toolbar,
-  statusBar
   // isActive,     // 将来的な機能拡張のため保持（現在は未使用）
   // windowId      // 将来的な機能拡張のため保持（現在は未使用）
 }) => {
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col">
       {/* ツールバーエリア - 提供された場合のみ表示 */}
       {toolbar && (
         <div className="border-b border-gray-200 bg-gray-50">
@@ -51,13 +50,6 @@ export const BaseApp: React.FC<BaseAppProps> = ({
       <div className="flex-1 overflow-auto">
         {children}
       </div>
-
-      {/* ステータスバーエリア - 提供された場合のみ表示 */}
-      {statusBar && (
-        <div className="border-t border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-600">
-          {statusBar}
-        </div>
-      )}
     </div>
   );
 };

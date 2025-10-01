@@ -47,6 +47,8 @@ export interface UIMessage {
   time: string;
   /** 無限スクロールやソート処理に使うためのDateオブジェクト */
   timestamp: Date;
+  /** 提出モード中のメッセージかどうか */
+  isSubmissionMessage?: boolean;
 }
 
 /**
