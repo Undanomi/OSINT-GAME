@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Send, Inbox, Trash2, Star, Settings, Search, Plus, AlertCircle } from 'lucide-react';
+import { Send, Inbox, Trash2, Star, Settings, Search, Plus, AlertCircle, User } from 'lucide-react';
 import type { EmailData } from '../../../types/email';
 import { getGogglesMailFromCache, hasGogglesMailCache, saveGogglesMailToCache } from '../../../lib/cache/gogglesMailCache';
+import { parseMarkdown } from '../../../lib/markdown';
 
 export const GogglesMailServicePage: React.FC = () => {
   const [selectedEmail, setSelectedEmail] = useState<number | null>(null);
@@ -13,6 +14,8 @@ export const GogglesMailServicePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const scrollPositionRef = React.useRef<number>(0);
+  const mailListRef = React.useRef<HTMLDivElement>(null);
 
   // ローカルストレージからメールデータを取得
   useEffect(() => {
@@ -50,6 +53,13 @@ export const GogglesMailServicePage: React.FC = () => {
       console.error('Failed to update local storage');
     }
   };
+
+  // スクロール位置を復元
+  useEffect(() => {
+    if (currentView === 'inbox' && mailListRef.current && scrollPositionRef.current > 0) {
+      mailListRef.current.scrollTop = scrollPositionRef.current;
+    }
+  }, [currentView]);
 
   // 既読にする
   const markAsRead = (emailId: number) => {
@@ -119,36 +129,47 @@ export const GogglesMailServicePage: React.FC = () => {
     }
   };
 
-  // 時間表示文字列を数値に変換してソート用の値を返す
-  const parseTimeString = (timeStr: string): number => {
-    if (timeStr.includes('分前')) {
-      const minutes = parseInt(timeStr.replace('分前', ''));
-      return minutes;
+  // アバター用のイニシャルと背景色を生成
+  const getAvatarInfo = (name: string) => {
+    const initial = name.charAt(0).toUpperCase();
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
-    if (timeStr.includes('時間前')) {
-      const hours = parseInt(timeStr.replace('時間前', ''));
-      return hours * 60;
+    const colors = [
+      'bg-purple-500',
+      'bg-blue-500',
+      'bg-green-500',
+      'bg-yellow-500',
+      'bg-red-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-teal-500',
+      'bg-orange-500',
+      'bg-cyan-500',
+    ];
+    const colorIndex = Math.abs(hash) % colors.length;
+    return { initial, color: colors[colorIndex] };
+  };
+
+  // タイムスタンプをフォーマットして表示
+  const formatEmailTime = (timestamp: string): string => {
+    const emailDate = new Date(timestamp);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    // メールが現在の年の場合MM月DD日と表示
+    if (emailDate.getFullYear() === currentYear) {
+      const month = emailDate.getMonth() + 1;
+      const day = emailDate.getDate();
+      return `${month}月${day}日`;
     }
-    if (timeStr.includes('昨日')) {
-      return 24 * 60;
-    }
-    if (timeStr.includes('日前')) {
-      const days = parseInt(timeStr.replace('日前', ''));
-      return days * 24 * 60;
-    }
-    if (timeStr.includes('週間前')) {
-      const weeks = parseInt(timeStr.replace('週間前', ''));
-      return weeks * 7 * 24 * 60;
-    }
-    if (timeStr.includes('ヶ月前')) {
-      const months = parseInt(timeStr.replace('ヶ月前', ''));
-      return months * 30 * 24 * 60;
-    }
-    if (timeStr.includes('年前')) {
-      const years = parseInt(timeStr.replace('年前', ''));
-      return years * 365 * 24 * 60;
-    }
-    return 0;
+
+    // メールが過去の年の場合YYYY/MM/DDと表示
+    const year = emailDate.getFullYear();
+    const month = (emailDate.getMonth() + 1).toString().padStart(2, '0');
+    const day = emailDate.getDate().toString().padStart(2, '0');
+    return `${year}/${month}/${day}`;
   };
 
   // メールの検索
@@ -189,9 +210,9 @@ export const GogglesMailServicePage: React.FC = () => {
 
     // 時間順（新しい順）でソート
     return searchedEmails.sort((a, b) => {
-      const timeA = parseTimeString(a.time);
-      const timeB = parseTimeString(b.time);
-      return timeA - timeB;
+      const timeA = new Date(a.time).getTime();
+      const timeB = new Date(b.time).getTime();
+      return timeB - timeA;
     });
   };
 
@@ -257,7 +278,7 @@ export const GogglesMailServicePage: React.FC = () => {
           )}
         </p>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div ref={mailListRef} className="flex-1 overflow-y-auto p-2">
         {filteredEmails.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             {searchQuery ? (
@@ -278,35 +299,64 @@ export const GogglesMailServicePage: React.FC = () => {
             )}
           </div>
         ) : (
-          filteredEmails.map((email) => (
-          <div
-            key={email.id}
-            onClick={() => {
-              setSelectedEmail(email.id);
-              setCurrentView('detail');
-              if (email.unread) {
-                markAsRead(email.id);
-              }
-            }}
-            className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-yellow-100 ${
-              email.unread ? '' : 'bg-gray-50'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className={`text-sm ${email.unread ? 'font-semibold' : ''}`}>
-                {currentFolder === 'sent' ? `宛先: ${email.to}` : `差出人: ${email.from}`}
-              </span>
-              <div className="flex items-center space-x-2">
-                {email.starred && <Star size={16} className="text-yellow-500 fill-current" />}
-                <span className="text-xs text-gray-500">{email.time}</span>
+          filteredEmails.map((email) => {
+            const senderName = currentFolder === 'sent' ? email.to || '' : email.from;
+            const avatarInfo = getAvatarInfo(senderName);
+
+            return (
+              <div
+                key={email.id}
+                onClick={() => {
+                  // スクロール位置を保存
+                  if (mailListRef.current) {
+                    scrollPositionRef.current = mailListRef.current.scrollTop;
+                  }
+                  setSelectedEmail(email.id);
+                  setCurrentView('detail');
+                  if (email.unread) {
+                    markAsRead(email.id);
+                  }
+                }}
+                className={`relative mb-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
+                  email.unread ? 'bg-white shadow-md' : 'bg-gray-50 shadow-sm'
+                }`}
+              >
+                {/* 未読インジケーター */}
+                {email.unread && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-l-lg" />
+                )}
+
+                <div className="p-4 pl-5">
+                  <div className="flex items-start space-x-3">
+                    {/* アバター */}
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full ${avatarInfo.color} flex items-center justify-center text-white font-semibold shadow-sm`}>
+                      {avatarInfo.initial}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-sm truncate ${email.unread ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                          {currentFolder === 'sent' ? `宛先: ${email.to}` : `差出人: ${email.from}`}
+                        </span>
+                        <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
+                          {email.starred && <Star size={16} className="text-yellow-500 fill-current" />}
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            email.unread ? 'bg-blue-100 text-blue-700 font-medium' : 'bg-gray-200 text-gray-600'
+                          }`}>
+                            {formatEmailTime(email.time)}
+                          </span>
+                        </div>
+                      </div>
+                      <h3 className={`text-sm mb-1 truncate ${email.unread ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                        {email.subject}
+                      </h3>
+                      <p className="text-xs text-gray-600 truncate">{email.content}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <h3 className={`text-sm mb-1 ${email.unread ? 'font-semibold' : ''}`}>
-              {email.subject}
-            </h3>
-            <p className="text-xs text-gray-600 truncate">{email.content}</p>
-          </div>
-        ))
+            );
+          })
         )}
       </div>
     </div>
@@ -321,7 +371,10 @@ export const GogglesMailServicePage: React.FC = () => {
         <div className="p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center justify-between mb-4">
             <button
-              onClick={() => {setCurrentView('inbox'); setSelectedEmail(null);}}
+              onClick={() => {
+                setCurrentView('inbox');
+                setSelectedEmail(null);
+              }}
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -361,19 +414,18 @@ export const GogglesMailServicePage: React.FC = () => {
           </div>
           <h1 className="text-xl font-semibold mb-2">{selectedEmailData.subject}</h1>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              {currentFolder === 'sent' ? `宛先: ${selectedEmailData.to}` : `差出人: ${selectedEmailData.from}`}
-            </p>
-            <p className="text-xs text-gray-500">{selectedEmailData.time}</p>
+            <div className="flex items-center space-x-2">
+              <User size={16} className="text-gray-400 flex-shrink-0" />
+              <p className="text-sm text-gray-600">
+                {currentFolder === 'sent' ? `宛先: ${selectedEmailData.to}` : `差出人: ${selectedEmailData.from}`}
+              </p>
+            </div>
+            <p className="text-xs text-gray-500">{formatEmailTime(selectedEmailData.time)}</p>
           </div>
         </div>
         <div className="flex-1 p-6 bg-white overflow-y-auto">
           <div className="prose max-w-none">
-            <p>こちらは {selectedEmailData.subject} の内容です。</p>
-            <p>{selectedEmailData.content}</p>
-            <p>詳細な内容がここに表示されます。このメールはデモ用のサンプルメールです。</p>
-            <br />
-            <p>実際のメールアプリケーションでは、ここにHTMLメールの内容やテキストメールの内容が表示されます。</p>
+            {parseMarkdown(selectedEmailData.content)}
           </div>
         </div>
       </div>

@@ -7,8 +7,8 @@
     "template": "FacelookProfilePage",
     "content": {
       "name": "テスト 太郎",
-      "profileImage": "https://picsum.photos/200/200?random=101",
-      "coverImage": "https://picsum.photos/1200/400?random=102",
+      "profileImage": "gs://your-project.firebasestorage.app/path/to/image",
+      "coverImage": "gs://your-project.firebasestorage.app/path/to/image",
       "job": "テストエンジニア",
       "company": "テスト株式会社",
       "location": "テスト市テスト区",
@@ -29,7 +29,7 @@
         },
         {
           "content": "テスト投稿その2：サンプルテキストです。テスト用のダミーデータです。",
-          "image": "https://picsum.photos/600/400?random=3",
+          "image": "gs://your-project.firebasestorage.app/path/to/image",
           "timestamp": "昨日 18:30",
           "likes": 128,
           "comments": 23,
@@ -46,25 +46,17 @@
       "friends": [
         {
           "name": "サンプル 花子",
-          "profileImage": "https://picsum.photos/40/40?random=110",
+          "profileImage": "gs://your-project.firebasestorage.app/path/to/image",
           "mutualFriends": 12
         },
         {
           "name": "ダミー 次郎",
-          "profileImage": "https://picsum.photos/40/40?random=111",
+          "profileImage": "gs://your-project.firebasestorage.app/path/to/image",
           "mutualFriends": 8
         }
       ],
       "photos": [
-        "https://picsum.photos/200/200?random=200",
-        "https://picsum.photos/200/200?random=200",
-        "https://picsum.photos/200/200?random=200",
-        "https://picsum.photos/200/200?random=200",
-        "https://picsum.photos/200/200?random=200",
-        "https://picsum.photos/200/200?random=200",
-        "https://picsum.photos/200/200?random=200",
-        "https://picsum.photos/200/200?random=200",
-        "https://picsum.photos/200/200?random=200"
+        "gs://your-project.firebasestorage.app/path/to/image"
       ]
     },
     "keywords": ["テスト太郎", "facelook", "テスト株式会社", "テストエンジニア", "テスト大学"],
@@ -79,8 +71,8 @@
     "template": "FacelookProfilePage",
     "content": {
       "name": "テスト 花子",
-      "profileImage": "https://picsum.photos/200/200?random=201",
-      "coverImage": "https://picsum.photos/1200/400?random=202",
+      "profileImage": "gs://your-project.firebasestorage.app/path/to/image",
+      "coverImage": "gs://your-project.firebasestorage.app/path/to/image",
       "job": "テストデザイナー",
       "company": "サンプルスタジオ",
       "location": "ダミー市ダミー区",
@@ -94,7 +86,7 @@
       "posts": [
         {
           "content": "テストプロジェクトのサンプルデザインが完成！これはダミーデータです。",
-          "image": "https://picsum.photos/600/400?random=3",
+          "image": "gs://your-project.firebasestorage.app/path/to/image",
           "timestamp": "5時間前",
           "likes": 234,
           "comments": 45,
@@ -111,19 +103,17 @@
       "friends": [
         {
           "name": "テスト 太郎",
-          "profileImage": "https://picsum.photos/40/40?random=210",
+          "profileImage": "gs://your-project.firebasestorage.app/path/to/image",
           "mutualFriends": 15
         },
         {
           "name": "サンプル 三郎",
-          "profileImage": "https://picsum.photos/40/40?random=211",
+          "profileImage": "gs://your-project.firebasestorage.app/path/to/image",
           "mutualFriends": 7
         }
       ],
       "photos": [
-        "https://picsum.photos/200/200?random=200",
-        "https://picsum.photos/200/200?random=200",
-        "https://picsum.photos/200/200?random=200"
+        "gs://your-project.firebasestorage.app/path/to/image"
       ]
     },
     "keywords": ["テスト花子", "facelook", "サンプルスタジオ", "テストデザイナー", "ダミー美術大学"],

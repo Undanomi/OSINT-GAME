@@ -2,7 +2,7 @@
   {
     "id": "chiita_article_1",
     "title": "React Hooksを使った状態管理のベストプラクティス - Chiita",
-    "url": "https://chiita.com/items/react-hooks-state-management",
+    "url": "https://test-chiita.com/items/react-hooks-state-management",
     "description": "React Hooksを活用した効率的な状態管理の方法について、実例とともに詳しく解説します。",
     "template": "ChiitaPage",
     "domainStatus": "active",
@@ -21,7 +21,7 @@
           {
             "title": "useStateの基本的な使い方",
             "content": "useStateはもっとも基本的で重要なHookです。このHookを使用することで、関数コンポーネント内で状態を保持し、更新することができます。従来のクラスコンポーネントにおけるthis.stateとthis.setStateの役割を果たします。\n\n基本的な使用方法は以下の通りです：\n\n```javascript\nimport React, { useState } from 'react';\n\nfunction Counter() {\n  const [count, setCount] = useState(0);\n\n  return (\n    <div>\n      <p>現在のカウント: {count}</p>\n      <button onClick={() => setCount(count + 1)}>\n        +1\n      </button>\n      <button onClick={() => setCount(count - 1)}>\n        -1\n      </button>\n      <button onClick={() => setCount(0)}>\n        リセット\n      </button>\n    </div>\n  );\n}\n```\n\nuseStateは配列を返し、最初の要素が現在の状態値、2番目の要素が状態を更新するための関数です。状態更新関数を呼び出すと、コンポーネントが再レンダリングされ、新しい状態値が反映されます。",
-            "image": "https://picsum.photos/600/300?random=401"
+            "image": "gs://your-project.firebasestorage.app/path/to/image"
           },
           {
             "title": "useEffectでの副作用処理",
@@ -29,8 +29,7 @@
           },
           {
             "title": "カスタムHooksの活用",
-            "content": "カスタムHooksは、状態管理ロジックを再利用可能な形で抽出するための強力な仕組みです。複数のコンポーネントで共通して使用されるロジックを、カスタムHookとして切り出すことで、コードの重複を減らし、保守性を向上させることができます。\n\n以下はAPIからデータを取得するカスタムHookの実装例です：\n\n```javascript\nimport { useState, useEffect, useCallback } from 'react';\n\nfunction useApi(url) {\n  const [data, setData] = useState(null);\n  const [loading, setLoading] = useState(false);\n  const [error, setError] = useState(null);\n\n  const fetchData = useCallback(async () => {\n    try {\n      setLoading(true);\n      setError(null);\n      const response = await fetch(url);\n      const result = await response.json();\n      setData(result);\n    } catch (err) {\n      setError(err.message);\n    } finally {\n      setLoading(false);\n    }\n  }, [url]);\n\n  useEffect(() => {\n    fetchData();\n  }, [fetchData]);\n\n  return { data, loading, error, refetch: fetchData };\n}\n```",
-            "image": "https://picsum.photos/600/300?random=402"
+            "content": "カスタムHooksは、状態管理ロジックを再利用可能な形で抽出するための強力な仕組みです。複数のコンポーネントで共通して使用されるロジックを、カスタムHookとして切り出すことで、コードの重複を減らし、保守性を向上させることができます。\n\n以下はAPIからデータを取得するカスタムHookの実装例です：\n\n```javascript\nimport { useState, useEffect, useCallback } from 'react';\n\nfunction useApi(url) {\n  const [data, setData] = useState(null);\n  const [loading, setLoading] = useState(false);\n  const [error, setError] = useState(null);\n\n  const fetchData = useCallback(async () => {\n    try {\n      setLoading(true);\n      setError(null);\n      const response = await fetch(url);\n      const result = await response.json();\n      setData(result);\n    } catch (err) {\n      setError(err.message);\n    } finally {\n      setLoading(false);\n    }\n  }, [url]);\n\n  useEffect(() => {\n    fetchData();\n  }, [fetchData]);\n\n  return { data, loading, error, refetch: fetchData };\n}\n```"
           },
           {
             "title": "まとめ",
@@ -59,127 +58,5 @@
       ]
     },
     "keywords": ["Chiita", "React", "Hooks", "JavaScript", "フロントエンド", "状態管理", "usestate", "useEffect"]
-  },
-  {
-    "id": "chiita_article_2",
-    "title": "Next.js 14の新機能とApp Routerの活用方法 - Chiita",
-    "url": "https://chiita.com/items/nextjs-14-app-router",
-    "description": "Next.js 14で導入されたApp Routerの新機能と、実際のプロジェクトでの活用方法について詳しく解説します。",
-    "template": "ChiitaPage",
-    "domainStatus": "active",
-    "archivedDate": "2025-09-12",
-    "content": {
-      "title": "Next.js 14の新機能とApp Routerの活用方法",
-      "publicDate": "2025年9月12日",
-      "updateDate": "2025年9月12日",
-      "author": "nextjs_master",
-      "content": {
-        "chapters": [
-          {
-            "title": "Next.js 14の概要",
-            "content": "Next.js 14では、App Routerが安定版となり、多くの新機能が追加されました。Server ComponentsやStreaming、新しいファイルベースルーティングなど、パフォーマンスと開発体験の向上に焦点が当てられています。\n\nApp Routerは従来のPages Routerと比べて、以下のような利点があります：\n\n- **Server Components**: サーバーサイドでのコンポーネントレンダリング\n- **ネストされたレイアウト**: より柔軟なレイアウト設計\n- **ストリーミング**: 段階的なページ読み込み\n- **改善されたSEO**: メタデータAPIによる最適化\n\nこれらの機能により、より高速で保守性の高いWebアプリケーションの開発が可能になりました。"
-          },
-          {
-            "title": "App Routerの基本構造",
-            "content": "App Routerでは、appディレクトリ内にファイルを配置することでルーティングを設定します。従来のPages Routerとは大きく異なる構造を持っています。\n\n```\napp/\n├── layout.tsx          # ルートレイアウト\n├── page.tsx           # ホームページ\n├── loading.tsx        # ローディングUI\n├── error.tsx          # エラーUI\n├── not-found.tsx      # 404ページ\n└── dashboard/\n    ├── layout.tsx     # ダッシュボードレイアウト\n    ├── page.tsx       # ダッシュボードページ\n    └── settings/\n        └── page.tsx   # 設定ページ\n```\n\nこの構造により、ネストされたレイアウトやローディング状態の管理が簡単になります。各ディレクトリには特別な役割を持つファイルを配置でき、それらが自動的に適切なタイミングで表示されます。\n\n```typescript\n// app/layout.tsx\nexport default function RootLayout({\n  children,\n}: {\n  children: React.ReactNode\n}) {\n  return (\n    <html lang=\"ja\">\n      <body>\n        <header>共通ヘッダー</header>\n        {children}\n        <footer>共通フッター</footer>\n      </body>\n    </html>\n  )\n}\n```",
-            "image": "https://picsum.photos/600/300?random=411"
-          },
-          {
-            "title": "Server Componentsの活用",
-            "content": "Server Componentsは、サーバー側でレンダリングされるコンポーネントです。これにより、クライアントに送信するJavaScriptのサイズを削減し、初期ページ読み込み速度を向上させることができます。\n\n```typescript\n// app/posts/page.tsx (Server Component)\nimport { prisma } from '@/lib/prisma';\n\nexport default async function PostsPage() {\n  // サーバー側でデータベースにアクセス\n  const posts = await prisma.post.findMany({\n    orderBy: { createdAt: 'desc' },\n    take: 10,\n  });\n  \n  return (\n    <div>\n      <h1>最新の投稿</h1>\n      {posts.map(post => (\n        <article key={post.id}>\n          <h2>{post.title}</h2>\n          <p>{post.excerpt}</p>\n          <time>{new Date(post.createdAt).toLocaleDateString()}</time>\n        </article>\n      ))}\n    </div>\n  );\n}\n```\n\nServer Componentsの利点：\n\n- **バンドルサイズの削減**: クライアントに送信するJSが少なくなる\n- **直接的なデータアクセス**: データベースやAPIへの直接アクセス\n- **SEOの向上**: サーバー側でHTMLが生成される\n- **セキュリティ**: 機密情報をクライアントに送信しない"
-          },
-          {
-            "title": "ストリーミングとSuspense",
-            "content": "React SuspenseとStreamingを組み合わせることで、ページの一部が読み込み完了次第、段階的にコンテンツを表示できます。これにより、ユーザーはページ全体の読み込みを待つ必要がなくなります。\n\n```typescript\n// app/dashboard/page.tsx\nimport { Suspense } from 'react';\nimport { PostsList } from './posts-list';\nimport { UserStats } from './user-stats';\nimport { LoadingSkeleton } from './loading-skeleton';\n\nexport default function Dashboard() {\n  return (\n    <div className=\"dashboard\">\n      <h1>ダッシュボード</h1>\n      \n      {/* 即座に表示される部分 */}\n      <div className=\"quick-actions\">\n        <button>新規投稿</button>\n        <button>設定</button>\n      </div>\n      \n      {/* 非同期で読み込まれる部分 */}\n      <div className=\"dashboard-content\">\n        <Suspense fallback={<LoadingSkeleton />}>\n          <UserStats />\n        </Suspense>\n        \n        <Suspense fallback={<div>投稿を読み込み中...</div>}>\n          <PostsList />\n        </Suspense>\n      </div>\n    </div>\n  );\n}\n\n// posts-list.tsx (Server Component)\nasync function PostsList() {\n  // 重い処理をシミュレート\n  await new Promise(resolve => setTimeout(resolve, 2000));\n  \n  const posts = await fetchPosts();\n  \n  return (\n    <section>\n      <h2>最近の投稿</h2>\n      {posts.map(post => (\n        <div key={post.id}>{post.title}</div>\n      ))}\n    </section>\n  );\n}\n```\n\nこの手法により、ユーザー体験が大幅に向上し、感覚的な読み込み速度が改善されます。",
-            "image": "https://picsum.photos/600/300?random=412"
-          },
-          {
-            "title": "まとめ",
-            "content": "Next.js 14のApp Routerは、現代のWeb開発における多くの課題を解決する画期的な機能です。Server ComponentsとStreamingを組み合わせることで、高速で動的なWebアプリケーションを構築できます。\n\n**移行時のポイント：**\n\n1. **段階的な移行**: Pages RouterからApp Routerへの移行は段階的に行う\n2. **Server/Client Componentsの理解**: どちらを使うべきかを適切に判断\n3. **データフェッチング戦略**: 新しいパターンに慣れる\n4. **キャッシュ戦略**: Next.js 14の強力なキャッシング機能を活用\n\nApp Routerをマスターすることで、より効率的で高性能なNext.jsアプリケーションの開発が可能になります。"
-          }
-        ]
-      },
-      "tags": ["Next.js", "React", "App Router", "Server Components", "フロントエンド"],
-      "readTime": 10,
-      "comments": [
-        {
-          "user": "webdev_enthusiast",
-          "date": "2025年9月12日 09:15",
-          "content": "App Routerの解説が非常に分かりやすかったです。実際のプロジェクトで試してみます！"
-        },
-        {
-          "user": "performance_geek",
-          "date": "2025年9月12日 11:30",
-          "content": "Streamingの部分が特に興味深かったです。ユーザー体験の向上に役立ちそうですね。"
-        },
-        {
-          "user": "react_developer",
-          "date": "2025年9月12日 15:45",
-          "content": "Server Componentsの使い分けについてもう少し詳しく知りたいです。続編お待ちしています！"
-        }
-      ]
-    },
-    "keywords": ["Chiita", "Next.js", "React", "App Router", "Server Components", "フロントエンド", "パフォーマンス"]
-  },
-  {
-    "id": "chiita_article_3",
-    "title": "TypeScriptでの型安全なAPI設計パターン - Chiita",
-    "url": "https://chiita.com/items/typescript-api-design-patterns",
-    "description": "TypeScriptを活用した型安全なAPI設計のベストプラクティスとデザインパターンについて詳しく解説します。",
-    "template": "ChiitaPage",
-    "domainStatus": "active",
-    "archivedDate": "2025-09-10",
-    "content": {
-      "title": "TypeScriptでの型安全なAPI設計パターン",
-      "publicDate": "2025年9月10日",
-      "updateDate": "2025年9月10日",
-      "author": "typescript_expert",
-      "content": {
-        "chapters": [
-          {
-            "title": "型安全なAPIの重要性",
-            "content": "TypeScriptを使用したAPI設計では、コンパイル時に型エラーを検出できるため、ランタイムエラーを大幅に減らすことができます。適切な型定義により、開発者の生産性向上とコードの保守性向上を実現できます。\n\n型安全なAPIを設計することで得られるメリット：\n\n- **コンパイル時エラー検出**: 実行前に多くのバグを発見\n- **IDEサポート**: 自動補完やリファクタリング支援\n- **ドキュメント効果**: 型定義自体がドキュメントの役割\n- **リファクタリング安全性**: 型システムが変更の影響範囲を明確化\n- **チーム開発効率**: APIの仕様が型で明確に定義される\n\n特に大規模なプロジェクトでは、これらの利点が開発速度と品質に大きく影響します。"
-          },
-          {
-            "title": "基本的な型定義パターン",
-            "content": "APIのレスポンス型を定義する際の基本パターンを見ていきましょう。適切な型定義により、APIの使用方法が明確になり、エラーを未然に防ぐことができます。\n\n```typescript\n// 基本的なエンティティ型\ninterface User {\n  id: number;\n  name: string;\n  email: string;\n  createdAt: Date;\n  updatedAt: Date;\n  isActive: boolean;\n}\n\n// APIレスポンスの基本形\ninterface ApiResponse<T> {\n  success: boolean;\n  data?: T;\n  error?: {\n    code: string;\n    message: string;\n    details?: Record<string, any>;\n  };\n  meta?: {\n    total?: number;\n    page?: number;\n    limit?: number;\n  };\n}\n\n// 具体的な使用例\ntype UserResponse = ApiResponse<User>;\ntype UsersListResponse = ApiResponse<User[]>;\ntype CreateUserResponse = ApiResponse<Pick<User, 'id' | 'name' | 'email'>>;\n\n// リクエスト型の定義\ninterface CreateUserRequest {\n  name: string;\n  email: string;\n  password: string;\n}\n\ninterface UpdateUserRequest {\n  name?: string;\n  email?: string;\n  isActive?: boolean;\n}\n```\n\nこのパターンにより、API全体で一貫したレスポンス形式を保ちながら、各エンドポイントに特化した型安全性を提供できます。",
-            "image": "https://picsum.photos/600/300?random=421"
-          },
-          {
-            "title": "ジェネリクスを活用したリポジトリパターン",
-            "content": "ジェネリクスを使用することで、再利用可能で型安全なリポジトリパターンを実装できます。このパターンにより、CRUD操作を一貫した方法で実装できます。\n\n```typescript\n// 基本的なエンティティインターフェース\ninterface Entity {\n  id: number | string;\n  createdAt: Date;\n  updatedAt: Date;\n}\n\n// ジェネリックリポジトリインターフェース\ninterface Repository<T extends Entity, K = T['id']> {\n  findById(id: K): Promise<T | null>;\n  findAll(params?: ListParams): Promise<ListResult<T>>;\n  create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T>;\n  update(id: K, entity: Partial<Omit<T, 'id' | 'createdAt' | 'updatedAt'>>): Promise<T>;\n  delete(id: K): Promise<void>;\n}\n\n// 検索・一覧取得用の型\ninterface ListParams {\n  page?: number;\n  limit?: number;\n  sortBy?: string;\n  sortOrder?: 'asc' | 'desc';\n  filters?: Record<string, any>;\n}\n\ninterface ListResult<T> {\n  data: T[];\n  total: number;\n  page: number;\n  limit: number;\n}\n\n// ユーザーリポジトリの実装\nclass UserRepository implements Repository<User> {\n  async findById(id: number): Promise<User | null> {\n    const response = await fetch(`/api/users/${id}`);\n    if (!response.ok) {\n      if (response.status === 404) return null;\n      throw new Error('Failed to fetch user');\n    }\n    const data: UserResponse = await response.json();\n    return data.success ? data.data || null : null;\n  }\n  \n  async findAll(params?: ListParams): Promise<ListResult<User>> {\n    const query = new URLSearchParams();\n    if (params?.page) query.set('page', params.page.toString());\n    if (params?.limit) query.set('limit', params.limit.toString());\n    \n    const response = await fetch(`/api/users?${query}`);\n    const data: UsersListResponse = await response.json();\n    \n    if (!data.success) {\n      throw new Error(data.error?.message || 'Failed to fetch users');\n    }\n    \n    return {\n      data: data.data || [],\n      total: data.meta?.total || 0,\n      page: data.meta?.page || 1,\n      limit: data.meta?.limit || 10,\n    };\n  }\n  \n  async create(userData: CreateUserRequest): Promise<User> {\n    const response = await fetch('/api/users', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify(userData),\n    });\n    \n    const data: CreateUserResponse = await response.json();\n    if (!data.success) {\n      throw new Error(data.error?.message || 'Failed to create user');\n    }\n    \n    return data.data!;\n  }\n  \n  // update, deleteメソッドも同様に実装...\n}\n```\n\nこのパターンにより、型安全性を保ちながら一貫したAPI操作を実現できます。"
-          },
-          {
-            "title": "ユニオン型を使った状態管理",
-            "content": "ユニオン型を活用することで、APIの各状態を型安全に管理できます。これにより、状態の取り扱いミスを防ぎ、より堅牢なアプリケーションを構築できます。\n\n```typescript\n// 非同期状態を表現するユニオン型\ntype AsyncState<T> = \n  | { status: 'idle' }\n  | { status: 'loading' }\n  | { status: 'success'; data: T }\n  | { status: 'error'; error: string };\n\n// カスタムフックでの活用例\nfunction useApi<T>(url: string | null): AsyncState<T> & {\n  refetch: () => void;\n} {\n  const [state, setState] = useState<AsyncState<T>>({ status: 'idle' });\n  \n  const fetchData = useCallback(async () => {\n    if (!url) return;\n    \n    setState({ status: 'loading' });\n    \n    try {\n      const response = await fetch(url);\n      if (!response.ok) {\n        throw new Error(`HTTP ${response.status}: ${response.statusText}`);\n      }\n      \n      const data = await response.json();\n      setState({ status: 'success', data });\n    } catch (error) {\n      setState({ \n        status: 'error', \n        error: error instanceof Error ? error.message : 'Unknown error'\n      });\n    }\n  }, [url]);\n  \n  useEffect(() => {\n    fetchData();\n  }, [fetchData]);\n  \n  return {\n    ...state,\n    refetch: fetchData,\n  };\n}\n\n// 使用例でのパターンマッチング\nfunction UserProfile({ userId }: { userId: number }) {\n  const apiState = useApi<User>(`/api/users/${userId}`);\n  \n  // 型安全なパターンマッチング\n  switch (apiState.status) {\n    case 'idle':\n      return <div>待機中...</div>;\n    \n    case 'loading':\n      return <div>読み込み中...</div>;\n    \n    case 'success':\n      // apiState.dataがT型であることが保証される\n      return (\n        <div>\n          <h1>{apiState.data.name}</h1>\n          <p>{apiState.data.email}</p>\n          <button onClick={apiState.refetch}>更新</button>\n        </div>\n      );\n    \n    case 'error':\n      // apiState.errorがstring型であることが保証される\n      return (\n        <div>\n          <p>エラー: {apiState.error}</p>\n          <button onClick={apiState.refetch}>再試行</button>\n        </div>\n      );\n  }\n}\n```\n\nこのパターンにより、全ての状態が適切に処理されることをTypeScriptが保証してくれます。",
-            "image": "https://picsum.photos/600/300?random=422"
-          },
-          {
-            "title": "まとめ",
-            "content": "TypeScriptの型システムを活用することで、APIの設計から実装、テストまで一貫して型安全なコードを書くことができます。この記事で紹介したパターンを組み合わせることで、保守性が高く、バグの少ないAPIを構築できます。\n\n**重要なベストプラクティス：**\n\n1. **一貫した型定義**: プロジェクト全体で統一されたパターンを使用\n2. **ジェネリクスの活用**: 再利用可能な型安全なコンポーネントを作成\n3. **ユニオン型**: 状態や条件分岐を型安全に表現\n4. **適切な抽象化**: 過度に複雑にせず、実用的なレベルで抽象化\n\n**次のステップ：**\n\n- Zodなどのランタイム型検証ライブラリの活用\n- GraphQLやtRPCを使ったエンドツーエンド型安全性\n- 自動テスト生成や型からのドキュメント生成\n\n型安全なAPI設計は初期の学習コストはありますが、長期的には開発効率と品質の大幅な向上をもたらします。"
-          }
-        ]
-      },
-      "tags": ["TypeScript", "API設計", "型安全", "ジェネリクス", "パターン"],
-      "readTime": 14,
-      "comments": [
-        {
-          "user": "type_safety_advocate",
-          "date": "2025年9月10日 10:20",
-          "content": "ジェネリクスを使ったリポジトリパターンが非常に参考になりました！実際のプロジェクトで活用してみます。"
-        },
-        {
-          "user": "api_designer",
-          "date": "2025年9月10日 13:45",
-          "content": "ユニオン型を使った状態管理パターンが素晴らしいですね。型安全性の重要性を改めて感じました。"
-        },
-        {
-          "user": "backend_engineer",
-          "date": "2025年9月10日 16:30",
-          "content": "リポジトリパターンの実装例が勉強になりました。フロントエンドでも応用できそうです。"
-        }
-      ]
-    },
-    "keywords": ["Chiita", "TypeScript", "API設計", "型安全", "ジェネリクス", "パターン", "設計"]
   }
 ]

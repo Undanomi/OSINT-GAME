@@ -7,8 +7,8 @@
     "template": "RankedOnProfilePage",
     "content": {
       "name": "テスト 太郎",
-      "profileImage": "https://picsum.photos/200/200?random=301",
-      "backgroundImage": "https://picsum.photos/800/200?random=302",
+      "profileImage": "gs://your-project.firebasestorage.app/path/to/image",
+      "backgroundImage": "gs://your-project.firebasestorage.app/path/to/image",
       "headline": "[テストデータ] テストエンジニア | サンプル開発者 | ダミープロフィール",
       "currentPosition": "テストシニアエンジニア",
       "currentCompany": "テスト株式会社（架空）",
@@ -22,7 +22,7 @@
         {
           "title": "テストシニアエンジニア",
           "company": "テスト株式会社（架空）",
-          "companyLogo": "https://picsum.photos/48/48?random=303",
+          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テストフルタイム",
           "location": "テスト県",
           "startDate": "2020年4月",
@@ -33,7 +33,7 @@
         {
           "title": "テストエンジニア",
           "company": "サンプルテック（架空）",
-          "companyLogo": "https://picsum.photos/48/48?random=304",
+          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テストフルタイム",
           "location": "サンプル県",
           "startDate": "2017年4月",
@@ -44,7 +44,7 @@
         {
           "title": "テストジュニアエンジニア",
           "company": "ダミーソフト（架空）",
-          "companyLogo": "https://picsum.photos/48/48?random=305",
+          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テスト契約",
           "location": "ダミー県",
           "startDate": "2015年4月",
@@ -56,7 +56,7 @@
       "education": [
         {
           "school": "テスト大学（架空）",
-          "schoolLogo": "https://picsum.photos/48/48?random=306",
+          "schoolLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "degree": "テスト修士",
           "fieldOfStudy": "テストコンピュータサイエンス",
           "startYear": "2013",
@@ -67,7 +67,7 @@
         },
         {
           "school": "サンプル工科大学（架空）",
-          "schoolLogo": "https://picsum.photos/48/48?random=307",
+          "schoolLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "degree": "テスト学士",
           "fieldOfStudy": "ダミー情報工学",
           "startYear": "2009",
@@ -114,7 +114,7 @@
         },
         {
           "content": "[テスト投稿] テストカンファレンス2024（架空）に参加しました！サンプルAIサービスの発表が印象的でした。これはOSINTゲーム用のダミーデータです。",
-          "image": "https://picsum.photos/600/400?random=308",
+          "image": "gs://your-project.firebasestorage.app/path/to/image",
           "timestamp": "2日前",
           "likes": 456,
           "comments": 78,
@@ -134,7 +134,7 @@
         {
           "recommenderName": "テスト 花子",
           "recommenderTitle": "テストプロダクトマネージャー",
-          "recommenderImage": "https://picsum.photos/40/40?random=309",
+          "recommenderImage": "gs://your-project.firebasestorage.app/path/to/image",
           "relationship": "テスト同僚（架空）として一緒に働いていました",
           "text": "[テスト推薦文] テスト太郎さんは架空の優れた技術力を持つダミーエンジニアです。これはOSINTゲーム用のサンプル推薦文であり、実在の人物による推薦ではありません。",
           "date": "2023年8月"
@@ -142,7 +142,7 @@
         {
           "recommenderName": "サンプル 次郎",
           "recommenderTitle": "ダミーテックリード",
-          "recommenderImage": "https://picsum.photos/40/40?random=310",
+          "recommenderImage": "gs://your-project.firebasestorage.app/path/to/image",
           "relationship": "テスト上司（架空）として指導しました",
           "text": "[テスト推薦文] 架空のプロジェクトで素晴らしいパフォーマンスを発揮しました。これはテストデータです。",
           "date": "2022年12月"
@@ -170,8 +170,8 @@
     "template": "RankedOnProfilePage",
     "content": {
       "name": "テスト 花子",
-      "profileImage": "https://picsum.photos/200/200?random=401",
-      "backgroundImage": "https://picsum.photos/800/200?random=402",
+      "profileImage": "gs://your-project.firebasestorage.app/path/to/image",
+      "backgroundImage": "gs://your-project.firebasestorage.app/path/to/image",
       "headline": "[テストデータ] テストプロダクトマネージャー | サンプルストラテジスト | ダミーリーダー",
       "currentPosition": "テストシニアプロダクトマネージャー",
       "currentCompany": "サンプルイノベーション（架空）",
@@ -185,7 +185,7 @@
         {
           "title": "テストシニアプロダクトマネージャー",
           "company": "サンプルイノベーション（架空）",
-          "companyLogo": "https://picsum.photos/48/48?random=403",
+          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テストフルタイム",
           "location": "ダミー都",
           "startDate": "2019年1月",
@@ -196,7 +196,7 @@
         {
           "title": "テストプロダクトマネージャー",
           "company": "ダミーテクノロジー（架空）",
-          "companyLogo": "https://picsum.photos/48/48?random=404",
+          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テストフルタイム",
           "location": "サンプル市",
           "startDate": "2016年4月",
@@ -208,7 +208,7 @@
       "education": [
         {
           "school": "ダミービジネススクール（架空）",
-          "schoolLogo": "https://picsum.photos/48/48?random=405",
+          "schoolLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "degree": "テストMBA",
           "fieldOfStudy": "サンプル経営管理",
           "startYear": "2014",
@@ -218,7 +218,7 @@
         },
         {
           "school": "テスト経済大学（架空）",
-          "schoolLogo": "https://picsum.photos/48/48?random=406",
+          "schoolLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "degree": "テスト学士",
           "fieldOfStudy": "ダミー経済学",
           "startYear": "2008",
@@ -252,7 +252,7 @@
         },
         {
           "content": "[テスト投稿] サンプルユーザーインタビューから得た架空のインサイト。ダミーペルソナの重要性について。OSINTゲーム用のテストデータです。",
-          "image": "https://picsum.photos/600/400?random=407",
+          "image": "gs://your-project.firebasestorage.app/path/to/image",
           "timestamp": "3日前",
           "likes": 234,
           "comments": 45,
@@ -264,7 +264,7 @@
         {
           "recommenderName": "ダミー 太郎",
           "recommenderTitle": "テストCEO",
-          "recommenderImage": "https://picsum.photos/40/40?random=408",
+          "recommenderImage": "gs://your-project.firebasestorage.app/path/to/image",
           "relationship": "架空の上司として",
           "text": "[テスト推薦文] テスト花子さんは架空の素晴らしいプロダクトマネージャーです。これはサンプル推薦文です。",
           "date": "2023年3月"
@@ -290,8 +290,8 @@
     "template": "RankedOnProfilePage",
     "content": {
       "name": "ダミー 次郎",
-      "profileImage": "https://picsum.photos/200/200?random=501",
-      "backgroundImage": "https://picsum.photos/800/200?random=502",
+      "profileImage": "gs://your-project.firebasestorage.app/path/to/image",
+      "backgroundImage": "gs://your-project.firebasestorage.app/path/to/image",
       "headline": "[テストデータ] テストデータサイエンティスト | サンプルAI研究者 | ダミー機械学習エキスパート",
       "currentPosition": "テストリードデータサイエンティスト",
       "currentCompany": "ダミーアナリティクス（架空）",
@@ -305,7 +305,7 @@
         {
           "title": "テストリードデータサイエンティスト",
           "company": "ダミーアナリティクス（架空）",
-          "companyLogo": "https://picsum.photos/48/48?random=503",
+          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テストフルタイム",
           "location": "サンプル県",
           "startDate": "2018年7月",
@@ -317,7 +317,7 @@
       "education": [
         {
           "school": "サンプル統計大学（架空）",
-          "schoolLogo": "https://picsum.photos/48/48?random=504",
+          "schoolLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "degree": "テスト博士",
           "fieldOfStudy": "ダミー統計学・機械学習",
           "startYear": "2015",

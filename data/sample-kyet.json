@@ -2,7 +2,7 @@
   {
     "id": "kyet_homepage",
     "title": "KYET - アウトドアツアー&イベント企画",
-    "url": "https://kyet.adventure",
+    "url": "https://test-kyet.adventure",
     "description": "自然と共に生きる喜びを発見。KYETは関西を中心に、アウトドアツアーとイベント企画を手がける専門企業です。",
     "template": "KyetPage",
     "content": {
@@ -28,7 +28,7 @@
           "price": 45000,
           "location": "和歌山県XX市",
           "images": [
-            "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_3.jpeg"
+            "gs://your-project.firebasestorage.app/path/to/image"
           ],
           "startDate": "2024-04-15",
           "endDate": "2024-04-17",
@@ -44,7 +44,7 @@
           "price": 12000,
           "location": "奈良県YY町",
           "images": [
-            "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_4.jpeg"
+            "gs://your-project.firebasestorage.app/path/to/image"
           ],
           "startDate": "2024-04-05",
           "endDate": "2024-04-05",
@@ -60,7 +60,7 @@
           "price": 38000,
           "location": "兵庫県II市",
           "images": [
-            "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_2.jpeg"
+            "gs://your-project.firebasestorage.app/path/to/image"
           ],
           "maxParticipants": 15,
           "currentParticipants": 4
@@ -77,7 +77,7 @@
           "location": "滋賀県高島市 琵琶湖",
           "price": 15000,
           "images": [
-            "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_7.jpeg"
+            "gs://your-project.firebasestorage.app/path/to/image"
           ],
           "maxParticipants": 16,
           "currentParticipants": 12
@@ -92,7 +92,7 @@
           "location": "京都府亀岡市 保津川",
           "price": 25000,
           "images": [
-            "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_5.jpeg"
+            "gs://your-project.firebasestorage.app/path/to/image"
           ],
           "maxParticipants": 24,
           "currentParticipants": 18
@@ -103,21 +103,21 @@
           "name": "橋本 薫",
           "role": "代表取締役・広報部長",
           "bio": "元THE SOUTH FAKE社員から独立。アウトドア業界で大きな野望を持ち、KYETのビジョンとミッションを牽引しています。",
-          "image": "https://picsum.photos/300/300?random=501",
+          "image": "gs://your-project.firebasestorage.app/path/to/image",
           "specialties": []
         },
         {
           "name": "佐藤 美咲",
           "role": "ツアープランナー・ガイド",
           "bio": "アウトドアスポーツインストラクター資格保有。特に女性向けのアウトドア体験プログラムの企画が得意です。",
-          "image": "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/sato.jpeg",
+          "image": "gs://your-project.firebasestorage.app/path/to/image",
           "specialties": []
         },
         {
           "name": "山田 隆志",
           "role": "イベント企画・安全管理",
           "bio": "元消防士の経験を活かし、安全管理のスペシャリストとして活動。企業向けプログラムの企画・運営を担当しています。",
-          "image": "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/yamada.jpeg",
+          "image": "gs://your-project.firebasestorage.app/path/to/image",
           "specialties": []
         }
       ],
@@ -151,17 +151,10 @@
           "tourOrEventTitle": "六甲山系 ナイトハイキング"
         }
       ],
-      "heroImage": "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/hero_section.jpeg",
+      "heroImage": "gs://your-project.firebasestorage.app/path/to/image",
       "aboutText": "KYETは2023年に設立されたアウトドアツアー&イベント企画の専門企業です。日本の山紫水明な自然を舞台に、初心者から上級者まで楽しめる多彩なプログラムを提供しています。経験豊富なガイドが安全で質の高い体験をお約束します。自然との触れ合いを通じて、新しい自分を発見してみませんか？",
       "rollingImages": [
-        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_1.jpeg",
-        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_2.jpeg",
-        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_3.jpeg",
-        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_4.jpeg",
-        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_5.jpeg",
-        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_6.jpeg",
-        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/company.jpeg",
-        "gs://mwscup2025-hackathon.firebasestorage.app/fakepages/kyet/image_roll_7.jpeg"
+        "gs://your-project.firebasestorage.app/path/to/image"
       ],
       "achievements": [
         {

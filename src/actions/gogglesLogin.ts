@@ -142,7 +142,7 @@ export async function validateSecretQuestion(questionData: SecretQuestionAnswer)
 
   // 秘密の質問の答え
   const correctAnswers: Record<number, string[]> = {
-    1: ['ワンダーフォーゲル部', 'ワンダーフォーゲル'],
+    1: ['ワンダーフォーゲル部'],
     2: ['こむぎ'],
     3: ['テリーズカフェ調布駅前店']
   };
@@ -203,6 +203,17 @@ export async function resetPassword(newPassword: string, confirmPassword: string
     return {
       success: false,
       error: 'パスワードは6文字以上で入力してください。'
+    };
+  }
+
+  // パスワードの複雑性チェック（半角英数字を含む）
+  const hasLetter = /[a-zA-Z]/.test(newPassword);
+  const hasNumber = /[0-9]/.test(newPassword);
+
+  if (!hasLetter || !hasNumber) {
+    return {
+      success: false,
+      error: 'パスワードは半角英数字を組み合わせて入力してください。'
     };
   }
 

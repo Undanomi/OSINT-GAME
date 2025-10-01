@@ -18,8 +18,8 @@ import { UnifiedSearchResult } from '@/types/search';
  */
 export const staticPages: { [key: string]: React.ReactElement | ((currentUrl: string, onNavigate?: (url: string) => void) => React.ReactElement) } = {
   // Goggles Mail - メインページとログインページのみ
-  'https://mail.goggles.com': (currentUrl) => <GogglesMail initialUrl={currentUrl} />,
-  'https://mail.goggles.com/login': (currentUrl) => <GogglesMail initialUrl={currentUrl} />,
+  'https://mail.goggles.com': (currentUrl, onNavigate) => <GogglesMail initialUrl={currentUrl} onNavigate={onNavigate} />,
+  'https://mail.goggles.com/login': (currentUrl, onNavigate) => <GogglesMail initialUrl={currentUrl} onNavigate={onNavigate} />,
 
   // Playback Machine - アーカイブビューア
   'https://playback.archive': (currentUrl, onNavigate) => <PlaybackMachinePage url={currentUrl} onNavigate={onNavigate} />,
