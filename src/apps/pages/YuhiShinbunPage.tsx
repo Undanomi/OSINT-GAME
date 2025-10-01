@@ -46,22 +46,35 @@ export const YuhiShinbunPage: React.FC<YuhiShinbunPageProps> = ({ documentId, in
         const data = await validateYuhiShinbunContent(searchResult.content);
         console.log('Validated data from Firestore:', data);
 
-        // TODO: 画像をFirebase Storageから取得するようにする
-        // Firebase Storage URLの変換
+        // gs:// URLをHTTPS URLに並列変換
+        const urlConversionPromises: Promise<void>[] = [];
+
+        // メイン画像
         if (data.image?.startsWith('gs://')) {
           console.log('Converting main image:', data.image);
-          data.image = await getDownloadURL(ref(storage, data.image));
-          console.log('Converted to:', data.image);
+          urlConversionPromises.push(
+            getDownloadURL(ref(storage, data.image)).then(url => {
+              data.image = url;
+              console.log('Converted main image to:', url);
+            })
+          );
         }
 
-        // 関連記事画像のURL変換
-        for (const article of data.relatedArticles) {
+        // 関連記事画像のURL変換（並列）
+        data.relatedArticles.forEach((article, index) => {
           if (article.image?.startsWith('gs://')) {
             console.log('Converting related article image:', article.image);
-            article.image = await getDownloadURL(ref(storage, article.image));
-            console.log('Converted to:', article.image);
+            urlConversionPromises.push(
+              getDownloadURL(ref(storage, article.image)).then(url => {
+                article.image = url;
+                console.log(`Converted related article ${index} image to:`, url);
+              })
+            );
           }
-        }
+        });
+
+        // すべてのURL変換を並列実行
+        await Promise.all(urlConversionPromises);
 
         console.log('Final data after URL conversion:', data);
         setArticleData(data);

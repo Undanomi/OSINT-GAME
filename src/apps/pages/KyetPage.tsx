@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
+import { ref, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/lib/firebase';
 import {
   MapPin,
   Phone,
@@ -361,9 +363,86 @@ export const KyetPage: React.FC<KyetPageProps> = ({ documentId, initialData }) =
           throw new Error('Invalid template');
         }
 
-        const kyetContent = await validateKyetContent(searchResult.content);
+        const data = await validateKyetContent(searchResult.content);
+        console.log('Validated data from Firestore:', data);
 
-        setKyetData(kyetContent);
+        // gs:// URLをHTTPS URLに並列変換
+        const urlConversionPromises: Promise<void>[] = [];
+
+        // ヒーロー画像
+        if (data.heroImage?.startsWith('gs://')) {
+          console.log('Converting hero image:', data.heroImage);
+          urlConversionPromises.push(
+            getDownloadURL(ref(storage, data.heroImage)).then(url => {
+              data.heroImage = url;
+              console.log('Converted hero image to:', url);
+            })
+          );
+        }
+
+        // ローリング画像の変換（並列）
+        data.rollingImages.forEach((image, index) => {
+          if (image?.startsWith('gs://')) {
+            console.log('Converting rolling image:', image);
+            urlConversionPromises.push(
+              getDownloadURL(ref(storage, image)).then(url => {
+                data.rollingImages[index] = url;
+                console.log(`Converted rolling image ${index} to:`, url);
+              })
+            );
+          }
+        });
+
+        // ツアー画像の変換（並列）
+        data.featuredTours.forEach((tour) => {
+          tour.images.forEach((image, imageIndex) => {
+            if (image?.startsWith('gs://')) {
+              console.log('Converting tour image:', image);
+              urlConversionPromises.push(
+                getDownloadURL(ref(storage, image)).then(url => {
+                  tour.images[imageIndex] = url;
+                  console.log(`Converted tour image to:`, url);
+                })
+              );
+            }
+          });
+        });
+
+        // イベント画像の変換（並列）
+        data.upcomingEvents.forEach((event) => {
+          event.images.forEach((image, imageIndex) => {
+            if (image?.startsWith('gs://')) {
+              console.log('Converting event image:', image);
+              urlConversionPromises.push(
+                getDownloadURL(ref(storage, image)).then(url => {
+                  event.images[imageIndex] = url;
+                  console.log(`Converted event image to:`, url);
+                })
+              );
+            }
+          });
+        });
+
+        // スタッフ画像の変換（並列）
+        data.staff.forEach((staff) => {
+          if (staff.image?.startsWith('gs://')) {
+            console.log('Converting staff image:', staff.image);
+            urlConversionPromises.push(
+              getDownloadURL(ref(storage, staff.image)).then(url => {
+                staff.image = url;
+                console.log('Converted staff image to:', url);
+              })
+            );
+          }
+        });
+
+        // すべてのURL変換を並列実行
+        console.log(`Starting parallel conversion of ${urlConversionPromises.length} images...`);
+        await Promise.all(urlConversionPromises);
+        console.log('All URL conversions completed');
+
+        console.log('Final data after URL conversion:', data);
+        setKyetData(data);
       } catch (error) {
         console.error('Error fetching Kyet data:', error);
         setKyetData(null);

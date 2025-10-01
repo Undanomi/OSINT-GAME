@@ -48,48 +48,84 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
         const rankedOnContent = await validateRankedOnContent(searchResult.content);
         // RankedOnContentをRankedOnUserに変換
         const data = await convertRankedOnContentToUser(rankedOnContent, documentId);
-          
-          // Storage URLの変換
+
+          // gs:// URLをHTTPS URLに並列変換
+          const urlConversionPromises: Promise<void>[] = [];
+
+          // プロフィール画像
           if (data.profileImage?.startsWith('gs://')) {
-            data.profileImage = await getDownloadURL(ref(storage, data.profileImage));
+            urlConversionPromises.push(
+              getDownloadURL(ref(storage, data.profileImage)).then(url => {
+                data.profileImage = url;
+              })
+            );
           }
+
+          // 背景画像
           if (data.backgroundImage?.startsWith('gs://')) {
-            data.backgroundImage = await getDownloadURL(ref(storage, data.backgroundImage));
+            urlConversionPromises.push(
+              getDownloadURL(ref(storage, data.backgroundImage)).then(url => {
+                data.backgroundImage = url;
+              })
+            );
           }
-          
-          // 投稿画像のURL変換
-          for (const post of data.posts) {
+
+          // 投稿画像のURL変換（並列）
+          data.posts.forEach((post) => {
             if (post.image?.startsWith('gs://')) {
-              post.image = await getDownloadURL(ref(storage, post.image));
+              urlConversionPromises.push(
+                getDownloadURL(ref(storage, post.image)).then(url => {
+                  post.image = url;
+                })
+              );
             }
             if (post.authorImage?.startsWith('gs://')) {
-              post.authorImage = await getDownloadURL(ref(storage, post.authorImage));
+              urlConversionPromises.push(
+                getDownloadURL(ref(storage, post.authorImage)).then(url => {
+                  post.authorImage = url;
+                })
+              );
             }
-          }
-          
-          // 会社ロゴのURL変換
-          for (const exp of data.experience) {
+          });
+
+          // 会社ロゴのURL変換（並列）
+          data.experience.forEach((exp) => {
             if (exp.companyLogo?.startsWith('gs://')) {
-              exp.companyLogo = await getDownloadURL(ref(storage, exp.companyLogo));
+              urlConversionPromises.push(
+                getDownloadURL(ref(storage, exp.companyLogo)).then(url => {
+                  exp.companyLogo = url;
+                })
+              );
             }
-          }
-          
-          // 学校ロゴのURL変換
-          for (const edu of data.education) {
+          });
+
+          // 学校ロゴのURL変換（並列）
+          data.education.forEach((edu) => {
             if (edu.schoolLogo?.startsWith('gs://')) {
-              edu.schoolLogo = await getDownloadURL(ref(storage, edu.schoolLogo));
+              urlConversionPromises.push(
+                getDownloadURL(ref(storage, edu.schoolLogo)).then(url => {
+                  edu.schoolLogo = url;
+                })
+              );
             }
-          }
-          
-          // 推薦者画像のURL変換
+          });
+
+          // 推薦者画像のURL変換（並列）
           if (data.recommendations) {
-            for (const rec of data.recommendations) {
+            data.recommendations.forEach((rec) => {
               if (rec.recommenderImage?.startsWith('gs://')) {
-                rec.recommenderImage = await getDownloadURL(ref(storage, rec.recommenderImage));
+                urlConversionPromises.push(
+                  getDownloadURL(ref(storage, rec.recommenderImage)).then(url => {
+                    rec.recommenderImage = url;
+                  })
+                );
               }
-            }
+            });
           }
-          
+
+          // すべてのURL変換を並列実行
+          await Promise.all(urlConversionPromises);
+
           setUserData(data);
       } catch {
         // エラーは静かに処理
