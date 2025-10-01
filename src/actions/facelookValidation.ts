@@ -31,7 +31,7 @@ const FacelookContentSchema = z.object({
   bio: z.string().optional(),
   friendsCount: z.number(),
   joined: z.string(),
-  website: z.string().optional(),
+  website: z.string().nullable().optional(),
   posts: z.array(FacelookPostSchema),
   friends: z.array(FacelookFriendSchema),
   photos: z.array(z.string()),
