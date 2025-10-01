@@ -12,6 +12,7 @@ export const GogglesMailPasswordResetPage: React.FC<MailPageProps> = ({ onPhaseN
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLoading, setShowLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,10 +23,12 @@ export const GogglesMailPasswordResetPage: React.FC<MailPageProps> = ({ onPhaseN
       const result = await resetPassword(newPassword, confirmPassword);
       
       if (result.success) {
-        // ログイン状態を更新し、メール画面に遷移
-        loginToGogglesMail();
+        // ローディング画面を表示
+        setShowLoading(true);
+
+        // 1秒後にログイン状態を更新してメール画面に遷移
         setTimeout(() => {
-          // 少し待ってから遷移
+          loginToGogglesMail();
           onPhaseNavigate('mail-service');
         }, 1000);
       } else {
@@ -37,6 +40,30 @@ export const GogglesMailPasswordResetPage: React.FC<MailPageProps> = ({ onPhaseN
       setIsSubmitting(false);
     }
   };
+
+  // ローディング画面
+  if (showLoading) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-white px-4">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-light text-gray-700 mb-2">
+            <span className="text-purple-600">G</span>
+            <span className="text-orange-500">o</span>
+            <span className="text-cyan-500">g</span>
+            <span className="text-pink-500">g</span>
+            <span className="text-indigo-500">l</span>
+            <span className="text-emerald-500">e</span>
+            <span className="text-amber-500">s</span>
+            <span className="text-gray-700 ml-2">Mail</span>
+          </h1>
+        </div>
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-gray-600">メールボックスを読み込んでいます...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col items-center justify-center bg-white px-4">

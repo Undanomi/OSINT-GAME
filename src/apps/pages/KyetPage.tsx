@@ -162,7 +162,7 @@ const EventsSection: React.FC<{
             >
               <div className="relative h-56 overflow-hidden">
                 <Image
-                  src={event.images[0] || 'https://picsum.photos/400/300?random=2'}
+                  src={event.images[0]}
                   alt={event.title}
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"
@@ -288,7 +288,7 @@ const FeaturedToursSection: React.FC<{
             >
               <div className="relative h-56 overflow-hidden">
                 <Image
-                  src={tour.images[0] || 'https://picsum.photos/400/300?random=1'}
+                  src={tour.images[0]}
                   alt={tour.title}
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"

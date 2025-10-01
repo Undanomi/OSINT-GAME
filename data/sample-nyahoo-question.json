@@ -2,7 +2,7 @@
   {
     "id": "nyahoo_question_1",
     "title": "プログラミング初心者です。どの言語から始めるべき？ - Nyahoo!無知袋",
-    "url": "https://nyahoo.com/question/programming-beginner",
+    "url": "https://test-nyahoo.com/question/programming-beginner",
     "description": "プログラミング未経験者からの質問。おすすめの言語について。",
     "template": "NyahooQuestionPage",
     "content": {
@@ -99,7 +99,7 @@
   {
     "id": "nyahoo_question_2",
     "title": "スマートフォンのバッテリーを長持ちさせる方法 - Nyahoo!無知袋",
-    "url": "https://nyahoo.com/question/smartphone-battery-tips",
+    "url": "https://test-nyahoo.com/question/smartphone-battery-tips",
     "description": "スマートフォンのバッテリー寿命を延ばすコツについての質問。",
     "template": "NyahooQuestionPage",
     "content": {
@@ -196,7 +196,7 @@
   {
     "id": "nyahoo_question_3",
     "title": "一人暮らしの料理初心者におすすめのレシピ - Nyahoo!無知袋",
-    "url": "https://nyahoo.com/question/cooking-beginner-recipes",
+    "url": "https://test-nyahoo.com/question/cooking-beginner-recipes",
     "description": "一人暮らしを始める人向けの簡単レシピについての質問。",
     "template": "NyahooQuestionPage",
     "content": {
