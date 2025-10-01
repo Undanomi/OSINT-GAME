@@ -146,7 +146,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
       {/* ゲームについてモーダル */}
       {showAbout && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+          <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/20 dark-scrollbar">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-bold text-white">ゲームについて</h3>
               <button
