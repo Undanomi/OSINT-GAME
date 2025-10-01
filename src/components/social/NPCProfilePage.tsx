@@ -56,7 +56,8 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
         reset ? undefined : cursor
       );
 
-      const uiPosts = result.items;
+      const now = new Date();
+      const uiPosts = result.items.filter(post => post.timestamp <= now);
 
       if (reset) {
         setPosts(uiPosts);
@@ -150,7 +151,7 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
               )}
               <div className="flex items-center space-x-2 text-gray-600">
                 <Calendar size={14} />
-                <span>参加日: {new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })}</span>
+                <span>参加日: {npc.createdAt ? npc.createdAt.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' }) : '不明'}</span>
               </div>
               {npc.birthday && (
                 <div className="flex items-center space-x-2 text-gray-600">
