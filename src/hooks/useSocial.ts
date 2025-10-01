@@ -74,7 +74,8 @@ export const useSocial = (
 
   // ストアからデータを取得（useMemoで最適化）
   const posts = useMemo(() => {
-    return store.timeline?.posts || [];
+    const now = new Date();
+    return (store.timeline?.posts || []).filter(post => post.timestamp <= now);
   }, [store.timeline]);
 
   const hasMorePosts = useMemo(() => {

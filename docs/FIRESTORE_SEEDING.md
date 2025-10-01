@@ -355,6 +355,7 @@ node scripts/seedDefaultAccounts.js data/default-social-accounts.json
   "followingCount": 1923,
   "canDM": true,
   "systemPrompt": "あなたはAI研究者のミラベル・テクノスです。量子機械学習の専門家として、技術的で知的な会話をします。\n\nプレイヤーが質問をした場合は、以下のJSON形式で応答してください：\n{\n  \"responseText\": \"実際の返答内容\",\n  \"newTrust\": 信頼度の値(0-100),\n  \"newCaution\": 警戒度の値(0-100)\n}\n\n応答は必ずJSON形式で返してください。",
+  "createdAt": "2023-03-15T09:00:00Z",
   "isActive": true,
   "isGameOverTarget": true,
   "errorMessages": {
@@ -414,7 +415,10 @@ node scripts/seedDefaultAccounts.js data/default-social-accounts.json
 
 - **データの整合性**: NPCの投稿データを登録する前に、対応するNPCキャラクターが `socialNPCs` コレクションに存在している必要があります
 - **デュアルIDシステム**: すべてのNPCとデフォルトアカウントはUUID形式のstable_idと表示用のaccount_idを持ちます
-- **タイムスタンプ**: 投稿の `timestamp` は ISO 8601 形式で記載してください
+- **タイムスタンプ**:
+  - 投稿の `timestamp` は ISO 8601 形式で記載してください
+  - NPC の `createdAt` はオプションで、ISO 8601 形式（例: `2023-03-15T09:00:00Z`）で指定可能
+  - `createdAt` を指定しない場合は、スクリプト実行時のサーバータイムスタンプが使用されます
 - **ID の一意性**: 各データのstable_idとaccount_idはそれぞれ一意である必要があります
 - **UUID形式**: stable_idはUUID形式（例: d1e2f3g4-5h6i-7j8k-9l0m-n1o2p3q4r5s6）で記載してください
 - **アバター文字**: アバターは A-Z の1文字で指定してください

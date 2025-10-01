@@ -53,7 +53,8 @@ export const InactiveUserProfilePage: React.FC<InactiveUserProfilePageProps> = (
         reset ? undefined : cursor
       );
 
-      const uiPosts = result.items;
+      const now = new Date();
+      const uiPosts = result.items.filter(post => post.timestamp <= now);
 
       if (reset) {
         setPosts(uiPosts);

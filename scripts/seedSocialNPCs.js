@@ -134,9 +134,14 @@ async function registerNPC(npc) {
     // NPCプロフィール情報から errorMessages を分離
     const { errorMessages, ...npcProfile } = npc;
 
+    // createdAtの処理: JSONに指定があればそれを使用、なければサーバータイムスタンプ
+    const createdAtValue = npc.createdAt
+      ? admin.firestore.Timestamp.fromDate(new Date(npc.createdAt))
+      : admin.firestore.FieldValue.serverTimestamp();
+
     await docRef.set({
       ...npcProfile,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: createdAtValue,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 

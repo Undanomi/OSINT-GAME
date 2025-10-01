@@ -52,7 +52,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         reset ? undefined : cursor
       );
 
-      const uiPosts = result.items;
+      const now = new Date();
+      const uiPosts = result.items.filter(post => post.timestamp <= now);
 
       if (reset) {
         setPosts(uiPosts);

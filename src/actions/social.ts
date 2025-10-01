@@ -635,18 +635,25 @@ export async function removeFromAllTimelines(postId: string): Promise<void> {
  * NPC投稿検索（timestampフィールド使用）
  */
 async function searchNPCPosts(
-  beforeTimestamp: Date,
+  beforeTimestamp: Date | null,
   limit: number
 ): Promise<SocialPost[]> {
   try {
     const npcPostsRef = collection(db, 'socialNPCPosts');
 
-    const timestampQuery = query(
-      npcPostsRef,
-      where('timestamp', '<', Timestamp.fromDate(beforeTimestamp)),
-      orderBy('timestamp', 'desc'),
-      firestoreLimit(limit)
-    );
+    // beforeTimestampが指定されている場合のみフィルタリング
+    const timestampQuery = beforeTimestamp
+      ? query(
+          npcPostsRef,
+          where('timestamp', '<=', Timestamp.fromDate(beforeTimestamp)),
+          orderBy('timestamp', 'desc'),
+          firestoreLimit(limit)
+        )
+      : query(
+          npcPostsRef,
+          orderBy('timestamp', 'desc'),
+          firestoreLimit(limit)
+        );
 
     const snapshot = await getDocs(timestampQuery);
 
@@ -711,19 +718,19 @@ export async function getTimeline(params: TimelineParams): Promise<PaginatedResu
       const remainingLimit = pageLimit - timelinePosts.length;
 
       // カーソル使用時は、カーソルドキュメントのタイムスタンプを取得
-      let lastTimestamp: Date;
+      let lastTimestamp: Date | null;
       if (cursor && timelinePosts.length === 0) {
         const cursorDoc = await getDoc(doc(timelineRef, cursor));
         if (cursorDoc.exists()) {
           const cursorData = cursorDoc.data();
-          lastTimestamp = cursorData.timestamp?.toDate() || new Date();
+          lastTimestamp = cursorData.timestamp?.toDate() || null;
         } else {
-          lastTimestamp = new Date();
+          lastTimestamp = null;
         }
       } else {
         lastTimestamp = timelinePosts.length > 0
           ? timelinePosts[timelinePosts.length - 1].timestamp
-          : new Date();
+          : null; // 初回読み込み時はnullを渡して全ての投稿を取得
       }
 
       // NPC投稿検索
