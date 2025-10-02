@@ -16,6 +16,9 @@
       "industry": "テスト・IT業界",
       "summary": "[これはテストデータです] OSINTゲーム用のサンプルプロフィールです。実在の人物・企業・団体とは一切関係ありません。このデータは架空のものであり、実際のプロフェッショナルネットワーキングサイトのプロフィールではありません。",
       "connectionsCount": 999,
+      "socialAccounts": [
+        { "platform": "Z", "id": "@test_taro_dummy" }
+      ],
       "experience": [
         {
           "title": "テストシニアエンジニア",
@@ -168,6 +171,9 @@
       "industry": "テスト・プロダクト管理",
       "summary": "[これはテストデータです] 架空の10年以上のプロダクト管理経験。実在しないスタートアップから架空の大企業まで、ダミープロダクトの成長を支援。OSINTゲーム用のサンプルデータです。",
       "connectionsCount": 1500,
+      "socialAccounts": [
+        { "platform": "Z", "id": "@test_hanako_pm" }
+      ],
       "experience": [
         {
           "title": "テストシニアプロダクトマネージャー",
@@ -279,6 +285,9 @@
       "industry": "テスト・データサイエンス",
       "summary": "[これはテストデータです] 架空の機械学習モデルの開発と実装。ダミービッグデータの分析。サンプル予測モデルの構築。すべて架空のプロジェクトです。OSINTゲーム用のテストプロフィール。",
       "connectionsCount": 888,
+      "socialAccounts": [
+        { "platform": "Z", "id": "@dummy_jiro_ds" }
+      ],
       "experience": [
         {
           "title": "テストリードデータサイエンティスト",
