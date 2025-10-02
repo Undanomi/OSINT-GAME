@@ -132,9 +132,9 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 -m-0">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 left-0 right-0 z-50 m-0">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-12">
             <div className="flex items-center space-x-4">
@@ -224,6 +224,23 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
                     {userData.location}
                     {userData.industry && ` · ${userData.industry}`}
                   </div>
+
+                  {/* SNS Accounts */}
+                  {userData.socialAccounts && userData.socialAccounts.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {userData.socialAccounts.map((account, idx) => (
+                        <div
+                          key={idx}
+                          className="text-sm text-gray-600 flex items-center"
+                        >
+                          <Globe className="w-4 h-4 mr-1" />
+                          <span className="font-medium">{account.platform}:</span>
+                          <span className="ml-1">{account.id}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="mt-3">
                     <span className="text-[#0077b5] font-semibold cursor-default">
                       {userData.connectionsCount}+ つながり

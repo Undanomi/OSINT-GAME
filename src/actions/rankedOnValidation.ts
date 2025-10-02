@@ -69,6 +69,11 @@ const LanguageSchema = z.object({
   proficiency: z.string(),
 });
 
+const SocialAccountSchema = z.object({
+  platform: z.string(),
+  id: z.string(),
+});
+
 const RankedOnContentSchema = z.object({
   name: z.string(),
   profileImage: z.string(),
@@ -80,6 +85,7 @@ const RankedOnContentSchema = z.object({
   industry: z.string().optional(),
   summary: z.string().optional(),
   connectionsCount: z.number(),
+  socialAccounts: z.array(SocialAccountSchema).optional(),
   experience: z.array(ExperienceSchema),
   education: z.array(EducationSchema),
   skills: z.array(SkillSchema),
@@ -120,6 +126,7 @@ export async function convertRankedOnContentToUser(
     industry: rankedOnContent.industry,
     summary: rankedOnContent.summary,
     connectionsCount: rankedOnContent.connectionsCount,
+    socialAccounts: rankedOnContent.socialAccounts,
     experience: rankedOnContent.experience || [],
     education: rankedOnContent.education || [],
     skills: rankedOnContent.skills || [],

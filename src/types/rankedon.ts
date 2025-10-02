@@ -1,5 +1,10 @@
 // RankedOnのデータ型定義
 
+export interface SocialAccount {
+  platform: string; // SNSプラットフォーム名（Twitter, Facebook, GitHub等）
+  id: string; // SNSアカウントのID
+}
+
 export interface RankedOnUser {
   userId: string;
   name: string;
@@ -12,7 +17,8 @@ export interface RankedOnUser {
   industry?: string; // 業界
   summary?: string; // 概要
   connectionsCount: number; // つながり数
-  
+  socialAccounts?: SocialAccount[]; // SNSアカウント
+
   // 職歴
   experience: Experience[];
   
@@ -118,6 +124,7 @@ export interface RankedOnContent {
   industry?: string;
   summary?: string;
   connectionsCount: number;
+  socialAccounts?: SocialAccount[];
   experience: Experience[];
   education: Education[];
   skills: Skill[];
