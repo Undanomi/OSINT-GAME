@@ -7,12 +7,11 @@ import { storage } from '@/lib/firebase';
 import { RankedOnUser } from '@/types/rankedon';
 import { UnifiedSearchResult } from '@/types/search';
 import { validateRankedOnContent, convertRankedOnContentToUser } from '@/actions/rankedOnValidation';
-import { 
-  Search, Bell, MessageSquare, Home, Users, Briefcase, Grid3x3,
-  Plus, Camera, Edit2, MoreHorizontal, ThumbsUp, MessageCircle,
-  Share2, Send, Eye, TrendingUp, X, MapPin,
-  Mail, Phone, Globe, Award, Languages, Star,
-  ExternalLink
+import {
+  Search, Home, Users, Briefcase, Grid3x3,
+  Plus, MoreHorizontal, ThumbsUp, MessageCircle, MessageSquare,
+  Share2, Send, X, MapPin,
+  Globe, Award, Languages, Star
 } from 'lucide-react';
 
 interface RankedOnProfilePageProps {
@@ -88,27 +87,6 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
             }
           });
 
-          // 会社ロゴのURL変換（並列）
-          data.experience.forEach((exp) => {
-            if (exp.companyLogo?.startsWith('gs://')) {
-              urlConversionPromises.push(
-                getDownloadURL(ref(storage, exp.companyLogo)).then(url => {
-                  exp.companyLogo = url;
-                })
-              );
-            }
-          });
-
-          // 学校ロゴのURL変換（並列）
-          data.education.forEach((edu) => {
-            if (edu.schoolLogo?.startsWith('gs://')) {
-              urlConversionPromises.push(
-                getDownloadURL(ref(storage, edu.schoolLogo)).then(url => {
-                  edu.schoolLogo = url;
-                })
-              );
-            }
-          });
 
           // 推薦者画像のURL変換（並列）
           if (data.recommendations) {
@@ -154,9 +132,9 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 -m-0">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 left-0 right-0 z-50 m-0">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-12">
             <div className="flex items-center space-x-4">
@@ -185,15 +163,6 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
               <button className="flex flex-col items-center text-gray-600 hover:text-black">
                 <Briefcase className="w-5 h-5" />
                 <span className="text-xs mt-1 hidden lg:block">求人</span>
-              </button>
-              <button className="flex flex-col items-center text-gray-600 hover:text-black">
-                <MessageSquare className="w-5 h-5" />
-                <span className="text-xs mt-1 hidden lg:block">メッセージ</span>
-              </button>
-              <button className="flex flex-col items-center text-gray-600 hover:text-black relative">
-                <Bell className="w-5 h-5" />
-                <span className="text-xs mt-1 hidden lg:block">通知</span>
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
               </button>
               <div className="border-l pl-4">
                 <button className="flex flex-col items-center text-gray-600 hover:text-black">
@@ -224,15 +193,12 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
                     unoptimized
                   />
                 )}
-                <button className="absolute top-4 right-4 bg-white p-2 rounded-full hover:bg-gray-100">
-                  <Camera className="w-4 h-4" />
-                </button>
               </div>
 
               {/* Profile Info */}
               <div className="px-6 pb-6">
                 <div className="flex justify-between items-start -mt-12">
-                  <div 
+                  <div
                     className="w-32 h-32 relative cursor-pointer"
                     onClick={() => handlePhotoClick(userData.profileImage)}
                   >
@@ -244,9 +210,6 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
                       unoptimized
                     />
                   </div>
-                  <button className="mt-16 p-2 hover:bg-gray-100 rounded-full">
-                    <Edit2 className="w-5 h-5" />
-                  </button>
                 </div>
 
                 <div className="mt-4">
@@ -261,6 +224,23 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
                     {userData.location}
                     {userData.industry && ` · ${userData.industry}`}
                   </div>
+
+                  {/* SNS Accounts */}
+                  {userData.socialAccounts && userData.socialAccounts.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {userData.socialAccounts.map((account, idx) => (
+                        <div
+                          key={idx}
+                          className="text-sm text-gray-600 flex items-center"
+                        >
+                          <Globe className="w-4 h-4 mr-1" />
+                          <span className="font-medium">{account.platform}:</span>
+                          <span className="ml-1">{account.id}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="mt-3">
                     <span className="text-[#0077b5] font-semibold cursor-default">
                       {userData.connectionsCount}+ つながり
@@ -285,36 +265,6 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
               </div>
             </div>
 
-            {/* Analytics Card */}
-            {(userData.profileViews || userData.searchAppearances) && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-semibold mb-4">アナリティクス</h2>
-                <div className="flex items-center text-gray-500 text-sm mb-2">
-                  <Eye className="w-4 h-4 mr-1" />
-                  非公開モード
-                </div>
-                <div className="space-y-3">
-                  {userData.profileViews && (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Eye className="w-5 h-5 text-gray-600 mr-3" />
-                        <span>プロフィールビュー</span>
-                      </div>
-                      <span className="font-semibold">{userData.profileViews}</span>
-                    </div>
-                  )}
-                  {userData.searchAppearances && (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <TrendingUp className="w-5 h-5 text-gray-600 mr-3" />
-                        <span>検索での表示回数</span>
-                      </div>
-                      <span className="font-semibold">{userData.searchAppearances}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* About Section */}
             {userData.summary && (
@@ -444,17 +394,9 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
                   <div className="space-y-6">
                     {userData.experience.map((exp, idx) => (
                       <div key={idx} className="flex space-x-4">
-                        {exp.companyLogo && (
-                          <div className="w-12 h-12 relative flex-shrink-0">
-                            <Image
-                              src={exp.companyLogo}
-                              alt={exp.company}
-                              fill
-                              className="object-cover rounded"
-                              unoptimized
-                            />
-                          </div>
-                        )}
+                        <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded flex items-center justify-center">
+                          <Briefcase className="w-6 h-6 text-gray-600" />
+                        </div>
                         <div className="flex-1">
                           <h3 className="font-semibold">{exp.title}</h3>
                           <p className="text-gray-700">{exp.company} · {exp.employmentType}</p>
@@ -485,17 +427,9 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
                   <div className="space-y-6">
                     {userData.education.map((edu, idx) => (
                       <div key={idx} className="flex space-x-4">
-                        {edu.schoolLogo && (
-                          <div className="w-12 h-12 relative flex-shrink-0">
-                            <Image
-                              src={edu.schoolLogo}
-                              alt={edu.school}
-                              fill
-                              className="object-cover rounded"
-                              unoptimized
-                            />
-                          </div>
-                        )}
+                        <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded flex items-center justify-center">
+                          <Award className="w-6 h-6 text-gray-600" />
+                        </div>
                         <div className="flex-1">
                           <h3 className="font-semibold">{edu.school}</h3>
                           {edu.degree && (
@@ -534,25 +468,14 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
                 {userData.skills.slice(0, 5).map((skill, idx) => (
                   <div key={idx}>
                     <div className="flex justify-between items-center">
-                      <span className="font-medium">{skill.name}</span>
+                      <div className="flex items-center space-x-2">
+                        <Star className="w-4 h-4 text-gray-600" />
+                        <span className="font-medium">{skill.name}</span>
+                      </div>
                       {skill.endorsements && (
-                        <span className="text-sm text-gray-500">{skill.endorsements}</span>
+                        <span className="text-sm text-gray-500">{skill.endorsements}人が推薦</span>
                       )}
                     </div>
-                    {skill.endorsements && (
-                      <div className="flex items-center mt-1">
-                        <div className="flex -space-x-2">
-                          {[...Array(Math.min(3, skill.endorsements))].map((_, i) => (
-                            <div key={i} className="w-6 h-6 bg-gray-300 rounded-full border-2 border-white"></div>
-                          ))}
-                        </div>
-                        {skill.endorsements > 3 && (
-                          <span className="ml-2 text-xs text-gray-500">
-                            +{skill.endorsements - 3} 人が推薦
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -589,8 +512,11 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
                 </div>
                 <div className="space-y-2">
                   {userData.languages.map((lang, idx) => (
-                    <div key={idx} className="flex justify-between">
-                      <span className="font-medium">{lang.name}</span>
+                    <div key={idx} className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <Globe className="w-4 h-4 text-gray-600" />
+                        <span className="font-medium">{lang.name}</span>
+                      </div>
                       <span className="text-sm text-gray-600">{lang.proficiency}</span>
                     </div>
                   ))}
@@ -631,40 +557,6 @@ export const RankedOnProfilePage: React.FC<RankedOnProfilePageProps> = ({ docume
               </div>
             )}
 
-            {/* Contact Info Card */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold mb-4">連絡先情報</h2>
-              <div className="space-y-3">
-                {userData.email && (
-                  <div className="flex items-center space-x-3">
-                    <Mail className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm">{userData.email}</span>
-                  </div>
-                )}
-                {userData.phone && (
-                  <div className="flex items-center space-x-3">
-                    <Phone className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm">{userData.phone}</span>
-                  </div>
-                )}
-                {userData.website && (
-                  <div className="flex items-center space-x-3">
-                    <Globe className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm text-[#0077b5] cursor-default">
-                      {userData.website.replace('https://', '')}
-                    </span>
-                  </div>
-                )}
-                {userData.rankedonUrl && (
-                  <div className="flex items-center space-x-3">
-                    <ExternalLink className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm text-[#0077b5] cursor-default">
-                      プロフィールURL
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </div>

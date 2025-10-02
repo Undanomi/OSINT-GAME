@@ -1,5 +1,10 @@
 // RankedOnのデータ型定義
 
+export interface SocialAccount {
+  platform: string; // SNSプラットフォーム名（Twitter, Facebook, GitHub等）
+  id: string; // SNSアカウントのID
+}
+
 export interface RankedOnUser {
   userId: string;
   name: string;
@@ -12,9 +17,8 @@ export interface RankedOnUser {
   industry?: string; // 業界
   summary?: string; // 概要
   connectionsCount: number; // つながり数
-  profileViews?: number; // プロフィール閲覧数
-  searchAppearances?: number; // 検索表示回数
-  
+  socialAccounts?: SocialAccount[]; // SNSアカウント
+
   // 職歴
   experience: Experience[];
   
@@ -36,18 +40,12 @@ export interface RankedOnUser {
   // 言語
   languages?: Language[];
   
-  // 連絡先情報
-  email?: string;
-  phone?: string;
-  website?: string;
-  rankedonUrl?: string;
 }
 
 export interface Experience {
   id?: string;
   title: string; // 役職
   company: string;
-  companyLogo?: string;
   employmentType?: string; // フルタイム、パートタイム等
   location?: string;
   startDate: string;
@@ -60,7 +58,6 @@ export interface Experience {
 export interface Education {
   id?: string;
   school: string;
-  schoolLogo?: string;
   degree?: string; // 学位
   fieldOfStudy?: string; // 専攻
   startYear: string;
@@ -127,8 +124,7 @@ export interface RankedOnContent {
   industry?: string;
   summary?: string;
   connectionsCount: number;
-  profileViews?: number;
-  searchAppearances?: number;
+  socialAccounts?: SocialAccount[];
   experience: Experience[];
   education: Education[];
   skills: Skill[];
@@ -136,8 +132,4 @@ export interface RankedOnContent {
   posts: RankedOnPost[];
   recommendations?: Recommendation[];
   languages?: Language[];
-  email?: string;
-  phone?: string;
-  website?: string;
-  rankedonUrl?: string;
 }
