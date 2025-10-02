@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Play, FileText, Users, Building2, Globe } from 'lucide-react';
+import { Play, FileText, Search, MapPin, Globe } from 'lucide-react';
 import { loadSearchResults } from '@/lib/cache/searchResultsCache';
 import { loadGogglesMailData } from '@/lib/cache/gogglesMailCache';
 
@@ -24,35 +24,35 @@ const scenarios: Scenario[] = [
     id: 'social-media-analysis',
     title: 'SNSを活用したOSINTとスピアフィッシング',
     description: 'SNSに公開されている情報を調査し、とある企業のエンジニアのアカウントが侵害されるまでの手順を攻撃者視点で体験します。',
-    difficulty: 'beginner',
-    estimatedTime: '20-30分',
+    difficulty: 'intermediate',
+    estimatedTime: '90-150分',
     icon: Globe,
     isImplemented: true,
   },
   {
-    id: 'missing-person',
-    title: '[ToDo]行方不明者の調査',
-    description: 'SNSやインターネット上の情報を活用して、行方不明になった人物の手がかりを探します。',
+    id: 'basic-osint',
+    title: '検索エンジンを使った基本的なOSINT',
+    description: '検索エンジンを利用すると、様々なWebページを得ることができます。ここでは検索の結果から得られる情報をOSINTしてみましょう。',
     difficulty: 'beginner',
-    estimatedTime: '30-45分',
-    icon: Users,
+    estimatedTime: '10-30分',
+    icon: Search,
     isImplemented: false,
   },
   {
-    id: 'corporate-investigation',
-    title: '[ToDo]企業調査',
-    description: '企業の背景、関係者、財務状況などを公開情報から調査します。',
+    id: 'geolocation-and-image-analysis',
+    title: '位置情報と画像を活用した行動特定',
+    description: 'インターネット上には個人を特定しうる情報が多数存在します。本シナリオでは位置情報や画像から得られる情報により、標的の行動を推定します。',
     difficulty: 'intermediate',
     estimatedTime: '45-60分',
-    icon: Building2,
+    icon: MapPin,
     isImplemented: false,
   },
   {
-    id: 'document-verification',
-    title: '[ToDo]文書検証',
-    description: '画像や文書の真正性を検証し、改ざんや偽造を見抜く方法を学びます。',
+    id: 'dark-web-osint',
+    title: 'ダークウェブを活用したOSINT',
+    description: 'ダークウェブには攻撃者コミュニティが存在し、情報の売買などが行われています。とある企業の漏洩情報や認証情報をダークウェブで収集し、企業に攻撃を仕掛けましょう。',
     difficulty: 'advanced',
-    estimatedTime: '60-90分',
+    estimatedTime: '180-240分',
     icon: FileText,
     isImplemented: false,
   },
@@ -131,7 +131,7 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
     } catch {
       console.error('キャッシュの保存に失敗しました:');
       setIsLoading(false);
-      
+
       // エラーメッセージを表示
       const errorMsg = 'ゲームの読み込みに失敗しました。';
       setErrorMessage(errorMsg);
