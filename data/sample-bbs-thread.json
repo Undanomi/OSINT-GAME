@@ -1,7 +1,7 @@
 [
   {
     "id": "bbs_sample_thread",
-    "title": "芸人 サンプル太郎 について語るスレ - 5ちゃんねる",
+    "title": "芸人 サンプル太郎 について語るスレ",
     "url": "https://sample-bbs.com/thread/123456",
     "description": "芸人サンプル太郎について語るスレッド。",
     "template": "BBSThreadPage",
