@@ -357,7 +357,12 @@ export function convertToUISocialPost(
   author: { id: string; account_id: string; name: string; avatar: string }
 ): UISocialPost {
   const now = new Date();
-  const diffMs = now.getTime() - post.timestamp.getTime();
+  const baseDate = new Date('2025-10-28');
+
+  // 現在時刻を基準日付の時刻として使用
+  baseDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+
+  const diffMs = baseDate.getTime() - post.timestamp.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
 
