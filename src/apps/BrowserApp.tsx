@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BaseApp } from '@/components/BaseApp';
 import { AppProps } from '@/types/app';
 import { Search, ArrowLeft, ArrowRight, RotateCcw, Home } from 'lucide-react';
@@ -32,6 +32,9 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   // URLバー入力の状態管理
   const [urlInput, setUrlInput] = useState('');
+
+  // 検索入力欄のref（フォーカス制御用）
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Firebase検索結果のキャッシュ
   const [firebaseCache, setFirebaseCache] = useState<UnifiedSearchResult[]>([]);
@@ -79,13 +82,17 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
         else if (urlObj.pathname === '/search') {
           const searchParam = urlObj.searchParams.get('q');
           if (searchParam) {
+            const trimmedParam = searchParam.trim();
+            if (!trimmedParam) {
+              return;
+            }
             // 検索クエリをセットして検索を実行
-            setSearchQuery(searchParam);
+            setSearchQuery(trimmedParam);
             setTimeout(() => {
               // URLから取得したクエリで検索を実行
               performSearchOnCache(
                 firebaseCache.length > 0 ? firebaseCache
-                : loadCacheFromLocalStorage(), searchParam
+                : loadCacheFromLocalStorage(), trimmedParam
               );
             }, 0);
           }
@@ -147,11 +154,8 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * キーワードマッチングとページネーション機能を実装
    */
   const performSearch = async () => {
-    console.log('performSearch called');
-    console.log('searchQuery:', searchQuery);
-    
-    if (!searchQuery.trim()) {
-      console.log('Empty search query, returning');
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) {
       return; // 空の検索クエリは無視
     }
 
@@ -163,7 +167,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       if (!isCacheLoaded) {
         // ローカルストレージから読み込みを試行
         const localCache = loadCacheFromLocalStorage();
-        
+
         if (localCache.length > 0) {
           // ローカルストレージのキャッシュが利用可能
           setFirebaseCache(localCache);
@@ -177,7 +181,10 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       }
 
       // キャッシュを使って検索を実行
-      performSearchOnCache(cacheToUse, searchQuery);
+      performSearchOnCache(cacheToUse, trimmedQuery);
+
+      // 検索実行後、入力欄からフォーカスを外して連打を防止
+      searchInputRef.current?.blur();
     } catch (error) {
       console.error('Failed to perform search:', error);
     }
@@ -421,6 +428,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
       <div className="flex items-center space-x-2">
         <Search size={16} className="text-gray-400" />
         <input
+          ref={searchInputRef}
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}

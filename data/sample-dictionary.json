@@ -1,0 +1,26 @@
+[
+  {
+    "id": "dictionary_sample",
+    "title": "サンプルの意味・使い方 - サンプル辞書",
+    "url": "https://sample-dictionary.com/words/sample",
+    "description": "「サンプル」の意味や使い方を解説。",
+    "template": "DictionaryPage",
+    "content": {
+      "term": "サンプル",
+      "reading": "さんぷる",
+      "partOfSpeech": "名詞",
+      "definitions": ["例として示すもの", "標本"],
+      "etymology": "英語「sample」に由来。",
+      "usageExamples": [
+        {"example": "サンプルを提示してください。", "meaning": "例を見せてくださいという意味。"}
+      ],
+      "relatedTerms": [
+        {"term": "例", "relation": "類義語"}
+      ],
+      "notes": "一般的に「見本」とも訳されます。"
+    },
+    "keywords": ["サンプル", "辞書", "意味"],
+    "domainStatus": "active",
+    "archivedDate": "2024-01-01"
+  }
+]

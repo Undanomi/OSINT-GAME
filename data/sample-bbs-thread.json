@@ -1,0 +1,27 @@
+[
+  {
+    "id": "bbs_sample_thread",
+    "title": "芸人 サンプル太郎 について語るスレ - 5ちゃんねる",
+    "url": "https://sample-bbs.com/thread/123456",
+    "description": "芸人サンプル太郎について語るスレッド。",
+    "template": "BBSThreadPage",
+    "content": {
+      "boardName": "お笑い芸人板",
+      "threadTitle": "【漫才】サンプル太郎を語るスレ Part1【コント】",
+      "threadNumber": 123456,
+      "totalPosts": 10,
+      "posts": [
+        {
+          "number": 1,
+          "name": "名無しさん",
+          "date": "2024/01/01 12:00:00",
+          "id": "ABC123",
+          "content": "サンプル太郎について語るスレです。"
+        }
+      ]
+    },
+    "keywords": ["サンプル太郎", "芸人", "掲示板"],
+    "domainStatus": "active",
+    "archivedDate": "2024-01-01"
+  }
+]
