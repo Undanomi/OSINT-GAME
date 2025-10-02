@@ -18,9 +18,10 @@ const MAIL_URLS = {
 
 interface GogglesMailProps {
   initialUrl: string;
+  onNavigate?: (url: string) => void;
 }
 
-type MailPhase = 
+type MailPhase =
   | 'login'
   | 'forgot-email'
   | 'forgot-method'
@@ -34,7 +35,7 @@ export interface MailPageProps {
   onPhaseNavigate: (phase: MailPhase) => void;
 }
 
-export const GogglesMail: React.FC<GogglesMailProps> = ({ initialUrl }) => {
+export const GogglesMail: React.FC<GogglesMailProps> = ({ initialUrl, onNavigate }) => {
   const { isGogglesMailLoggedIn } = useGogglesMailAuthStore();
   const [mailPhase, setMailPhase] = useState<MailPhase>('login');
 
@@ -73,6 +74,11 @@ export const GogglesMail: React.FC<GogglesMailProps> = ({ initialUrl }) => {
   // フェーズの変更処理
   const handlePhaseNavigate = (phase: MailPhase) => {
     setMailPhase(phase);
+
+    // メールサービス画面に遷移する場合、ブラウザのURLも更新
+    if (phase === 'mail-service' && onNavigate) {
+      onNavigate(MAIL_URLS.MAIL_SERVICE);
+    }
   };
 
   // フェーズに応じて適切なコンポーネントを表示

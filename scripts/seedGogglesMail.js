@@ -1,0 +1,249 @@
+/**
+ * Firestore データ自動登録スクリプト
+ * JSONファイルからデータを読み込んでFirestoreに登録
+ * 
+ * 使い方:
+ * node scripts/seedFirestore.js <JSONファイルパス> [オプション]
+ * 
+ * 例:
+ * node scripts/seedFirestore.js data/facelook.json
+ * node scripts/seedFirestore.js data/facelook.json --overwrite
+ * node scripts/seedFirestore.js data/facelook.json --skip-existing
+ */
+
+import admin from 'firebase-admin';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import dotenv from 'dotenv';
+
+// ES modulesで__dirnameを使うための設定
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// .env.localを読み込む
+dotenv.config({ path: '.env.local' });
+
+// オプション: --overwrite フラグで上書きを許可
+const allowOverwrite = process.argv.includes('--overwrite');
+const skipExisting = process.argv.includes('--skip-existing');
+
+// コマンドライン引数からJSONファイルパスを取得（必須）
+// オプションフラグを除外してファイルパスを探す
+const args = process.argv.slice(2).filter(arg => !arg.startsWith('--'));
+const jsonFilePath = args[0];
+
+// ファイルパスが指定されていない場合はエラー
+if (!jsonFilePath) {
+  console.error('[-] エラー: JSONファイルパスを指定してください');
+  console.log('\n使い方:');
+  console.log('  node scripts/seedFirestore.js <JSONファイルパス> [オプション]');
+  console.log('\n例:');
+  console.log('  node scripts/seedFirestore.js data/sample.json');
+  console.log('  node scripts/seedFirestore.js data/sample.json --overwrite');
+  console.log('  node scripts/seedFirestore.js data/sample.json --skip-existing');
+  console.log('\nまたはnpmスクリプトを使用:');
+  console.log('  npm run seed data/sample.json');
+  console.log('  npm run seed:overwrite data/sample.json');
+  console.log('  npm run seed:skip data/sample.json');
+  process.exit(1);
+}
+const absolutePath = path.resolve(jsonFilePath);
+
+// Firebase Admin SDK の初期化
+// プロジェクトIDは環境変数から取得
+const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+
+if (!projectId) {
+  console.error('[-] Firebase プロジェクトIDが設定されていません');
+  console.log('[i] 以下のいずれかの方法で設定してください:');
+  console.log('    1. .env.local に NEXT_PUBLIC_FIREBASE_PROJECT_ID を設定');
+  console.log('    2. 環境変数 FIREBASE_PROJECT_ID を設定');
+  console.log('    3. コマンド実行時に指定: FIREBASE_PROJECT_ID=your-project-id node scripts/seedFirestore.js');
+  process.exit(1);
+}
+
+// サービスアカウントキーをチェック
+const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
+if (fs.existsSync(serviceAccountPath)) {
+  console.log('[i] サービスアカウントキーを使用して認証します');
+  const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    projectId: projectId,
+  });
+} else {
+  console.log('[i] デフォルト認証を使用します（サービスアカウントキーが見つかりません）');
+  console.log('[i] scripts/serviceAccountKey.json を配置するか、Firebase CLIでログインしてください');
+  admin.initializeApp({
+    projectId: projectId,
+  });
+}
+
+const db = admin.firestore();
+
+// JSONファイルを読み込む関数
+function loadJsonData(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      console.error(`[-] ファイルが見つかりません: ${filePath}`);
+      console.log('\n[i] JSONファイルの例:');
+      console.log(JSON.stringify(sampleStructure, null, 2));
+      process.exit(1);
+    }
+
+    const rawData = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(rawData);
+
+    // 配列でもオブジェクトでも対応
+    return Array.isArray(data) ? data : [data];
+  } catch (error) {
+    console.error(`[-] JSONファイルの読み込みに失敗しました: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+// JSONファイルの構造例
+const sampleStructure = [
+  {
+    id: 1,
+    from: 'security-support@test-goggles.com',
+    subject: '【重要】セキュリティアップデートのお知らせ',
+    content: 'お客様のアカウントのセキュリティ強化のため...',
+    unread: true,
+    folder: 'inbox',
+    time: '3時間前',
+    originalFolder: '',
+    to: 'y@test-goggles.com',
+    starred: true
+  }
+];
+
+// データ検証関数
+function validateData(data) {
+  const requiredFields = ['id', 'from', 'subject', 'content', 'unread', 'folder', 'time', 'to', 'starred'];
+  const errors = [];
+
+  data.forEach((item, index) => {
+    requiredFields.forEach(field => {
+      if (item[field] === undefined || item[field] === null) {
+        errors.push(`Item ${index}: "${field}" フィールドが不足しています`);
+      }
+    });
+
+    // folder検証
+    const validFolders = ['inbox', 'sent', 'trash'];
+    if (item.folder && !validFolders.includes(item.folder)) {
+      errors.push(`Item ${index}: folder は "inbox", "sent", "trash" のいずれかである必要があります`);
+    }
+
+    // boolean検証
+    if (typeof item.unread !== 'boolean') {
+      errors.push(`Item ${index}: unread はboolean型である必要があります`);
+    }
+    if (typeof item.starred !== 'boolean') {
+      errors.push(`Item ${index}: starred はboolean型である必要があります`);
+    }
+  });
+
+  if (errors.length > 0) {
+    console.error('[-] データ検証エラー:');
+    errors.forEach(error => console.error(`  - ${error}`));
+    return false;
+  }
+
+  return true;
+}
+
+// データをFirestoreに登録する関数
+async function seedData() {
+  console.log('[*] JSONファイルを読み込んでいます...');
+  console.log(`    ファイルパス: ${absolutePath}\n`);
+
+  const data = loadJsonData(absolutePath);
+  
+  console.log(`[+] ${data.length} 件のデータを読み込みました\n`);
+  
+  // データ検証
+  console.log('[*] データを検証しています...');
+  if (!validateData(data)) {
+    console.error('\n[-] データ検証に失敗しました。JSONファイルを修正してください。');
+    process.exit(1);
+  }
+  console.log('[+] データ検証成功\n');
+
+  // 登録確認
+  console.log('[i] 登録するデータ:');
+  data.forEach(item => {
+    console.log(`  - ${item.id}: ${item.subject}`);
+  });
+  console.log();
+
+  // Firestoreへの登録
+  console.log('[*] Firestore へのデータ登録を開始します...\n');
+
+  let successCount = 0;
+  let failCount = 0;
+
+  for (const item of data) {
+    try {
+      const docRef = db.collection('goggles_mail').doc(item.id.toString());
+      const doc = await docRef.get();
+      
+      if (doc.exists) {
+        if (skipExisting) {
+          console.log(`[*] スキップ（既存）: ${item.id} - ${item.subject}`);
+          continue;
+        } else if (!allowOverwrite) {
+          console.log(`[!] 警告: ${item.id} は既に存在します。上書きするには --overwrite オプションを使用してください`);
+          failCount++;
+          continue;
+        } else {
+          console.log(`[*] 上書き: ${item.id} - ${item.subject}`);
+        }
+      }
+
+      // ドキュメントを登録
+      await docRef.set(item);
+      console.log(`[+] 登録成功: ${item.id} - ${item.subject}`);
+      successCount++;
+    } catch (error) {
+      console.error(`[-] 登録失敗: ${item.id}`, error.message);
+      failCount++;
+    }
+  }
+
+  console.log('\n========================================');
+  console.log('[!] データ登録が完了しました！');
+  console.log(`    成功: ${successCount} 件`);
+  console.log(`    失敗: ${failCount} 件`);
+  console.log('========================================\n');
+
+  if (successCount > 0) {
+    console.log('[i] 登録されたメールデータ:');
+    data.forEach(item => {
+      console.log(`  - ID: ${item.id}, Subject: ${item.subject}, Folder: ${item.folder}`);
+    });
+  }
+
+  process.exit(failCount > 0 ? 1 : 0);
+}
+
+// スクリプト実行
+console.log('========================================');
+console.log('  Firestore データ自動登録スクリプト');
+console.log('========================================\n');
+
+if (allowOverwrite) {
+  console.log('[!] 上書きモード: 既存のドキュメントを上書きします\n');
+} else if (skipExisting) {
+  console.log('[!] スキップモード: 既存のドキュメントをスキップします\n');
+} else {
+  console.log('[i] 通常モード: 既存のドキュメントがある場合は警告を表示します\n');
+}
+
+seedData().catch(error => {
+  console.error('[E] エラーが発生しました:', error);
+  process.exit(1);
+});

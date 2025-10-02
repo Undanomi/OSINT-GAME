@@ -1,0 +1,48 @@
+[
+  {
+    "id": 1,
+    "from": "security-support@goggles.com",
+    "subject": "【重要】セキュリティアップデートのお知らせ",
+    "content": "お客様のアカウントのセキュリティ強化のため...",
+    "unread": true,
+    "folder": "inbox",
+    "time": "3時間前",
+    "originalFolder": "",
+    "to": "y@goggles.com",
+    "starred": true
+  },
+  {
+    "id": 2,
+    "from": "news-tech@goggles.com",
+    "subject": "今週のテクノロジーニュース",
+    "content": "AI技術の最新動向について...",
+    "unread": false,
+    "folder": "trash",
+    "originalFolder": "inbox",
+    "to": "y@goggles.com",
+    "starred": false,
+    "time": "5時間前"
+  },
+  {
+    "id": 3,
+    "to": "undanomitech@company.goggles.com",
+    "subject": "プロジェクトの進捗について",
+    "content": "お疲れ様です。プロジェクトの進捗をお知らせします...",
+    "time": "昨日",
+    "unread": false,
+    "starred": false,
+    "folder": "sent",
+    "from": "y@goggles.com"
+  },
+  {
+    "id": 4,
+    "to": "a",
+    "subject": "a",
+    "unread": true,
+    "starred": false,
+    "time": "昨日",
+    "content": "a",
+    "originFolder": "",
+    "from": "inbox"
+  }
+]
