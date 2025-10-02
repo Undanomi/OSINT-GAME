@@ -57,7 +57,9 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
       );
 
       const now = new Date();
-      const uiPosts = result.items.filter(post => post.timestamp <= now);
+      const baseDate = new Date("2025-10-28");
+      baseDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+      const uiPosts = result.items.filter(post => post.timestamp <= baseDate);
 
       if (reset) {
         setPosts(uiPosts);
