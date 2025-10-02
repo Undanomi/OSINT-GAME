@@ -1221,7 +1221,14 @@ export const generateSocialAIResponse = requireAuth(async (
           const jsonString = responseText.slice(7, -3).trim();
           parsedResponse = JSON.parse(jsonString);
         } else {
-          parsedResponse = JSON.parse(responseText);
+          const pattern: RegExp = /\{.*?\}/gs;
+        // match()メソッドで、パターンに一致するすべての部分を配列として取得
+          const jsonString: string[] | null = responseText.match(pattern);
+          if (jsonString == null) {
+            throw new Error('No JSON found in AI response');
+          }
+          // 最初に見つかったJSONオブジェクトを使用
+          parsedResponse = JSON.parse(jsonString[0]);
         }
         // 応答の検証
         if (!parsedResponse.responseText ||
