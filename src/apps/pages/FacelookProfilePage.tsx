@@ -216,9 +216,10 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 relative">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-300 sticky top-0 z-30">
+    <div className="h-full overflow-hidden relative">
+      <div className="h-full overflow-auto bg-gray-100">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-300 sticky top-0 z-30">
         <div className="max-w-full px-2 sm:px-4">
           <div className="flex items-center justify-between h-14">
             {/* Left section */}
@@ -542,22 +543,32 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
           </div>
         </div>
       </div>
+      </div>
 
       {/* Photo Modal */}
       {selectedPhoto && (
         <>
           {/* Overlay */}
-          <div 
-            className="fixed inset-0 bg-black/60 z-40"
+          <div
+            className="absolute inset-0 bg-black/60 z-40"
             onClick={handleCloseModal}
           />
           {/* Modal content */}
-          <div 
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 pointer-events-none"
+          <div
+            className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none"
           >
-            <div className="relative pointer-events-auto">
+            <div className="relative inline-block pointer-events-auto max-w-[75%] max-h-[75%]">
+              <Image
+                src={selectedPhoto}
+                alt="Enlarged photo"
+                width={800}
+                height={600}
+                className="object-contain w-auto h-auto max-w-full max-h-full"
+                unoptimized
+                onClick={(e) => e.stopPropagation()}
+              />
               <button
-                className="absolute top-2 right-2 text-white bg-black bg-opacity-70 rounded-full p-2 hover:bg-opacity-90 z-10 transition-all"
+                className="absolute -top-8 -right-8 text-white bg-black bg-opacity-70 rounded-full p-2 hover:bg-opacity-90 z-10 transition-all"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleCloseModal();
@@ -565,15 +576,6 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
               >
                 <X className="w-6 h-6" />
               </button>
-              <Image
-                src={selectedPhoto}
-                alt="Enlarged photo"
-                width={800}
-                height={600}
-                className="object-contain max-w-[90vw] max-h-[80vh] w-auto h-auto"
-                unoptimized
-                onClick={(e) => e.stopPropagation()}
-              />
             </div>
           </div>
         </>
