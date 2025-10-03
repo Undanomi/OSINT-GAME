@@ -13,7 +13,7 @@ export const DisclaimerLoading: React.FC<DisclaimerLoadingProps> = ({ onComplete
   const steps = [
     "この物語はフィクションであり、",
     "実在の人物・団体とは一切関係ありません。",
-    "調査スキルの向上を目的とした",
+    "セキュリティ意識の向上を目的とした",
     "教育的なシミュレーションです。"
   ];
 

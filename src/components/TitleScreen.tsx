@@ -75,7 +75,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
             OSINT GAME
           </h1>
           <h2 className="text-2xl text-cyan-300 font-light tracking-wide">
-            Open Source Intelligence Training
+            Open Source Intelligence Game
           </h2>
         </div>
 

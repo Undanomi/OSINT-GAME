@@ -16,13 +16,13 @@
       "industry": "テスト・IT業界",
       "summary": "[これはテストデータです] OSINTゲーム用のサンプルプロフィールです。実在の人物・企業・団体とは一切関係ありません。このデータは架空のものであり、実際のプロフェッショナルネットワーキングサイトのプロフィールではありません。",
       "connectionsCount": 999,
-      "profileViews": 777,
-      "searchAppearances": 2345,
+      "socialAccounts": [
+        { "platform": "Z", "id": "@test_taro_dummy" }
+      ],
       "experience": [
         {
           "title": "テストシニアエンジニア",
           "company": "テスト株式会社（架空）",
-          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テストフルタイム",
           "location": "テスト県",
           "startDate": "2020年4月",
@@ -33,7 +33,6 @@
         {
           "title": "テストエンジニア",
           "company": "サンプルテック（架空）",
-          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テストフルタイム",
           "location": "サンプル県",
           "startDate": "2017年4月",
@@ -44,7 +43,6 @@
         {
           "title": "テストジュニアエンジニア",
           "company": "ダミーソフト（架空）",
-          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テスト契約",
           "location": "ダミー県",
           "startDate": "2015年4月",
@@ -56,7 +54,6 @@
       "education": [
         {
           "school": "テスト大学（架空）",
-          "schoolLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "degree": "テスト修士",
           "fieldOfStudy": "テストコンピュータサイエンス",
           "startYear": "2013",
@@ -67,7 +64,6 @@
         },
         {
           "school": "サンプル工科大学（架空）",
-          "schoolLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "degree": "テスト学士",
           "fieldOfStudy": "ダミー情報工学",
           "startYear": "2009",
@@ -152,11 +148,7 @@
         { "name": "テスト日本語", "proficiency": "テストネイティブ" },
         { "name": "テスト英語", "proficiency": "テストビジネスレベル" },
         { "name": "ダミー中国語", "proficiency": "サンプル初級" }
-      ],
-      "email": "test.taro@test-example.com",
-      "phone": "+81-TEST-1234-5678",
-      "website": "https://test-taro-tech-blog.example.com",
-      "rankedonUrl": "https://test-rankedon.com/on/test-taro-dummy"
+      ]
     },
     "keywords": ["テスト太郎", "rankedon", "テスト株式会社", "テストエンジニア", "架空プロフィール"],
     "domainStatus": "active",
@@ -179,13 +171,13 @@
       "industry": "テスト・プロダクト管理",
       "summary": "[これはテストデータです] 架空の10年以上のプロダクト管理経験。実在しないスタートアップから架空の大企業まで、ダミープロダクトの成長を支援。OSINTゲーム用のサンプルデータです。",
       "connectionsCount": 1500,
-      "profileViews": 456,
-      "searchAppearances": 1234,
+      "socialAccounts": [
+        { "platform": "Z", "id": "@test_hanako_pm" }
+      ],
       "experience": [
         {
           "title": "テストシニアプロダクトマネージャー",
           "company": "サンプルイノベーション（架空）",
-          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テストフルタイム",
           "location": "ダミー都",
           "startDate": "2019年1月",
@@ -196,7 +188,6 @@
         {
           "title": "テストプロダクトマネージャー",
           "company": "ダミーテクノロジー（架空）",
-          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テストフルタイム",
           "location": "サンプル市",
           "startDate": "2016年4月",
@@ -208,7 +199,6 @@
       "education": [
         {
           "school": "ダミービジネススクール（架空）",
-          "schoolLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "degree": "テストMBA",
           "fieldOfStudy": "サンプル経営管理",
           "startYear": "2014",
@@ -218,7 +208,6 @@
         },
         {
           "school": "テスト経済大学（架空）",
-          "schoolLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "degree": "テスト学士",
           "fieldOfStudy": "ダミー経済学",
           "startYear": "2008",
@@ -273,10 +262,7 @@
       "languages": [
         { "name": "テスト日本語", "proficiency": "テストネイティブ" },
         { "name": "テスト英語", "proficiency": "テストビジネスレベル" }
-      ],
-      "email": "test.hanako@sample-example.com",
-      "website": "https://test-hanako-portfolio.example.com",
-      "rankedonUrl": "https://test-rankedon.com/on/test-hanako-dummy"
+      ]
     },
     "keywords": ["テスト花子", "rankedon", "サンプルイノベーション", "テストプロダクトマネージャー", "架空プロフィール"],
     "domainStatus": "expired",
@@ -299,13 +285,13 @@
       "industry": "テスト・データサイエンス",
       "summary": "[これはテストデータです] 架空の機械学習モデルの開発と実装。ダミービッグデータの分析。サンプル予測モデルの構築。すべて架空のプロジェクトです。OSINTゲーム用のテストプロフィール。",
       "connectionsCount": 888,
-      "profileViews": 333,
-      "searchAppearances": 999,
+      "socialAccounts": [
+        { "platform": "Z", "id": "@dummy_jiro_ds" }
+      ],
       "experience": [
         {
           "title": "テストリードデータサイエンティスト",
           "company": "ダミーアナリティクス（架空）",
-          "companyLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "employmentType": "テストフルタイム",
           "location": "サンプル県",
           "startDate": "2018年7月",
@@ -317,7 +303,6 @@
       "education": [
         {
           "school": "サンプル統計大学（架空）",
-          "schoolLogo": "gs://your-project.firebasestorage.app/path/to/image",
           "degree": "テスト博士",
           "fieldOfStudy": "ダミー統計学・機械学習",
           "startYear": "2015",
@@ -345,9 +330,7 @@
       "languages": [
         { "name": "テスト日本語", "proficiency": "テストネイティブ" },
         { "name": "ダミー英語", "proficiency": "サンプル上級" }
-      ],
-      "email": "dummy.jiro@test-analytics.example.com",
-      "rankedonUrl": "https://test-rankedon.com/on/dummy-jiro-test"
+      ]
     },
     "keywords": ["ダミー次郎", "rankedon", "ダミーアナリティクス", "テストデータサイエンティスト", "架空プロフィール"],
     "domainStatus": "active",

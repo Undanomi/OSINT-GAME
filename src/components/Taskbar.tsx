@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { useWindowStore } from '@/store/windowStore';
 import { useAppStore } from '@/store/appStore';
 import { X } from 'lucide-react';
@@ -23,6 +23,19 @@ export const Taskbar: React.FC = React.memo(() => {
   const { windows, focusWindowOnInteraction, minimizeWindow, closeWindow } = useWindowStore();
   // アプリストアからアプリメタデータ取得関数を取得
   const { getAppById } = useAppStore();
+  // 現在時刻の状態管理
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  /**
+   * 1秒ごとに時刻を更新
+   */
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   /**
    * 開いていて非表示でないウィンドウのみをフィルタリング
@@ -107,11 +120,14 @@ export const Taskbar: React.FC = React.memo(() => {
       </div>
 
       {/* 時計表示エリア（右端） */}
-      <div className="ml-auto flex items-center text-white text-sm">
-        {new Date().toLocaleTimeString('ja-JP', {
-          hour: '2-digit',
-          minute: '2-digit'
-        })}
+      <div className="ml-auto flex flex-col items-end text-white text-sm">
+        <div>2025年10月28日</div>
+        <div>
+          {currentTime.toLocaleTimeString('ja-JP', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </div>
       </div>
     </div>
   );
