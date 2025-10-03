@@ -1,0 +1,31 @@
+[
+  {
+    "id": "company_review_sample_inc",
+    "title": "Sample株式会社の口コミ・評判 - 企業口コミナビ",
+    "url": "https://sample-reviews.com/companies/sample-inc",
+    "description": "Sample株式会社の口コミ・評判を掲載。",
+    "template": "CompanyReviewPage",
+    "content": {
+      "companyName": "Sample株式会社",
+      "industry": "情報通信・IT",
+      "location": "東京都サンプル区",
+      "employeeCount": "約100名",
+      "averageRating": 3.5,
+      "totalReviews": 10,
+      "reviews": [
+        {
+          "reviewer": "現社員",
+          "date": "2024年1月1日",
+          "rating": 4,
+          "category": "働きがい",
+          "title": "成長できる環境",
+          "content": "新しい技術に挑戦できる環境があります。",
+          "helpful": 10
+        }
+      ]
+    },
+    "keywords": ["Sample株式会社", "口コミ", "評判"],
+    "domainStatus": "active",
+    "archivedDate": "2024-01-01"
+  }
+]

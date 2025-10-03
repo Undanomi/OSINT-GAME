@@ -1,0 +1,34 @@
+[
+  {
+    "id": "product_review_sample_pen",
+    "title": "【文房具レビュー】サンプルペンを徹底レビュー！ - レビューブログ",
+    "url": "https://sample-review-blog.com/pen-review",
+    "description": "サンプルペンを実際に使ってみた詳細レビュー。デザイン、使い心地、機能性などを徹底解説します。",
+    "template": "ProductReviewBlogPage",
+    "content": {
+      "bloggerName": "サンプルレビュアー",
+      "bloggerProfile": "文房具とガジェットが好きなレビュアー。",
+      "postDate": "2024年1月1日",
+      "productName": "サンプルペン",
+      "manufacturer": "サンプル株式会社",
+      "category": "文房具・ペン",
+      "rating": 4.0,
+      "purchaseDate": "2023年12月25日",
+      "purchaseLocation": "サンプル文房具店",
+      "price": 500,
+      "pros": ["書きやすい", "インクが滑らか"],
+      "cons": ["やや高い"],
+      "reviewSections": [
+        {
+          "title": "デザイン",
+          "content": "シンプルで持ちやすいデザインです。"
+        }
+      ],
+      "overallReview": "コストパフォーマンスに優れた商品です。",
+      "recommendationScore": 4
+    },
+    "keywords": ["サンプルペン", "文房具", "レビュー"],
+    "domainStatus": "active",
+    "archivedDate": "2024-01-01"
+  }
+]

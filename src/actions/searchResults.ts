@@ -39,18 +39,18 @@ export const getSearchResults = async (): Promise<UnifiedSearchResult[]> => {
 
 /**
  * キャッシュされたsearch_resultsに対して部分一致検索を実行する
- * 複数のキーワードをスペース、「OR」、「|」で区切って指定した場合、OR検索を実行する
+ * 複数のキーワードをスペース、「AND」、「&」で区切って指定した場合、AND検索を実行する
  * @param cache - 検索対象のUnifiedSearchResultの配列
- * @param query - 検索クエリ（スペース、「OR」、「|」で区切って複数キーワード指定可能）
+ * @param query - 検索クエリ（スペース、「AND」、「&」で区切って複数キーワード指定可能）
  * @returns Promise<SearchResult[]> - フィルタリングされた検索結果
  */
 export const filterSearchResults = async (
   cache: UnifiedSearchResult[],
   query: string
 ): Promise<SearchResult[]> => {
-  // クエリを全角・半角スペース、「OR」、「|」で分割してキーワード配列を作成
+  // クエリを全角・半角スペース、「AND」、「&」で分割してキーワード配列を作成
   const keywords = query
-    .split(/\s*(?:OR|\|)\s*|[\s　]+/)  // OR、|（前後の空白含む）、またはスペースで分割
+    .split(/\s*(?:AND|&)\s*|[\s　]+/)  // AND、&（前後の空白含む）、またはスペースで分割
     .map(k => k.toLowerCase().trim())
     .filter(k => k.length > 0);
 
@@ -90,18 +90,15 @@ export const filterSearchResults = async (
   }
 
   // キャッシュから部分一致で検索（expired状態のドメインは除外）
-  // いずれかのキーワードにマッチする結果を返す（OR検索）
+  // すべてのキーワードにマッチする結果を返す（AND検索）
   const filteredItems = cache.filter(item => {
-    console.log('Filtering item:', item);
-
     // expired状態のドメインは検索結果から除外
     if (item.domainStatus === 'expired') {
-      console.log('Skipping expired domain:', item.url);
       return false;
     }
 
-    // いずれかのキーワードがマッチするかチェック（OR検索）
-    const anyKeywordMatches = keywords.some(keyword => {
+    // すべてのキーワードがマッチするかチェック（AND検索）
+    const allKeywordsMatch = keywords.every(keyword => {
       // キーワードフィールドでの部分一致
       const matchesKeywords = item.keywords?.some(k =>
         k.toLowerCase().includes(keyword)
@@ -113,13 +110,10 @@ export const filterSearchResults = async (
       // 説明文での部分一致
       const matchesDescription = item.description.toLowerCase().includes(keyword);
 
-      const matches = matchesKeywords || matchesTitle || matchesDescription;
-      console.log(`Keyword "${keyword}" matches:`, matches);
-      return matches;
+      return matchesKeywords || matchesTitle || matchesDescription;
     });
 
-    console.log('Any keyword matches:', anyKeywordMatches);
-    return anyKeywordMatches;
+    return allKeywordsMatch;
   });
 
   // 非同期変換処理
@@ -136,9 +130,6 @@ export const filterSearchResults = async (
     const j = Math.floor(Math.random() * (i + 1));
     [shuffledResults[i], shuffledResults[j]] = [shuffledResults[j], shuffledResults[i]];
   }
-
-  console.log('検索結果:', shuffledResults);
-  console.log('検索結果数:', shuffledResults.length);
 
   return shuffledResults;
 };
