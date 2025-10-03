@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, UIEvent } from 'react'
 import { SocialAccount, UISocialPost, getDisplayUserId } from '@/types/social';
 import { PostComponent } from './PostComponent';
 import { getUserAccountPosts } from '@/actions/social';
+import { handleServerAction } from '@/utils/handleServerAction';
 import {
   MapPin,
   Calendar,
@@ -45,13 +46,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       setIsLoadingMore(true);
     }
 
-    try {
-      const result = await getUserAccountPosts(
+    const result = await handleServerAction(
+      () => getUserAccountPosts(
         activeAccount.id,
         10,
         reset ? undefined : cursor
-      );
+      ),
+      (error) => {
+        console.error('Failed to load user posts:', error);
+        // エラー時もhasMoreをfalseに設定して無限ループを防ぐ
+        setHasMore(false);
+        setCursor(undefined);
+      }
+    );
 
+    if (result) {
       const now = new Date();
       const baseDate = new Date('2025-10-28');
       baseDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
@@ -71,17 +80,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         setHasMore(result.hasMore);
         setCursor(result.lastCursor);
       }
-    } catch (error) {
-      console.error('Failed to load user posts:', error);
-      // エラー時もhasMoreをfalseに設定して無限ループを防ぐ
-      setHasMore(false);
-      setCursor(undefined);
-    } finally {
-      if (reset) {
-        setLoading(false);
-      } else {
-        setIsLoadingMore(false);
-      }
+    }
+
+    if (reset) {
+      setLoading(false);
+    } else {
+      setIsLoadingMore(false);
     }
   }, [activeAccount, loading, isLoadingMore, hasMore, cursor]);
 

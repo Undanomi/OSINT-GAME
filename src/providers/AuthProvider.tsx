@@ -2,11 +2,11 @@
 
 /**
  * TODO: 残りのフォルダ構成のリファクタリング
- * 
+ *
  * 残りのタスク:
  * 1. hooksフォルダの削除
  *    - /src/hooks/useHydration.ts は使用されていないため削除可能
- * 
+ *
  * 2. utils.tsの確認
  *    - 使用状況を確認して削除または維持を判断
  */
@@ -21,7 +21,6 @@ import {
   onAuthStateChanged
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -41,7 +40,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
     // 認証状態の変更を監視
     const unsubscribe = onAuthStateChanged(auth, (user) => {

@@ -1,8 +1,8 @@
 'use server'
 
-import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { getAdminFirestore } from '@/lib/auth/firebase-admin';
 import { UnifiedSearchResult } from '@/types/search';
+import { ensureAuth } from '@/lib/auth/server';
 
 /**
  * 検索結果アイテムのデータ構造を定義するインターフェース
@@ -109,9 +109,10 @@ const getSpellingSuggestion = (query: string): string | undefined => {
 /**
  * Firebaseのsearch_resultsコレクションからデータを取得する
  */
-export const getSearchResults = async (): Promise<UnifiedSearchResult[]> => {
-	const searchResultsRef = collection(db, 'search_results');
-	const querySnapshot = await getDocs(searchResultsRef);
+export const getSearchResults = ensureAuth(async (): Promise<UnifiedSearchResult[]> => {
+	const db = getAdminFirestore();
+	const searchResultsRef = db.collection('search_results');
+	const querySnapshot = await searchResultsRef.get();
 	const firebaseResults: UnifiedSearchResult[] = [];
 	querySnapshot.forEach((doc) => {
 		const data = doc.data() as UnifiedSearchResult;
@@ -121,11 +122,11 @@ export const getSearchResults = async (): Promise<UnifiedSearchResult[]> => {
 		});
 	});
 	return firebaseResults;
-};
+});
 
 /**
  * キャッシュされたsearch_resultsに対して部分一致検索を実行する
- * 複数のキーワードをスペース、「OR」、「|」で区切って指定した場合、OR検索を実行する
+ * 複数のキーワードをスペース、「AND」、「&」で区切って指定した場合、AND検索を実行する
  * @param cache - 検索対象のUnifiedSearchResultの配列
  * @param query - 検索クエリ（スペース、「OR」、「|」で区切って複数キーワード指定可能）
  * @returns Promise<SearchResultsWithSuggestion> - フィルタリングされた検索結果と提案
@@ -139,7 +140,7 @@ export const filterSearchResults = async (
 
   // クエリを全角・半角スペース、「OR」、「|」で分割してキーワード配列を作成
   const keywords = query
-    .split(/\s*(?:OR|\|)\s*|[\s　]+/)  // OR、|（前後の空白含む）、またはスペースで分割
+    .split(/\s*(?:AND|&)\s*|[\s　]+/)  // AND、&（前後の空白含む）、またはスペースで分割
     .map(k => k.toLowerCase().trim())
     .filter(k => k.length > 0);
 
@@ -147,6 +148,12 @@ export const filterSearchResults = async (
   const playbackKeywords = ['playback', 'archive', 'アーカイブ', 'wayback', '過去', 'キャッシュ', 'cache'];
   const isPlaybackSearch = keywords.some(keyword =>
     playbackKeywords.some(playbackKeyword => keyword.includes(playbackKeyword))
+  );
+
+  // Goggles Mail関連の検索キーワード
+  const gogglesMailKeywords = ['goggles', 'mail', 'メール', 'ログイン', 'login', 'gmail', 'email'];
+  const isGogglesMailSearch = keywords.some(keyword =>
+    gogglesMailKeywords.some(gogglesMailKeyword => keyword.includes(gogglesMailKeyword))
   );
 
   // Playback Machineを検索結果に追加
@@ -161,19 +168,27 @@ export const filterSearchResults = async (
     });
   }
 
-  // キャッシュから部分一致で検索（expired状態のドメインは除外）
-  // いずれかのキーワードにマッチする結果を返す（OR検索）
-  const filteredItems = cache.filter(item => {
-    console.log('Filtering item:', item);
+  // Goggles Mailログインページを検索結果に追加
+  if (isGogglesMailSearch) {
+    staticResults.push({
+      id: 'goggles-mail-login-static',
+      title: 'Goggles Mail - ログイン',
+      url: 'https://mail.goggles.com/login',
+      description: 'Goggles Mailアカウントにログインして、メール、連絡先、カレンダーなどにアクセスできます。',
+      type: 'directory' as const,
+    });
+  }
 
+  // キャッシュから部分一致で検索（expired状態のドメインは除外）
+  // すべてのキーワードにマッチする結果を返す（AND検索）
+  const filteredItems = cache.filter(item => {
     // expired状態のドメインは検索結果から除外
     if (item.domainStatus === 'expired') {
-      console.log('Skipping expired domain:', item.url);
       return false;
     }
 
-    // いずれかのキーワードがマッチするかチェック（OR検索）
-    const anyKeywordMatches = keywords.some(keyword => {
+    // すべてのキーワードがマッチするかチェック（AND検索）
+    const allKeywordsMatch = keywords.every(keyword => {
       // キーワードフィールドでの部分一致
       const matchesKeywords = item.keywords?.some(k =>
         k.toLowerCase().includes(keyword)
@@ -185,13 +200,10 @@ export const filterSearchResults = async (
       // 説明文での部分一致
       const matchesDescription = item.description.toLowerCase().includes(keyword);
 
-      const matches = matchesKeywords || matchesTitle || matchesDescription;
-      console.log(`Keyword "${keyword}" matches:`, matches);
-      return matches;
+      return matchesKeywords || matchesTitle || matchesDescription;
     });
 
-    console.log('Any keyword matches:', anyKeywordMatches);
-    return anyKeywordMatches;
+    return allKeywordsMatch;
   });
 
   // 非同期変換処理
@@ -226,9 +238,9 @@ export const filterSearchResults = async (
  */
 export const convertFirebaseResult = async (unifiedResult: UnifiedSearchResult): Promise<SearchResult> => {
   let type: SearchResult['type'] = 'directory';
-  
+
   // templateからページタイプを判定（NOTE: 将来不要）
-  if (unifiedResult.template === 'FacelookProfilePage' || 
+  if (unifiedResult.template === 'FacelookProfilePage' ||
       unifiedResult.template === 'LinkedInProfilePage') {
     type = 'social';
   } else if (unifiedResult.template === 'AbcCorpPage') {

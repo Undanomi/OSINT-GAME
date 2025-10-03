@@ -1,23 +1,7 @@
 'use server';
 
-import {
-  collection,
-  doc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  getDoc,
-  query,
-  where,
-  orderBy,
-  limit as firestoreLimit,
-  startAfter,
-  writeBatch,
-  Timestamp
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { getAuthenticatedUserId } from '@/lib/auth/server';
+import { getAdminFirestore } from '@/lib/auth/firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
 import {
   SocialAccount,
   SocialPost,
@@ -40,7 +24,7 @@ import {
   MAX_SOCIAL_AI_RETRY_ATTEMPTS
 } from '@/lib/social/constants';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
-import { requireAuth } from '@/lib/auth/server';
+import { requireAuth, ensureAuth } from '@/lib/auth/server';
 import type { RateLimitInfo } from '@/types/messenger';
 
 // =====================================
@@ -166,10 +150,11 @@ function generateTimestampId(timestamp: Date): string {
 /**
  * 全てのデフォルトソーシャルアカウント設定を取得
  */
-export async function getAllDefaultSocialAccountSettings(): Promise<SocialAccount[]> {
+export const getAllDefaultSocialAccountSettings = ensureAuth(async (): Promise<SocialAccount[]> => {
+  const db = getAdminFirestore();
   try {
-    const settingsRef = collection(db, 'defaultSocialAccountSettings');
-    const settingsSnapshot = await getDocs(settingsRef);
+    const settingsRef = db.collection('defaultSocialAccountSettings');
+    const settingsSnapshot = await settingsRef.get();
 
     const settings: SocialAccount[] = [];
     settingsSnapshot.forEach((doc) => {
@@ -187,7 +172,7 @@ export async function getAllDefaultSocialAccountSettings(): Promise<SocialAccoun
     console.error('Failed to get all default social account settings:', error);
     throw new Error('dbError');
   }
-}
+});
 
 
 // =====================================
@@ -197,16 +182,12 @@ export async function getAllDefaultSocialAccountSettings(): Promise<SocialAccoun
 /**
  * ユーザーのソーシャルアカウント一覧を取得（認証必須）
  */
-export async function getSocialAccounts(): Promise<SocialAccount[]> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+export const getSocialAccounts = requireAuth(async (userId: string): Promise<SocialAccount[]> => {
+  const db = getAdminFirestore();
 
   try {
-    const accountsRef = collection(db, 'users', userId, 'socialAccounts');
-    const accountsQuery = query(accountsRef, orderBy('createdAt', 'asc'));
-    const snapshot = await getDocs(accountsQuery);
+    const accountsRef = db.collection('users').doc(userId).collection('socialAccounts');
+    const snapshot = await accountsRef.orderBy('createdAt', 'asc').get();
 
     return snapshot.docs.map(doc => {
       const data = doc.data();
@@ -221,18 +202,16 @@ export async function getSocialAccounts(): Promise<SocialAccount[]> {
     console.error('Failed to get social accounts:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * 新しいソーシャルアカウントを作成
  */
-export async function createSocialAccount(
+export const createSocialAccount = requireAuth(async (
+  userId: string,
   accountData: SocialAccount
-): Promise<SocialAccount> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+): Promise<SocialAccount> => {
+  const db = getAdminFirestore();
 
   try {
     // アカウントIDの検証
@@ -240,10 +219,8 @@ export async function createSocialAccount(
       throw new Error('アカウントIDが無効です');
     }
 
-    const accountsRef = collection(db, 'users', userId, 'socialAccounts');
-
-    const docRef = doc(accountsRef, accountData.id);
-    await setDoc(docRef, {
+    const docRef = db.collection('users').doc(userId).collection('socialAccounts').doc(accountData.id);
+    await docRef.set({
       ...accountData,
       createdAt: Timestamp.fromDate(accountData.createdAt),
     });
@@ -255,7 +232,7 @@ export async function createSocialAccount(
     console.error('Failed to create social account:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * ソーシャルアカウントを更新
@@ -264,28 +241,23 @@ export async function createSocialAccount(
  * account_idの重複チェック（認証済みユーザーのアカウントとNPCを対象）
  */
 async function checkAccountIdDuplicate(
+  userId: string,
   accountId: string,
   excludeStableId: string
 ): Promise<boolean> {
+  const db = getAdminFirestore();
   try {
-    const userId = await getAuthenticatedUserId();
-    if (!userId) {
-      throw new Error('authError');
-    }
-
     // 1. NPCのaccount_idをチェック
-    const npcsRef = collection(db, 'socialNPCs');
-    const npcQuery = query(npcsRef, where('account_id', '==', accountId));
-    const npcSnapshot = await getDocs(npcQuery);
+    const npcsRef = db.collection('socialNPCs');
+    const npcSnapshot = await npcsRef.where('account_id', '==', accountId).get();
 
     if (!npcSnapshot.empty) {
       return true; // NPC側で重複
     }
 
     // 2. 認証済みユーザーのアカウントをチェック
-    const socialAccountsRef = collection(db, 'users', userId, 'socialAccounts');
-    const accountQuery = query(socialAccountsRef, where('account_id', '==', accountId));
-    const accountSnapshot = await getDocs(accountQuery);
+    const socialAccountsRef = db.collection('users').doc(userId).collection('socialAccounts');
+    const accountSnapshot = await socialAccountsRef.where('account_id', '==', accountId).get();
 
     if (!accountSnapshot.empty) {
       // excludeStableIdが指定されている場合、それを除外
@@ -302,31 +274,29 @@ async function checkAccountIdDuplicate(
   }
 }
 
-export async function updateSocialAccount(
+export const updateSocialAccount = requireAuth(async (
+  userId: string,
   accountId: string,
   updates: Partial<SocialAccount>
-): Promise<void> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+): Promise<void> => {
+  const db = getAdminFirestore();
 
   try {
     // account_idが変更される場合は重複チェック
     if (updates.account_id) {
-      const isDuplicate = await checkAccountIdDuplicate(updates.account_id, accountId);
+      const isDuplicate = await checkAccountIdDuplicate(userId, updates.account_id, accountId);
       if (isDuplicate) {
         throw new Error('accountDuplicate');
       }
     }
 
-    const accountRef = doc(db, 'users', userId, 'socialAccounts', accountId);
+    const accountRef = db.collection('users').doc(userId).collection('socialAccounts').doc(accountId);
     const updateData = {
       ...updates,
       updatedAt: new Date()
     };
 
-    await updateDoc(accountRef, updateData);
+    await accountRef.update(updateData);
   } catch (error) {
     if (error instanceof Error && error.message === 'accountDuplicate') {
       throw error;
@@ -334,42 +304,36 @@ export async function updateSocialAccount(
     console.error('Failed to update social account:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * ソーシャルアカウントを削除
  */
-export async function deleteSocialAccount(accountId: string): Promise<void> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+export const deleteSocialAccount = requireAuth(async (userId: string, accountId: string): Promise<void> => {
+  const db = getAdminFirestore();
 
   try {
-    const accountRef = doc(db, 'users', userId, 'socialAccounts', accountId);
-    await deleteDoc(accountRef);
+    const accountRef = db.collection('users').doc(userId).collection('socialAccounts').doc(accountId);
+    await accountRef.delete();
   } catch (error) {
     console.error('Failed to delete social account:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * アクティブアカウントを切り替え
  */
-export async function switchActiveAccount(accountId: string): Promise<void> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+export const switchActiveAccount = requireAuth(async (userId: string, accountId: string): Promise<void> => {
+  const db = getAdminFirestore();
 
   try {
-    const batch = writeBatch(db);
-    const accountsRef = collection(db, 'users', userId, 'socialAccounts');
-    const accountsSnapshot = await getDocs(accountsRef);
+    const batch = db.batch();
+    const accountsRef = db.collection('users').doc(userId).collection('socialAccounts');
+    const accountsSnapshot = await accountsRef.get();
 
     accountsSnapshot.docs.forEach(docSnap => {
-      const ref = doc(db, 'users', userId, 'socialAccounts', docSnap.id);
+      const ref = db.collection('users').doc(userId).collection('socialAccounts').doc(docSnap.id);
       batch.update(ref, {
         isActive: docSnap.id === accountId
       });
@@ -380,7 +344,7 @@ export async function switchActiveAccount(accountId: string): Promise<void> {
     console.error('Failed to switch active account:', error);
     throw new Error('dbError');
   }
-}
+});
 
 // =====================================
 // 投稿管理
@@ -389,14 +353,12 @@ export async function switchActiveAccount(accountId: string): Promise<void> {
 /**
  * 新しい投稿を作成（認証必須）
  */
-export async function createSocialPost(
+export const createSocialPost = requireAuth(async (
+  userId: string,
   stableId: string,
   content: string
-): Promise<SocialPost> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+): Promise<SocialPost> => {
+  const db = getAdminFirestore();
 
   // 入力値の検証
   if (!content || content.trim().length === 0) {
@@ -406,7 +368,6 @@ export async function createSocialPost(
     throw new Error('投稿は500文字以内で入力してください');
   }
   try {
-    const postsRef = collection(db, 'users', userId, 'socialAccounts', stableId, 'posts');
     const now = new Date();
     const timestampId = generateTimestampId(now);
 
@@ -423,8 +384,8 @@ export async function createSocialPost(
     };
 
     // アカウント別投稿コレクションに保存（タイムスタンプベースID使用）
-    const docRef = doc(postsRef, timestampId);
-    await setDoc(docRef, {
+    const docRef = db.collection('users').doc(userId).collection('socialAccounts').doc(stableId).collection('posts').doc(timestampId);
+    await docRef.set({
       ...newPost,
       timestamp: Timestamp.fromDate(now),
       createdAt: Timestamp.fromDate(now),
@@ -445,49 +406,38 @@ export async function createSocialPost(
     console.error('Failed to create social post:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * ユーザーアカウントの投稿一覧を取得（ページング対応）
  */
-export async function getUserAccountPosts(
+export const getUserAccountPosts = requireAuth(async (
+  userId: string,
   accountId: string,
   pageLimit: number = SOCIAL_POSTS_PER_PAGE,
   cursor?: string
-): Promise<PaginatedResult<UISocialPost>> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+): Promise<PaginatedResult<UISocialPost>> => {
+  const db = getAdminFirestore();
 
   try {
     // アカウント情報を取得
-    const accountDoc = await getDoc(doc(db, 'users', userId, 'socialAccounts', accountId));
-    if (!accountDoc.exists()) {
+    const accountDoc = await db.collection('users').doc(userId).collection('socialAccounts').doc(accountId).get();
+    if (!accountDoc.exists) {
       throw new Error('アカウントが見つかりません');
     }
     const account = accountDoc.data() as SocialAccount;
 
-    const postsRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'posts');
-    let postsQuery = query(
-      postsRef,
-      orderBy('timestamp', 'desc'),
-      firestoreLimit(pageLimit)
-    );
+    const postsRef = db.collection('users').doc(userId).collection('socialAccounts').doc(accountId).collection('posts');
+    let postsQuery = postsRef.orderBy('timestamp', 'desc').limit(pageLimit);
 
     if (cursor) {
-      const cursorDoc = await getDoc(doc(postsRef, cursor));
-      if (cursorDoc.exists()) {
-        postsQuery = query(
-          postsRef,
-          orderBy('timestamp', 'desc'),
-          startAfter(cursorDoc),
-          firestoreLimit(pageLimit)
-        );
+      const cursorDoc = await postsRef.doc(cursor).get();
+      if (cursorDoc.exists) {
+        postsQuery = postsRef.orderBy('timestamp', 'desc').startAfter(cursorDoc).limit(pageLimit);
       }
     }
 
-    const snapshot = await getDocs(postsQuery);
+    const snapshot = await postsQuery.get();
     const posts = snapshot.docs.map(doc => {
       const data = doc.data();
       const post: SocialPost = {
@@ -517,7 +467,7 @@ export async function getUserAccountPosts(
     console.error('Failed to get user account posts:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * ユーザーのタイムラインに投稿を追加
@@ -527,9 +477,10 @@ export async function addToUserTimeline(
   postId: string,
   post: SocialPost
 ): Promise<void> {
+  const db = getAdminFirestore();
   try {
-    const timelineRef = collection(db, 'users', userId, 'socialTimeline');
-    await setDoc(doc(timelineRef, postId), {
+    const timelineRef = db.collection('users').doc(userId).collection('socialTimeline').doc(postId);
+    await timelineRef.set({
       authorId: post.authorId,
       authorType: post.authorType,
       content: post.content,
@@ -553,13 +504,14 @@ export async function saveNPCPostToCentralCollection(
   postId: string,
   post: SocialPost
 ): Promise<void> {
+  const db = getAdminFirestore();
   try {
     if (post.authorType !== 'npc') {
       return; // NPCの投稿でない場合は何もしない
     }
 
-    const centralPostRef = doc(db, 'socialNPCPosts', postId);
-    await setDoc(centralPostRef, {
+    const centralPostRef = db.collection('socialNPCPosts').doc(postId);
+    await centralPostRef.set({
       authorId: post.authorId,
       authorType: post.authorType,
       content: post.content,
@@ -583,12 +535,13 @@ export async function distributeToAllTimelines(
   postId: string,
   post: SocialPost
 ): Promise<void> {
+  const db = getAdminFirestore();
   try {
-    const usersSnapshot = await getDocs(collection(db, 'users'));
-    const batch = writeBatch(db);
+    const usersSnapshot = await db.collection('users').get();
+    const batch = db.batch();
 
     usersSnapshot.docs.forEach(userDoc => {
-      const timelineRef = doc(db, 'users', userDoc.id, 'socialTimeline', postId);
+      const timelineRef = db.collection('users').doc(userDoc.id).collection('socialTimeline').doc(postId);
       batch.set(timelineRef, {
         authorId: post.authorId,
         authorType: post.authorType,
@@ -614,12 +567,13 @@ export async function distributeToAllTimelines(
  * 全ユーザーのタイムラインから投稿を削除
  */
 export async function removeFromAllTimelines(postId: string): Promise<void> {
+  const db = getAdminFirestore();
   try {
-    const usersSnapshot = await getDocs(collection(db, 'users'));
-    const batch = writeBatch(db);
+    const usersSnapshot = await db.collection('users').get();
+    const batch = db.batch();
 
     usersSnapshot.docs.forEach(userDoc => {
-      const timelineRef = doc(db, 'users', userDoc.id, 'socialTimeline', postId);
+      const timelineRef = db.collection('users').doc(userDoc.id).collection('socialTimeline').doc(postId);
       batch.delete(timelineRef);
     });
 
@@ -638,24 +592,20 @@ async function searchNPCPosts(
   beforeTimestamp: Date | null,
   limit: number
 ): Promise<SocialPost[]> {
+  const db = getAdminFirestore();
   try {
-    const npcPostsRef = collection(db, 'socialNPCPosts');
+    const npcPostsRef = db.collection('socialNPCPosts');
 
     // beforeTimestampが指定されている場合のみフィルタリング
-    const timestampQuery = beforeTimestamp
-      ? query(
-          npcPostsRef,
-          where('timestamp', '<=', Timestamp.fromDate(beforeTimestamp)),
-          orderBy('timestamp', 'desc'),
-          firestoreLimit(limit)
-        )
-      : query(
-          npcPostsRef,
-          orderBy('timestamp', 'desc'),
-          firestoreLimit(limit)
-        );
+    let timestampQuery = npcPostsRef.orderBy('timestamp', 'desc');
 
-    const snapshot = await getDocs(timestampQuery);
+    if (beforeTimestamp) {
+      timestampQuery = timestampQuery.where('timestamp', '<=', Timestamp.fromDate(beforeTimestamp));
+    }
+
+    timestampQuery = timestampQuery.limit(limit);
+
+    const snapshot = await timestampQuery.get();
 
     return snapshot.docs.map(doc => {
       const data = doc.data();
@@ -676,31 +626,23 @@ async function searchNPCPosts(
 /**
  * 統合タイムライン取得（3層構造: socialStore → users/{user_id}/socialTimeline → socialNPCPosts）
  */
-export async function getTimeline(params: TimelineParams): Promise<PaginatedResult<SocialPost>> {
+export const getTimeline = requireAuth(async (userId: string, params: Omit<TimelineParams, 'userId'>): Promise<PaginatedResult<SocialPost>> => {
+  const db = getAdminFirestore();
   try {
-    const { userId, limit: pageLimit = SOCIAL_POSTS_PER_PAGE, cursor } = params;
+    const { limit: pageLimit = SOCIAL_POSTS_PER_PAGE, cursor } = params;
 
     // 1. まずユーザーのsocialTimelineから取得
-    const timelineRef = collection(db, 'users', userId, 'socialTimeline');
-    let timelineQuery = query(
-      timelineRef,
-      orderBy('timestamp', 'desc'),
-      firestoreLimit(pageLimit)
-    );
+    const timelineRef = db.collection('users').doc(userId).collection('socialTimeline');
+    let timelineQuery = timelineRef.orderBy('timestamp', 'desc').limit(pageLimit);
 
     if (cursor) {
-      const cursorDoc = await getDoc(doc(timelineRef, cursor));
-      if (cursorDoc.exists()) {
-        timelineQuery = query(
-          timelineRef,
-          orderBy('timestamp', 'desc'),
-          startAfter(cursorDoc),
-          firestoreLimit(pageLimit)
-        );
+      const cursorDoc = await timelineRef.doc(cursor).get();
+      if (cursorDoc.exists) {
+        timelineQuery = timelineRef.orderBy('timestamp', 'desc').startAfter(cursorDoc).limit(pageLimit);
       }
     }
 
-    const timelineSnapshot = await getDocs(timelineQuery);
+    const timelineSnapshot = await timelineQuery.get();
     const timelinePosts = timelineSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -720,10 +662,10 @@ export async function getTimeline(params: TimelineParams): Promise<PaginatedResu
       // カーソル使用時は、カーソルドキュメントのタイムスタンプを取得
       let lastTimestamp: Date | null;
       if (cursor && timelinePosts.length === 0) {
-        const cursorDoc = await getDoc(doc(timelineRef, cursor));
-        if (cursorDoc.exists()) {
+        const cursorDoc = await timelineRef.doc(cursor).get();
+        if (cursorDoc.exists) {
           const cursorData = cursorDoc.data();
-          lastTimestamp = cursorData.timestamp?.toDate() || null;
+          lastTimestamp = cursorData?.timestamp?.toDate() || null;
         } else {
           lastTimestamp = null;
         }
@@ -741,11 +683,10 @@ export async function getTimeline(params: TimelineParams): Promise<PaginatedResu
 
       if (npcPosts.length > 0) {
         // 新しいNPC投稿をユーザーのタイムラインに追加
-        const batch = writeBatch(db);
-        const timelineRef = collection(db, 'users', userId, 'socialTimeline');
+        const batch = db.batch();
 
         for (const post of npcPosts) {
-          const postRef = doc(timelineRef, post.id);
+          const postRef = db.collection('users').doc(userId).collection('socialTimeline').doc(post.id);
           batch.set(postRef, {
             ...post,
             timestamp: Timestamp.fromDate(post.timestamp),
@@ -776,7 +717,7 @@ export async function getTimeline(params: TimelineParams): Promise<PaginatedResu
     console.error('Failed to get unified timeline:', error);
     throw new Error('dbError');
   }
-}
+});
 
 // =====================================
 // NPC管理
@@ -785,11 +726,11 @@ export async function getTimeline(params: TimelineParams): Promise<PaginatedResu
 /**
  * NPCリストを取得
  */
-export async function getSocialNPCs(): Promise<SocialNPC[]> {
+export const getSocialNPCs = ensureAuth(async (): Promise<SocialNPC[]> => {
+  const db = getAdminFirestore();
   try {
-    const npcsRef = collection(db, 'socialNPCs');
-    const npcsQuery = query(npcsRef, where('isActive', '==', true));
-    const snapshot = await getDocs(npcsQuery);
+    const npcsRef = db.collection('socialNPCs');
+    const snapshot = await npcsRef.where('isActive', '==', true).get();
 
     return snapshot.docs.map(doc => {
       const data = doc.data();
@@ -805,21 +746,26 @@ export async function getSocialNPCs(): Promise<SocialNPC[]> {
     console.error('Failed to get social NPCs:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * 特定のNPCを取得
  */
-export async function getSocialNPC(npcId: string): Promise<SocialNPC | null> {
+export const getSocialNPC = requireAuth(async (_userId: string, npcId: string): Promise<SocialNPC | null> => {
+  const db = getAdminFirestore();
   try {
-    const npcRef = doc(db, 'socialNPCs', npcId);
-    const npcSnapshot = await getDoc(npcRef);
+    const npcRef = db.collection('socialNPCs').doc(npcId);
+    const npcSnapshot = await npcRef.get();
 
-    if (!npcSnapshot.exists()) {
+    if (!npcSnapshot.exists) {
       return null;
     }
 
     const data = npcSnapshot.data();
+    if (!data) {
+      return null;
+    }
+
     return {
       id: npcSnapshot.id,
       ...data,
@@ -831,17 +777,18 @@ export async function getSocialNPC(npcId: string): Promise<SocialNPC | null> {
     console.error('Failed to get social NPC:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * 指定されたNPCの全エラーメッセージを取得
  */
-export async function getErrorMessage(npcId: string): Promise<Record<string, string> | null> {
+export const getErrorMessage = requireAuth(async (_userId: string, npcId: string): Promise<Record<string, string> | null> => {
+  const db = getAdminFirestore();
   try {
-    const docRef = doc(db, 'socialNPCs', npcId, 'config', 'errorMessages');
-    const docSnap = await getDoc(docRef);
+    const docRef = db.collection('socialNPCs').doc(npcId).collection('config').doc('errorMessages');
+    const docSnap = await docRef.get();
 
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
       const data = docSnap.data();
       return data || null;
     }
@@ -851,44 +798,37 @@ export async function getErrorMessage(npcId: string): Promise<Record<string, str
     console.error('Error getting error messages:', error);
     return null;
   }
-}
+});
 
 /**
  * NPCプロフィールの投稿一覧を取得（ページング対応）
  */
-export async function getNPCPosts(
+export const getNPCPosts = requireAuth(async (
+  _userId: string,
   npcId: string,
   pageLimit: number = SOCIAL_POSTS_PER_PAGE,
   cursor?: string
-): Promise<PaginatedResult<UISocialPost>> {
+): Promise<PaginatedResult<UISocialPost>> => {
+  const db = getAdminFirestore();
   try {
     // NPC情報を取得
-    const npcDoc = await getDoc(doc(db, 'socialNPCs', npcId));
-    if (!npcDoc.exists()) {
+    const npcDoc = await db.collection('socialNPCs').doc(npcId).get();
+    if (!npcDoc.exists) {
       throw new Error('NPCが見つかりません');
     }
     const npc = npcDoc.data() as SocialNPC;
 
-    const postsRef = collection(db, 'socialNPCs', npcId, 'posts');
-    let postsQuery = query(
-      postsRef,
-      orderBy('timestamp', 'desc'),
-      firestoreLimit(pageLimit)
-    );
+    const postsRef = db.collection('socialNPCs').doc(npcId).collection('posts');
+    let postsQuery = postsRef.orderBy('timestamp', 'desc').limit(pageLimit);
 
     if (cursor) {
-      const cursorDoc = await getDoc(doc(postsRef, cursor));
-      if (cursorDoc.exists()) {
-        postsQuery = query(
-          postsRef,
-          orderBy('timestamp', 'desc'),
-          startAfter(cursorDoc),
-          firestoreLimit(pageLimit)
-        );
+      const cursorDoc = await postsRef.doc(cursor).get();
+      if (cursorDoc.exists) {
+        postsQuery = postsRef.orderBy('timestamp', 'desc').startAfter(cursorDoc).limit(pageLimit);
       }
     }
 
-    const snapshot = await getDocs(postsQuery);
+    const snapshot = await postsQuery.get();
     const posts = snapshot.docs.map(doc => {
       const data = doc.data();
       const post: SocialPost = {
@@ -918,7 +858,7 @@ export async function getNPCPosts(
     console.error('Failed to get NPC posts:', error);
     throw new Error('dbError');
   }
-}
+});
 
 // =====================================
 // DM機能
@@ -928,15 +868,12 @@ export async function getNPCPosts(
 /**
  * DM連絡先一覧を取得（アカウントごと）
  */
-export async function getSocialContacts(accountId: string): Promise<SocialContact[]> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+export const getSocialContacts = requireAuth(async (userId: string, accountId: string): Promise<SocialContact[]> => {
+  const db = getAdminFirestore();
 
   try {
-    const contactsRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'Contacts');
-    const snapshot = await getDocs(contactsRef);
+    const contactsRef = db.collection('users').doc(userId).collection('socialAccounts').doc(accountId).collection('Contacts');
+    const snapshot = await contactsRef.get();
 
     return snapshot.docs.map(doc => {
       const data = doc.data();
@@ -951,26 +888,23 @@ export async function getSocialContacts(accountId: string): Promise<SocialContac
     console.error('Failed to get social contacts:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * 新しいDM連絡先を追加
  */
-export async function addSocialContact(
+export const addSocialContact = requireAuth(async (
+  userId: string,
   accountId: string,
   contact: SocialContact
-): Promise<void> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+): Promise<void> => {
+  const db = getAdminFirestore();
 
   try {
-    const contactsRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'Contacts');
-    const contactRef = doc(contactsRef, contact.id);
+    const contactRef = db.collection('users').doc(userId).collection('socialAccounts').doc(accountId).collection('Contacts').doc(contact.id);
 
-    // setDocを使用してドキュメントIDを指定して作成または更新
-    await setDoc(contactRef, {
+    // setを使用してドキュメントIDを指定して作成または更新
+    await contactRef.set({
       id: contact.id,
       name: contact.name,
       type: contact.type
@@ -979,45 +913,32 @@ export async function addSocialContact(
     console.error('Failed to add social contact:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * DMメッセージ履歴を取得（時間ベースID活用）
  */
-export async function getSocialMessages(params: Omit<DMHistoryParams, 'userId'>): Promise<PaginatedResult<SocialDMMessage>> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+export const getSocialMessages = requireAuth(async (userId: string, params: Omit<DMHistoryParams, 'userId'>): Promise<PaginatedResult<SocialDMMessage>> => {
+  const db = getAdminFirestore();
 
   try {
     const { accountId, contactId, limit: pageLimit = SOCIAL_MESSAGES_PER_PAGE, cursor } = params;
 
-    const messagesRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'Contacts', contactId, 'history');
+    const messagesRef = db.collection('users').doc(userId).collection('socialAccounts').doc(accountId).collection('Contacts').doc(contactId).collection('history');
 
     // タイムスタンプフィールドでソート（インデックス自動作成）
-    let messagesQuery = query(
-      messagesRef,
-      orderBy('timestamp', 'desc'),
-      firestoreLimit(pageLimit)
-    );
+    let messagesQuery = messagesRef.orderBy('timestamp', 'desc').limit(pageLimit);
 
     if (cursor) {
       // カーソルドキュメントより古いメッセージを取得
-      const cursorDocRef = doc(messagesRef, cursor);
-      const cursorDoc = await getDoc(cursorDocRef);
+      const cursorDoc = await messagesRef.doc(cursor).get();
 
-      if (cursorDoc.exists()) {
-        messagesQuery = query(
-          messagesRef,
-          orderBy('timestamp', 'desc'),
-          startAfter(cursorDoc),
-          firestoreLimit(pageLimit)
-        );
+      if (cursorDoc.exists) {
+        messagesQuery = messagesRef.orderBy('timestamp', 'desc').startAfter(cursorDoc).limit(pageLimit);
       }
     }
 
-    const snapshot = await getDocs(messagesQuery);
+    const snapshot = await messagesQuery.get();
     const messages = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
@@ -1033,25 +954,22 @@ export async function getSocialMessages(params: Omit<DMHistoryParams, 'userId'>)
     console.error('Failed to get social messages:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * DMメッセージを追加
  */
-export async function addSocialMessage(
+export const addSocialMessage = requireAuth(async (
+  userId: string,
   accountId: string,
   contactId: string,
   message: SocialDMMessage
-): Promise<SocialDMMessage> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+): Promise<SocialDMMessage> => {
+  const db = getAdminFirestore();
 
   try {
-    const messagesRef = collection(db, 'users', userId, 'socialAccounts', accountId, 'Contacts', contactId, 'history');
-    const messageRef = doc(messagesRef, message.id);
-    await setDoc(messageRef, {
+    const messageRef = db.collection('users').doc(userId).collection('socialAccounts').doc(accountId).collection('Contacts').doc(contactId).collection('history').doc(message.id);
+    await messageRef.set({
       sender: message.sender,
       text: message.text,
       timestamp: Timestamp.fromDate(message.timestamp),
@@ -1062,30 +980,32 @@ export async function addSocialMessage(
     console.error('Failed to add social message:', error);
     throw new Error('dbError');
   }
-}
+});
 
 
 /**
  * 関係性情報を取得
  */
-export async function getSocialRelationship(
+export const getSocialRelationship = requireAuth(async (
+  userId: string,
   accountId: string,
   contactId: string
-): Promise<SocialRelationship | null> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+): Promise<SocialRelationship | null> => {
+  const db = getAdminFirestore();
 
   try {
-    const relationshipRef = doc(db, 'users', userId, 'socialAccounts', accountId, 'Relationships', contactId);
-    const relationshipDoc = await getDoc(relationshipRef);
+    const relationshipRef = db.collection('users').doc(userId).collection('socialAccounts').doc(accountId).collection('Relationships').doc(contactId);
+    const relationshipDoc = await relationshipRef.get();
 
-    if (!relationshipDoc.exists()) {
+    if (!relationshipDoc.exists) {
       return null;
     }
 
     const data = relationshipDoc.data();
+    if (!data) {
+      return null;
+    }
+
     return {
       trust: data.trust || 30,
       caution: data.caution || 70,
@@ -1096,26 +1016,24 @@ export async function getSocialRelationship(
     console.error('Failed to get social relationship:', error);
     return null;
   }
-}
+});
 
 /**
  * 関係性情報を更新または作成
  */
-export async function updateSocialRelationship(
+export const updateSocialRelationship = requireAuth(async (
+  userId: string,
   accountId: string,
   contactId: string,
   trust: number,
   caution: number
-): Promise<void> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    throw new Error('認証が必要です');
-  }
+): Promise<void> => {
+  const db = getAdminFirestore();
 
   try {
-    const relationshipRef = doc(db, 'users', userId, 'socialAccounts', accountId, 'Relationships', contactId);
+    const relationshipRef = db.collection('users').doc(userId).collection('socialAccounts').doc(accountId).collection('Relationships').doc(contactId);
 
-    await setDoc(relationshipRef, {
+    await relationshipRef.set({
       trust: Math.max(0, Math.min(100, trust)), // 0-100の範囲に制限
       caution: Math.max(0, Math.min(100, caution)), // 0-100の範囲に制限
       lastInteractionAt: Timestamp.fromDate(new Date()),
@@ -1125,7 +1043,7 @@ export async function updateSocialRelationship(
     console.error('Failed to update social relationship:', error);
     throw new Error('dbError');
   }
-}
+});
 
 /**
  * SocialApp用のAI応答を生成（プロフィール情報と信頼度・警戒度を含む）

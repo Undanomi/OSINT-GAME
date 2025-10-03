@@ -1,0 +1,38 @@
+[
+  {
+    "id": "sample_elementary_school",
+    "title": "サンプル小学校 - ホームページ",
+    "url": "https://sample-elementary.ed.jp/",
+    "description": "サンプル小学校の公式ホームページです。児童数300名。みんな仲良く元気よく。",
+    "template": "ElementarySchoolPage",
+    "content": {
+      "schoolName": "サンプル小学校",
+      "principal": "山田 花子",
+      "address": "〒000-0000 東京都サンプル市1-1-1",
+      "phone": "03-0000-0000",
+      "email": "info@sample-elementary.ed.jp",
+      "established": "2000年4月",
+      "studentCount": 300,
+      "schoolImage": "gs://your-project.firebasestorage.app/path/to/image",
+      "motto": "元気に 仲良く 助け合う",
+      "greeting": "サンプル小学校は地域と共に歩み、子どもたちの健やかな成長を支えます。",
+      "news": [
+        {
+          "date": "2024年3月15日",
+          "title": "卒業式のお知らせ",
+          "content": "令和5年度卒業式を3月20日に行います。"
+        }
+      ],
+      "events": [
+        {
+          "date": "4月",
+          "title": "入学式",
+          "description": "新1年生を迎えます。"
+        }
+      ]
+    },
+    "keywords": ["サンプル小学校", "小学校", "教育"],
+    "domainStatus": "active",
+    "archivedDate": "2024-01-01"
+  }
+]
