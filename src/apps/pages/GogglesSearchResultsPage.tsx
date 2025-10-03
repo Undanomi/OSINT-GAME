@@ -8,6 +8,8 @@ interface GogglesSearchResultsPageProps {
   itemsPerPage: number;
   onResultClick: (url: string) => void;
   onPageChange: (page: number) => void;
+  spellingSuggestion?: string;
+  onSuggestionClick: (suggestion: string) => void;
 }
 
 export const GogglesSearchResultsPage: React.FC<GogglesSearchResultsPageProps> = ({
@@ -16,6 +18,8 @@ export const GogglesSearchResultsPage: React.FC<GogglesSearchResultsPageProps> =
   itemsPerPage,
   onResultClick,
   onPageChange,
+  spellingSuggestion,
+  onSuggestionClick,
 }) => {
   const topRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +50,21 @@ export const GogglesSearchResultsPage: React.FC<GogglesSearchResultsPageProps> =
 
   return (
     <div ref={topRef} className="p-4">
+      {/* スペル提案の表示 */}
+      {spellingSuggestion && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+          <p className="text-sm text-gray-700">
+            もしや:{' '}
+            <button
+              onClick={() => onSuggestionClick(spellingSuggestion)}
+              className="text-blue-600 hover:underline font-medium"
+            >
+              {spellingSuggestion}
+            </button>
+          </p>
+        </div>
+      )}
+
       {/* 検索結果の統計情報 */}
       {totalResults > 0 && (
         <div className="mb-4 pb-3 border-b">

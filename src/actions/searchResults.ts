@@ -21,6 +21,92 @@ export interface SearchResult {
 }
 
 /**
+ * 検索結果と提案を含むデータ構造
+ */
+export interface SearchResultsWithSuggestion {
+  /** 検索結果のリスト */
+  results: SearchResult[];
+  /** もしかしての提案キーワード（存在する場合） */
+  suggestion?: string;
+}
+
+/**
+ * よくある誤植とその提案の静的マッピング
+ */
+const SPELLING_SUGGESTIONS: Record<string, string> = {
+  // Facelook
+  'facelok': 'facelook',
+  'faceloook': 'facelook',
+  'facebook': 'facelook',
+  'facebok': 'facelook',
+  'faceboook': 'facelook',
+
+  // Goggles
+  'gogles': 'goggles',
+  'gogle': 'goggles',
+  'goggels': 'goggles',
+  'goggle': 'goggles',
+  'google': 'goggles',
+  'googles': 'goggles',
+
+  // RankedOn
+  'rankedin': 'rankedon',
+  'linkedin': 'rankedon',
+  'linkedon': 'rankedon',
+
+  // Playback Machine
+  'wayback': 'playback machine',
+  'wayback machine': 'playback machine',
+
+  // Nyahoo
+  'yahoo': 'nyahoo',
+  'yahoo!': 'nyahoo',
+  'nyaho': 'nyahoo',
+  'nyahooo': 'nyahoo',
+  'nyaho!': 'nyahoo',
+  'nyahooo!': 'nyahoo',
+
+  // Chiita
+  'chitta': 'chiita',
+  'chiiita': 'chiita',
+  'qiita': 'chiita',
+  'qiiita': 'chiita',
+
+  // Usopedia
+  'wikipedia': 'usopedia',
+  'wiki' : 'usopedia',
+
+  // 日本語サービス名
+  'むち袋': '無知袋',
+  '無地袋': '無知袋',
+  '夕陽新聞': '夕日新聞',
+  'ゆうひ新聞': '夕日新聞',
+  '夕日しんぶん': '夕日新聞',
+
+  // 一般的な検索用語
+  'あーかいぶ': 'アーカイブ',
+  'アーカイーブ': 'アーカイブ',
+  'けんさく': '検索',
+  'けんさ': '検索',
+};
+
+/**
+ * クエリに対する提案キーワードを取得する
+ * @param query - 検索クエリ
+ * @returns 提案キーワード（存在する場合）
+ */
+const getSpellingSuggestion = (query: string): string | undefined => {
+  const normalizedQuery = query.toLowerCase().trim();
+
+  // 完全一致チェック
+  if (SPELLING_SUGGESTIONS[normalizedQuery]) {
+    return SPELLING_SUGGESTIONS[normalizedQuery];
+  }
+
+  return;
+};
+
+/**
  * Firebaseのsearch_resultsコレクションからデータを取得する
  */
 export const getSearchResults = async (): Promise<UnifiedSearchResult[]> => {
@@ -42,12 +128,15 @@ export const getSearchResults = async (): Promise<UnifiedSearchResult[]> => {
  * 複数のキーワードをスペース、「OR」、「|」で区切って指定した場合、OR検索を実行する
  * @param cache - 検索対象のUnifiedSearchResultの配列
  * @param query - 検索クエリ（スペース、「OR」、「|」で区切って複数キーワード指定可能）
- * @returns Promise<SearchResult[]> - フィルタリングされた検索結果
+ * @returns Promise<SearchResultsWithSuggestion> - フィルタリングされた検索結果と提案
  */
 export const filterSearchResults = async (
   cache: UnifiedSearchResult[],
   query: string
-): Promise<SearchResult[]> => {
+): Promise<SearchResultsWithSuggestion> => {
+  // スペルチェックと提案の取得
+  const suggestion = getSpellingSuggestion(query);
+
   // クエリを全角・半角スペース、「OR」、「|」で分割してキーワード配列を作成
   const keywords = query
     .split(/\s*(?:OR|\|)\s*|[\s　]+/)  // OR、|（前後の空白含む）、またはスペースで分割
@@ -122,8 +211,14 @@ export const filterSearchResults = async (
 
   console.log('検索結果:', shuffledResults);
   console.log('検索結果数:', shuffledResults.length);
+  if (suggestion) {
+    console.log('提案キーワード:', suggestion);
+  }
 
-  return shuffledResults;
+  return {
+    results: shuffledResults,
+    suggestion
+  };
 };
 
 /**

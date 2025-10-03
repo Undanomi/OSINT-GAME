@@ -30,6 +30,8 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [searchQuery, setSearchQuery] = useState('');
   // 検索結果の状態管理
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  // スペル提案の状態管理
+  const [spellingSuggestion, setSpellingSuggestion] = useState<string | undefined>();
   // URLバー入力の状態管理
   const [urlInput, setUrlInput] = useState('');
   
@@ -188,12 +190,13 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    */
   const performSearchOnCache = async (cache: UnifiedSearchResult[], query: string) => {
     try {
-      const filteredResults = await filterSearchResults(cache, query);
+      const { results, suggestion } = await filterSearchResults(cache, query);
 
-      console.log('検索結果:', filteredResults);
-      console.log('検索結果数:', filteredResults.length);
-      
-      setSearchResults(filteredResults);
+      console.log('検索結果:', results);
+      console.log('検索結果数:', results.length);
+
+      setSearchResults(results);
+      setSpellingSuggestion(suggestion);
       navigateTo(VIEW_SEARCH_RESULTS); // 検索結果ページに遷移
     } catch (error) {
       console.error('Failed to filter results:', error);
@@ -206,6 +209,19 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    */
   const handleResultClick = (targetUrl: string) => {
     navigateTo(targetUrl);
+  };
+
+  /**
+   * スペル提案のクリック処理
+   * 提案されたキーワードで再検索を実行
+   */
+  const handleSuggestionClick = (suggestedQuery: string) => {
+    setSearchQuery(suggestedQuery);
+    // キャッシュを使って検索を実行
+    const cacheToUse = firebaseCache.length > 0 ? firebaseCache : loadCacheFromLocalStorage();
+    if (cacheToUse.length > 0) {
+      performSearchOnCache(cacheToUse, suggestedQuery);
+    }
   };
 
   /**
@@ -471,6 +487,8 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           itemsPerPage={itemsPerPage}
           onResultClick={handleResultClick}
           onPageChange={setCurrentPage}
+          spellingSuggestion={spellingSuggestion}
+          onSuggestionClick={handleSuggestionClick}
         />
       );
     }
