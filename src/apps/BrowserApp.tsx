@@ -5,7 +5,6 @@ import { Search, ArrowLeft, ArrowRight, RotateCcw, Home } from 'lucide-react';
 import { UnifiedSearchResult } from '@/types/search';
 import { filterSearchResults, SearchResult } from '@/actions/searchResults';
 import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
-import { handleServerAction } from '@/utils/handleServerAction';
 
 // 各ページコンポーネントのインポート
 import { GenericPage } from './pages/GenericPage';

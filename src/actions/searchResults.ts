@@ -55,8 +55,7 @@ const SPELLING_SUGGESTIONS: Record<string, string> = {
   'linkedon': 'rankedon',
 
   // Playback Machine
-  'wayback': 'playback machine',
-  'wayback machine': 'playback machine',
+  'wayback': 'playback',
 
   // Nyahoo
   'yahoo': 'nyahoo',
@@ -82,12 +81,6 @@ const SPELLING_SUGGESTIONS: Record<string, string> = {
   '夕陽新聞': '夕日新聞',
   'ゆうひ新聞': '夕日新聞',
   '夕日しんぶん': '夕日新聞',
-
-  // 一般的な検索用語
-  'あーかいぶ': 'アーカイブ',
-  'アーカイーブ': 'アーカイブ',
-  'けんさく': '検索',
-  'けんさ': '検索',
 };
 
 /**
@@ -135,24 +128,44 @@ export const filterSearchResults = async (
   cache: UnifiedSearchResult[],
   query: string
 ): Promise<SearchResultsWithSuggestion> => {
-  // スペルチェックと提案の取得
-  const suggestion = getSpellingSuggestion(query);
-
-  // クエリを全角・半角スペース、「OR」、「|」で分割してキーワード配列を作成
+  // クエリを全角・半角スペース、「AND」、「&」で分割してキーワード配列を作成
   const keywords = query
     .split(/\s*(?:AND|&)\s*|[\s　]+/)  // AND、&（前後の空白含む）、またはスペースで分割
-    .map(k => k.toLowerCase().trim())
+    .map(k => k.trim())
     .filter(k => k.length > 0);
+
+  // 各キーワードに対してスペルチェックを行い、提案を作成
+  let suggestion: string | undefined;
+  const suggestedKeywords: string[] = [];
+  let hasSuggestion = false;
+
+  for (const keyword of keywords) {
+    const keywordSuggestion = getSpellingSuggestion(keyword);
+    if (keywordSuggestion) {
+      suggestedKeywords.push(keywordSuggestion);
+      hasSuggestion = true;
+    } else {
+      suggestedKeywords.push(keyword);
+    }
+  }
+
+  // 提案があった場合、提案クエリを作成
+  if (hasSuggestion) {
+    suggestion = suggestedKeywords.join(' ');
+  }
+
+  // 検索用に小文字化
+  const keywordsLower = keywords.map(k => k.toLowerCase());
 
   // Playback Machine関連の検索キーワード
   const playbackKeywords = ['playback', 'archive', 'アーカイブ', 'wayback', '過去', 'キャッシュ', 'cache'];
-  const isPlaybackSearch = keywords.some(keyword =>
+  const isPlaybackSearch = keywordsLower.some(keyword =>
     playbackKeywords.some(playbackKeyword => keyword.includes(playbackKeyword))
   );
 
   // Goggles Mail関連の検索キーワード
   const gogglesMailKeywords = ['goggles', 'mail', 'メール', 'ログイン', 'login', 'gmail', 'email'];
-  const isGogglesMailSearch = keywords.some(keyword =>
+  const isGogglesMailSearch = keywordsLower.some(keyword =>
     gogglesMailKeywords.some(gogglesMailKeyword => keyword.includes(gogglesMailKeyword))
   );
 
@@ -188,7 +201,7 @@ export const filterSearchResults = async (
     }
 
     // すべてのキーワードがマッチするかチェック（AND検索）
-    const allKeywordsMatch = keywords.every(keyword => {
+    const allKeywordsMatch = keywordsLower.every(keyword => {
       // キーワードフィールドでの部分一致
       const matchesKeywords = item.keywords?.some(k =>
         k.toLowerCase().includes(keyword)
