@@ -29,6 +29,7 @@ export const CompanyReviewPage: React.FC<CompanyReviewPageProps> = ({ documentId
   const [reportingReviewIndex, setReportingReviewIndex] = useState<number | null>(null);
   const [reportReason, setReportReason] = useState('不適切な内容');
   const [showReportSuccess, setShowReportSuccess] = useState(false);
+  const [showPostSuccess, setShowPostSuccess] = useState(false);
   const [newReview, setNewReview] = useState({
     title: '',
     category: '企業文化',
@@ -116,6 +117,12 @@ export const CompanyReviewPage: React.FC<CompanyReviewPageProps> = ({ documentId
       reviewer: '匿名',
     });
     setShowPostModal(false);
+    setShowPostSuccess(true);
+
+    // 3秒後に成功メッセージを非表示
+    setTimeout(() => {
+      setShowPostSuccess(false);
+    }, 3000);
   };
 
   const handleOpenReport = (index: number) => {
@@ -331,167 +338,202 @@ export const CompanyReviewPage: React.FC<CompanyReviewPageProps> = ({ documentId
 
       {/* 投稿モーダル */}
       {showPostModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setShowPostModal(false)}>
+        <>
+          {/* Overlay */}
           <div
-            className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-slate-900 p-8 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-black/70 z-40"
+            onClick={() => setShowPostModal(false)}
+          />
+          {/* Modal content */}
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 pointer-events-none"
           >
-            <button
-              onClick={() => setShowPostModal(false)}
-              className="absolute right-6 top-6 rounded-full p-2 text-slate-400 transition hover:bg-white/10 hover:text-white"
+            <div
+              className="relative w-full max-w-2xl max-h-[50vh] overflow-y-auto rounded-3xl border border-white/10 bg-slate-900 p-6 sm:p-8 shadow-2xl pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="h-5 w-5" />
-            </button>
+              <button
+                onClick={() => setShowPostModal(false)}
+                className="absolute right-6 top-6 rounded-full p-2 text-slate-400 transition hover:bg-white/10 hover:text-white z-10"
+              >
+                <X className="h-5 w-5" />
+              </button>
 
-            <h2 className="text-2xl font-semibold text-white">口コミを投稿</h2>
-            <p className="mt-2 text-sm text-slate-400">あなたの体験を共有して、次の世代をサポートしましょう</p>
+              <h2 className="text-2xl font-semibold text-white">口コミを投稿</h2>
+              <p className="mt-2 text-sm text-slate-400">あなたの体験を共有して、次の世代をサポートしましょう</p>
 
-            <div className="mt-6 space-y-6">
-              {/* カテゴリー選択 */}
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">カテゴリー</label>
-                <select
-                  value={newReview.category}
-                  onChange={(e) => setNewReview({ ...newReview, category: e.target.value })}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
-                >
-                  <option>企業文化</option>
-                  <option>給与・待遇</option>
-                  <option>働きがい</option>
-                  <option>ワークライフバランス</option>
-                  <option>成長機会</option>
-                  <option>マネジメント</option>
-                  <option>福利厚生</option>
-                  <option>その他</option>
-                </select>
-              </div>
+              <div className="mt-6 space-y-6">
+                {/* カテゴリー選択 */}
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-300">カテゴリー</label>
+                  <select
+                    value={newReview.category}
+                    onChange={(e) => setNewReview({ ...newReview, category: e.target.value })}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+                  >
+                    <option>企業文化</option>
+                    <option>給与・待遇</option>
+                    <option>働きがい</option>
+                    <option>ワークライフバランス</option>
+                    <option>成長機会</option>
+                    <option>マネジメント</option>
+                    <option>福利厚生</option>
+                    <option>その他</option>
+                  </select>
+                </div>
 
-              {/* 評価 */}
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">評価</label>
-                {renderInteractiveStars(newReview.rating, (rating) => setNewReview({ ...newReview, rating }))}
-              </div>
+                {/* 評価 */}
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-300">評価</label>
+                  {renderInteractiveStars(newReview.rating, (rating) => setNewReview({ ...newReview, rating }))}
+                </div>
 
-              {/* タイトル */}
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">タイトル</label>
-                <input
-                  type="text"
-                  value={newReview.title}
-                  onChange={(e) => setNewReview({ ...newReview, title: e.target.value })}
-                  placeholder="例：風通しが良く挑戦できる環境"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
-                />
-              </div>
+                {/* タイトル */}
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-300">タイトル</label>
+                  <input
+                    type="text"
+                    value={newReview.title}
+                    onChange={(e) => setNewReview({ ...newReview, title: e.target.value })}
+                    placeholder="例：風通しが良く挑戦できる環境"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+                  />
+                </div>
 
-              {/* 投稿者立場 */}
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">立場（任意）</label>
-                <input
-                  type="text"
-                  value={newReview.reviewer}
-                  onChange={(e) => setNewReview({ ...newReview, reviewer: e.target.value })}
-                  placeholder="例：現社員、元社員など"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
-                />
-              </div>
+                {/* 投稿者立場 */}
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-300">立場（任意）</label>
+                  <input
+                    type="text"
+                    value={newReview.reviewer}
+                    onChange={(e) => setNewReview({ ...newReview, reviewer: e.target.value })}
+                    placeholder="例：現社員、元社員など"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+                  />
+                </div>
 
-              {/* 内容 */}
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">口コミ内容</label>
-                <textarea
-                  value={newReview.content}
-                  onChange={(e) => setNewReview({ ...newReview, content: e.target.value })}
-                  placeholder="企業の良い点や気になる点などを詳しく教えてください"
-                  rows={6}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
-                />
-              </div>
+                {/* 内容 */}
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-300">口コミ内容</label>
+                  <textarea
+                    value={newReview.content}
+                    onChange={(e) => setNewReview({ ...newReview, content: e.target.value })}
+                    placeholder="企業の良い点や気になる点などを詳しく教えてください"
+                    rows={6}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+                  />
+                </div>
 
-              {/* 送信ボタン */}
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setShowPostModal(false)}
-                  className="rounded-full border border-white/10 px-6 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/5"
-                >
-                  キャンセル
-                </button>
-                <button
-                  onClick={handleSubmitReview}
-                  disabled={!newReview.title.trim() || !newReview.content.trim()}
-                  className="rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  投稿する
-                </button>
+                {/* 送信ボタン */}
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowPostModal(false)}
+                    className="rounded-full border border-white/10 px-6 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/5"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={handleSubmitReview}
+                    disabled={!newReview.title.trim() || !newReview.content.trim()}
+                    className="rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    投稿する
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* 報告モーダル */}
       {showReportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setShowReportModal(false)}>
+        <>
+          {/* Overlay */}
           <div
-            className="relative w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-8 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-black/70 z-40"
+            onClick={() => setShowReportModal(false)}
+          />
+          {/* Modal content */}
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 pointer-events-none"
           >
-            <button
-              onClick={() => setShowReportModal(false)}
-              className="absolute right-6 top-6 rounded-full p-2 text-slate-400 transition hover:bg-white/10 hover:text-white"
+            <div
+              className="relative w-full max-w-md max-h-[50vh] overflow-y-auto rounded-3xl border border-white/10 bg-slate-900 p-6 sm:p-8 shadow-2xl pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="h-5 w-5" />
-            </button>
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="absolute right-6 top-6 rounded-full p-2 text-slate-400 transition hover:bg-white/10 hover:text-white z-10"
+              >
+                <X className="h-5 w-5" />
+              </button>
 
-            <h2 className="text-2xl font-semibold text-white">口コミを報告</h2>
-            <p className="mt-2 text-sm text-slate-400">不適切な内容を報告してください</p>
+              <h2 className="text-2xl font-semibold text-white">口コミを報告</h2>
+              <p className="mt-2 text-sm text-slate-400">不適切な内容を報告してください</p>
 
-            <div className="mt-6 space-y-4">
-              {/* 報告理由選択 */}
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">報告理由</label>
-                <select
-                  value={reportReason}
-                  onChange={(e) => setReportReason(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
-                >
-                  <option>不適切な内容</option>
-                  <option>虚偽の情報</option>
-                  <option>誹謗中傷</option>
-                  <option>個人情報の掲載</option>
-                  <option>スパム</option>
-                  <option>その他</option>
-                </select>
-              </div>
-
-              {/* 報告対象の口コミ情報 */}
-              {reportingReviewIndex !== null && reviewData && (
-                <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs text-slate-500">報告対象の口コミ</p>
-                  <p className="mt-1 font-semibold text-white">
-                    {reviewData.reviews[reportingReviewIndex]?.title}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    投稿者: {reviewData.reviews[reportingReviewIndex]?.reviewer}
-                  </p>
+              <div className="mt-6 space-y-4">
+                {/* 報告理由選択 */}
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-300">報告理由</label>
+                  <select
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+                  >
+                    <option>不適切な内容</option>
+                    <option>虚偽の情報</option>
+                    <option>誹謗中傷</option>
+                    <option>個人情報の掲載</option>
+                    <option>スパム</option>
+                    <option>その他</option>
+                  </select>
                 </div>
-              )}
 
-              {/* 送信ボタン */}
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  onClick={() => setShowReportModal(false)}
-                  className="rounded-full border border-white/10 px-6 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/5"
-                >
-                  キャンセル
-                </button>
-                <button
-                  onClick={handleSubmitReport}
-                  className="rounded-full bg-red-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
-                >
-                  報告する
-                </button>
+                {/* 報告対象の口コミ情報 */}
+                {reportingReviewIndex !== null && reviewData && (
+                  <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs text-slate-500">報告対象の口コミ</p>
+                    <p className="mt-1 font-semibold text-white">
+                      {reviewData.reviews[reportingReviewIndex]?.title}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      投稿者: {reviewData.reviews[reportingReviewIndex]?.reviewer}
+                    </p>
+                  </div>
+                )}
+
+                {/* 送信ボタン */}
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => setShowReportModal(false)}
+                    className="rounded-full border border-white/10 px-6 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/5"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={handleSubmitReport}
+                    className="rounded-full bg-red-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+                  >
+                    報告する
+                  </button>
+                </div>
               </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 投稿成功トースト */}
+      {showPostSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
+          <div className="flex items-center gap-3 rounded-2xl border border-sky-400/40 bg-slate-900 px-6 py-4 shadow-2xl">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-400/20">
+              <Sparkles className="h-5 w-5 text-sky-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-white">口コミを投稿しました</p>
+              <p className="text-sm text-slate-400">ご協力ありがとうございます</p>
             </div>
           </div>
         </div>
