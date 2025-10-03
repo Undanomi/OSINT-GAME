@@ -127,20 +127,6 @@ function optimizeConversationHistory(history: Content[]): Content[] {
   return optimizedHistory;
 }
 
-// =====================================
-// ユーティリティ関数
-// =====================================
-
-/**
- * タイムスタンプベースのドキュメントIDを生成
- */
-function generateTimestampId(timestamp: Date): string {
-  const timeString = timestamp.toISOString().replace(/[-:T]/g, '').slice(0, 14);
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
-  return `${timeString}_${randomSuffix}`;
-}
-
-
 
 // =====================================
 // デフォルト設定管理
@@ -350,152 +336,8 @@ export const switchActiveAccount = requireAuth(async (userId: string, accountId:
 // 投稿管理
 // =====================================
 
-/**
- * 新しい投稿を作成（認証必須）
- */
-export const createSocialPost = requireAuth(async (
-  userId: string,
-  stableId: string,
-  content: string
-): Promise<SocialPost> => {
-  const db = getAdminFirestore();
 
-  // 入力値の検証
-  if (!content || content.trim().length === 0) {
-    throw new Error('投稿内容を入力してください');
-  }
-  if (content.length > 500) {
-    throw new Error('投稿は500文字以内で入力してください');
-  }
-  try {
-    const now = new Date();
-    const timestampId = generateTimestampId(now);
 
-    const newPost: Omit<SocialPost, 'id'> = {
-      authorId: stableId, // stable_idを使用
-      authorType: 'user',
-      content: content.trim(), // XSS対策：トリム処理
-      timestamp: now,
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    // アカウント別投稿コレクションに保存（タイムスタンプベースID使用）
-    const docRef = db.collection('users').doc(userId).collection('socialAccounts').doc(stableId).collection('posts').doc(timestampId);
-    await docRef.set({
-      ...newPost,
-      timestamp: Timestamp.fromDate(now),
-      createdAt: Timestamp.fromDate(now),
-      updatedAt: Timestamp.fromDate(now),
-    });
-
-    // 自分のタイムラインに追加
-    await addToUserTimeline(userId, timestampId, {
-      ...newPost,
-      id: timestampId,
-    });
-
-    return {
-      id: timestampId,
-      ...newPost,
-    };
-  } catch (error) {
-    console.error('Failed to create social post:', error);
-    throw new Error('dbError');
-  }
-});
-
-/**
- * ユーザーアカウントの投稿一覧を取得（ページング対応）
- */
-export const getUserAccountPosts = requireAuth(async (
-  userId: string,
-  accountId: string,
-  pageLimit: number = SOCIAL_POSTS_PER_PAGE,
-  cursor?: string
-): Promise<PaginatedResult<UISocialPost>> => {
-  const db = getAdminFirestore();
-
-  try {
-    // アカウント情報を取得
-    const accountDoc = await db.collection('users').doc(userId).collection('socialAccounts').doc(accountId).get();
-    if (!accountDoc.exists) {
-      throw new Error('アカウントが見つかりません');
-    }
-    const account = accountDoc.data() as SocialAccount;
-
-    const postsRef = db.collection('users').doc(userId).collection('socialAccounts').doc(accountId).collection('posts');
-    let postsQuery = postsRef.orderBy('timestamp', 'desc').limit(pageLimit);
-
-    if (cursor) {
-      const cursorDoc = await postsRef.doc(cursor).get();
-      if (cursorDoc.exists) {
-        postsQuery = postsRef.orderBy('timestamp', 'desc').startAfter(cursorDoc).limit(pageLimit);
-      }
-    }
-
-    const snapshot = await postsQuery.get();
-    const posts = snapshot.docs.map(doc => {
-      const data = doc.data();
-      const post: SocialPost = {
-        id: doc.id,
-        ...data,
-        timestamp: data.timestamp?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate?.() || new Date(),
-        updatedAt: data.updatedAt?.toDate?.() || new Date(),
-      } as SocialPost;
-
-      const author = {
-        id: account.id,
-        account_id: account.account_id,
-        name: account.name,
-        avatar: account.avatar,
-      };
-
-      return convertToUISocialPost(post, author);
-    });
-
-    return {
-      items: posts,
-      hasMore: posts.length === pageLimit && posts.length > 0,
-      lastCursor: posts.length > 0 ? posts[posts.length - 1].id : undefined,
-    };
-  } catch (error) {
-    console.error('Failed to get user account posts:', error);
-    throw new Error('dbError');
-  }
-});
-
-/**
- * ユーザーのタイムラインに投稿を追加
- */
-export async function addToUserTimeline(
-  userId: string,
-  postId: string,
-  post: SocialPost
-): Promise<void> {
-  const db = getAdminFirestore();
-  try {
-    const timelineRef = db.collection('users').doc(userId).collection('socialTimeline').doc(postId);
-    await timelineRef.set({
-      authorId: post.authorId,
-      authorType: post.authorType,
-      content: post.content,
-      timestamp: Timestamp.fromDate(post.timestamp),
-      likes: post.likes,
-      comments: post.comments,
-      shares: post.shares,
-      createdAt: Timestamp.fromDate(post.createdAt),
-      updatedAt: Timestamp.fromDate(post.updatedAt),
-    });
-  } catch (error) {
-    console.error('Failed to add to user timeline:', error);
-    throw new Error('dbError');
-  }
-}
 
 /**
  * NPC投稿をsocialNPCPostsコレクションに保存
@@ -528,122 +370,30 @@ export async function saveNPCPostToCentralCollection(
   }
 }
 
-/**
- * 全ユーザーのタイムラインに投稿を配信
- */
-export async function distributeToAllTimelines(
-  postId: string,
-  post: SocialPost
-): Promise<void> {
-  const db = getAdminFirestore();
-  try {
-    const usersSnapshot = await db.collection('users').get();
-    const batch = db.batch();
 
-    usersSnapshot.docs.forEach(userDoc => {
-      const timelineRef = db.collection('users').doc(userDoc.id).collection('socialTimeline').doc(postId);
-      batch.set(timelineRef, {
-        authorId: post.authorId,
-        authorType: post.authorType,
-        content: post.content,
-        timestamp: Timestamp.fromDate(post.timestamp),
-        likes: post.likes,
-        comments: post.comments,
-        shares: post.shares,
-      });
-    });
-
-    await batch.commit();
-
-    // NPC投稿の場合は中央コレクションにも保存
-    await saveNPCPostToCentralCollection(postId, post);
-  } catch (error) {
-    console.error('Failed to distribute to all timelines:', error);
-    throw new Error('dbError');
-  }
-}
-
-/**
- * 全ユーザーのタイムラインから投稿を削除
- */
-export async function removeFromAllTimelines(postId: string): Promise<void> {
-  const db = getAdminFirestore();
-  try {
-    const usersSnapshot = await db.collection('users').get();
-    const batch = db.batch();
-
-    usersSnapshot.docs.forEach(userDoc => {
-      const timelineRef = db.collection('users').doc(userDoc.id).collection('socialTimeline').doc(postId);
-      batch.delete(timelineRef);
-    });
-
-    await batch.commit();
-  } catch (error) {
-    console.error('Failed to remove from all timelines:', error);
-    throw new Error('dbError');
-  }
-}
 
 
 /**
- * NPC投稿検索（timestampフィールド使用）
+ * タイムライン取得（socialNPCPostsのみから取得）
  */
-async function searchNPCPosts(
-  beforeTimestamp: Date | null,
-  limit: number
-): Promise<SocialPost[]> {
-  const db = getAdminFirestore();
-  try {
-    const npcPostsRef = db.collection('socialNPCPosts');
-
-    // beforeTimestampが指定されている場合のみフィルタリング
-    let timestampQuery = npcPostsRef.orderBy('timestamp', 'desc');
-
-    if (beforeTimestamp) {
-      timestampQuery = timestampQuery.where('timestamp', '<=', Timestamp.fromDate(beforeTimestamp));
-    }
-
-    timestampQuery = timestampQuery.limit(limit);
-
-    const snapshot = await timestampQuery.get();
-
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        timestamp: data.timestamp?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate?.() || new Date(),
-        updatedAt: data.updatedAt?.toDate?.() || new Date(),
-      };
-    }) as SocialPost[];
-  } catch (error) {
-    console.error('Failed to search NPC posts:', error);
-    return [];
-  }
-}
-
-/**
- * 統合タイムライン取得（3層構造: socialStore → users/{user_id}/socialTimeline → socialNPCPosts）
- */
-export const getTimeline = requireAuth(async (userId: string, params: Omit<TimelineParams, 'userId'>): Promise<PaginatedResult<SocialPost>> => {
+export const getTimeline = ensureAuth(async (params: Omit<TimelineParams, 'userId'>): Promise<PaginatedResult<SocialPost>> => {
   const db = getAdminFirestore();
   try {
     const { limit: pageLimit = SOCIAL_POSTS_PER_PAGE, cursor } = params;
 
-    // 1. まずユーザーのsocialTimelineから取得
-    const timelineRef = db.collection('users').doc(userId).collection('socialTimeline');
-    let timelineQuery = timelineRef.orderBy('timestamp', 'desc').limit(pageLimit);
+    // socialNPCPostsから直接取得
+    const npcPostsRef = db.collection('socialNPCPosts');
+    let npcQuery = npcPostsRef.orderBy('timestamp', 'desc').limit(pageLimit);
 
     if (cursor) {
-      const cursorDoc = await timelineRef.doc(cursor).get();
+      const cursorDoc = await npcPostsRef.doc(cursor).get();
       if (cursorDoc.exists) {
-        timelineQuery = timelineRef.orderBy('timestamp', 'desc').startAfter(cursorDoc).limit(pageLimit);
+        npcQuery = npcPostsRef.orderBy('timestamp', 'desc').startAfter(cursorDoc).limit(pageLimit);
       }
     }
 
-    const timelineSnapshot = await timelineQuery.get();
-    const timelinePosts = timelineSnapshot.docs.map(doc => {
+    const snapshot = await npcQuery.get();
+    const posts = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -654,67 +404,13 @@ export const getTimeline = requireAuth(async (userId: string, params: Omit<Timel
       };
     }) as SocialPost[];
 
-    // 2. 不足分をsocialNPCPostsから効率的に補完
-    let allPosts = timelinePosts;
-    if (timelinePosts.length < pageLimit) {
-      const remainingLimit = pageLimit - timelinePosts.length;
-
-      // カーソル使用時は、カーソルドキュメントのタイムスタンプを取得
-      let lastTimestamp: Date | null;
-      if (cursor && timelinePosts.length === 0) {
-        const cursorDoc = await timelineRef.doc(cursor).get();
-        if (cursorDoc.exists) {
-          const cursorData = cursorDoc.data();
-          lastTimestamp = cursorData?.timestamp?.toDate() || null;
-        } else {
-          lastTimestamp = null;
-        }
-      } else {
-        lastTimestamp = timelinePosts.length > 0
-          ? timelinePosts[timelinePosts.length - 1].timestamp
-          : null; // 初回読み込み時はnullを渡して全ての投稿を取得
-      }
-
-      // NPC投稿検索
-      const npcPosts = await searchNPCPosts(
-        lastTimestamp,
-        remainingLimit
-      );
-
-      if (npcPosts.length > 0) {
-        // 新しいNPC投稿をユーザーのタイムラインに追加
-        const batch = db.batch();
-
-        for (const post of npcPosts) {
-          const postRef = db.collection('users').doc(userId).collection('socialTimeline').doc(post.id);
-          batch.set(postRef, {
-            ...post,
-            timestamp: Timestamp.fromDate(post.timestamp),
-            createdAt: Timestamp.fromDate(post.createdAt),
-            updatedAt: Timestamp.fromDate(post.updatedAt),
-          });
-        }
-
-        await batch.commit();
-      }
-
-      // 重複を除去してからタイムスタンプでソート
-      const combinedPosts = [...timelinePosts, ...npcPosts];
-      const uniquePosts = combinedPosts.filter((post, index, self) =>
-        index === self.findIndex(p => p.id === post.id)
-      );
-      allPosts = uniquePosts.sort((a, b) =>
-        b.timestamp.getTime() - a.timestamp.getTime()
-      );
-    }
-
     return {
-      items: allPosts.slice(0, pageLimit),
-      hasMore: allPosts.length === pageLimit,
-      lastCursor: allPosts.length > 0 ? allPosts[allPosts.length - 1].id : undefined,
+      items: posts,
+      hasMore: posts.length === pageLimit,
+      lastCursor: posts.length > 0 ? posts[posts.length - 1].id : undefined,
     };
   } catch (error) {
-    console.error('Failed to get unified timeline:', error);
+    console.error('Failed to get timeline:', error);
     throw new Error('dbError');
   }
 });
