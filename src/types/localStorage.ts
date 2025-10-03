@@ -21,4 +21,4 @@ export const LOCAL_STORAGE_KEYS = {
 } as const;
 
 // キャッシュの有効期限
-export const CACHE_EXPIRY = 60 * 60 * 1000;
+export const CACHE_EXPIRY = 24 * 60 * 60 * 1000;
