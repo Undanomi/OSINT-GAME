@@ -1,6 +1,7 @@
 import { getSearchResults } from '@/actions/searchResults';
 import { UnifiedSearchResult } from '@/types/search';
 import { LOCAL_STORAGE_KEYS, CACHE_EXPIRY } from '@/types/localStorage';
+import { handleServerAction } from '@/utils/handleServerAction';
 
 /**
  * 検索結果をローカルストレージに保存
@@ -88,21 +89,28 @@ export function clearSearchResultsCache(): void {
  * @returns Promise<UnifiedSearchResult[]>
  */
 export async function loadSearchResults(): Promise<UnifiedSearchResult[]> {
-  try {
-    // キャッシュが有効な場合
-    if (isSearchResultsCacheValid()) {
-      // 期限を更新してキャッシュを使用
-      const cachedResults = getSearchResultsFromCache();
-      if (cachedResults.length > 0) {
-        localStorage.setItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
-        console.log('既存のキャッシュの期限を更新しました:', cachedResults.length + '件');
-        return cachedResults;
-      }
+  // キャッシュが有効な場合
+  if (isSearchResultsCacheValid()) {
+    // 期限を更新してキャッシュを使用
+    const cachedResults = getSearchResultsFromCache();
+    if (cachedResults.length > 0) {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
+      console.log('既存のキャッシュの期限を更新しました:', cachedResults.length + '件');
+      return cachedResults;
     }
+  }
 
-    // キャッシュが無効または存在しない場合、新しく取得
-    clearSearchResultsCache(); // 古いキャッシュを削除
-    const searchResults = await getSearchResults();
+  // キャッシュが無効または存在しない場合、新しく取得
+  clearSearchResultsCache(); // 古いキャッシュを削除
+
+  const searchResults = await handleServerAction(
+    () => getSearchResults(),
+    (error) => {
+      console.error('Error loading search results:', error);
+    }
+  );
+
+  if (searchResults) {
     saveSearchResultsToCache(searchResults);
 
     const message = isSearchResultsCacheValid()
@@ -111,8 +119,8 @@ export async function loadSearchResults(): Promise<UnifiedSearchResult[]> {
     console.log(message, searchResults.length + '件');
 
     return searchResults;
-  } catch (error) {
-    console.error('Error loading search results:', error);
-    throw error;
   }
+
+  // エラー時は空の配列を返す
+  return [];
 }

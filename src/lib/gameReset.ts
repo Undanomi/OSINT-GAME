@@ -4,6 +4,7 @@ import { resetUserData } from '@/actions/user';
 import { useSocialStore } from '@/store/socialStore';
 import { useMessengerStore } from '@/store/messengerStore';
 import { useSubmissionStore } from '@/store/submissionStore';
+import { handleServerAction } from '@/utils/handleServerAction';
 
 /**
  * ゲーム全体をリセットする関数
@@ -13,10 +14,15 @@ import { useSubmissionStore } from '@/store/submissionStore';
  * - 提出状況のリセット
  */
 export const resetGameData = async () => {
-  try {
-    // 1. Firestoreのユーザーデータをリセット
-    await resetUserData();
+  // 1. Firestoreのユーザーデータをリセット
+  const result = await handleServerAction(
+    () => resetUserData(),
+    (error) => {
+      console.error('Error during game data reset:', error);
+    }
+  );
 
+  if (result !== null) {
     // 2. SocialAppのキャッシュをクリア
     useSocialStore.getState().clearAllData();
 
@@ -28,8 +34,7 @@ export const resetGameData = async () => {
     useSubmissionStore.getState().clearSubmissionHistory();
 
     console.log('Game data reset completed successfully');
-  } catch (error) {
-    console.error('Error during game data reset:', error);
-    throw error;
+  } else {
+    throw new Error('Failed to reset user data');
   }
 };

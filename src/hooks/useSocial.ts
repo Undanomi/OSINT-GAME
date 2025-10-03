@@ -4,9 +4,9 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { useSocialStore } from '@/store/socialStore';
 import { useGameStore } from '@/store/gameStore';
+import { handleServerAction } from '@/utils/handleServerAction';
 import {
   getTimeline,
-  createSocialPost,
   getSocialContacts,
   addSocialContact,
   getSocialMessages,
@@ -16,7 +16,8 @@ import {
   getSocialNPC,
   getSocialAccounts,
   updateSocialAccount,
-  getErrorMessage
+  getErrorMessage,
+  getNPCPosts
 } from '@/actions/social';
 import {
   SocialPost,
@@ -58,6 +59,9 @@ export const useSocial = (
   const { user } = useAuthContext();
   const store = useSocialStore();
   const { triggerGameOver } = useGameStore();
+
+  // storeのメソッドを分離して依存配列で使用できるようにする
+  const { setTimeline } = store;
 
   // ローディング状態
   const [postsLoading, setPostsLoading] = useState(false);
@@ -149,11 +153,15 @@ export const useSocial = (
       }
 
       // サーバーから取得
-      const fetchedNPCs = await getSocialNPCs();
+      const fetchedNPCs = await handleServerAction(
+        () => getSocialNPCs(),
+        (error) => {
+          console.error('Failed to load NPCs:', error);
+          setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+        }
+      );
+
       store.setNPCs(fetchedNPCs);
-    } catch (error) {
-      console.error('Failed to load NPCs:', error);
-      setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
     } finally {
       setNpcsLoading(false);
     }
@@ -177,19 +185,28 @@ export const useSocial = (
       }
 
       // 全アカウント情報を事前に読み込み（作者情報解決のため）
-      try {
-        const accounts = await getSocialAccounts();
-        store.setAccounts(accounts);
-      } catch (accountError) {
-        console.warn('Failed to load accounts for timeline:', accountError);
-        // アカウント読み込みエラーでもタイムライン表示は継続
-      }
+      const accounts = await handleServerAction(
+        () => getSocialAccounts(),
+        (error) => {
+          console.warn('Failed to load accounts for timeline:', error);
+          // アカウント読み込みエラーでもタイムライン表示は継続
+        }
+      );
+
+      store.setAccounts(accounts);
 
       // サーバーから取得
-      const { items: newPosts, hasMore } = await getTimeline({
-        userId: user.uid,
-        limit: SOCIAL_POSTS_PER_PAGE
-      });
+      const result = await handleServerAction(
+        () => getTimeline({
+          limit: SOCIAL_POSTS_PER_PAGE
+        }),
+        (error) => {
+          console.error('Failed to load timeline:', error);
+          setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+        }
+      );
+
+      const { items: newPosts, hasMore } = result;
 
       // NPCデータと結合してUI用に変換
       const uiPosts = newPosts.map(post => {
@@ -198,9 +215,6 @@ export const useSocial = (
       });
 
       store.setTimeline(uiPosts, hasMore);
-    } catch (error) {
-      console.error('Failed to load timeline:', error);
-      setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
     } finally {
       setPostsLoading(false);
     }
@@ -210,10 +224,11 @@ export const useSocial = (
    * タイムスタンプを更新（キャッシュは保持）
    */
   const refreshTimeline = useCallback(() => {
-    if (!user || !store.timeline) return;
+    const currentTimeline = store.timeline;
+    if (!user || !currentTimeline) return;
 
     // 現在のタイムラインの投稿に対してタイムスタンプのみを再計算
-    const updatedPosts = store.timeline.posts.map(post => {
+    const updatedPosts = currentTimeline.posts.map(post => {
       // SocialPostの形に戻してからconvertToUISocialPostで再変換
       const socialPost = {
         id: post.id,
@@ -232,8 +247,9 @@ export const useSocial = (
     });
 
     // ストアを更新
-    store.setTimeline(updatedPosts, store.timeline.hasMore);
-  }, [user, store]);
+    setTimeline(updatedPosts, currentTimeline.hasMore);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, setTimeline]);
 
   /**
    * タイムラインの追加読み込み（無限スクロール）
@@ -244,62 +260,99 @@ export const useSocial = (
     setIsLoadingMorePosts(true);
     const lastPost = posts[posts.length - 1];
 
-    try {
-      const { items: newPosts, hasMore } = await getTimeline({
-        userId: user.uid,
+    const result = await handleServerAction(
+      () => getTimeline({
         limit: SOCIAL_POSTS_PER_PAGE,
         cursor: lastPost.id
+      }),
+      (error) => {
+        console.error('Failed to load more posts:', error);
+        setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+      }
+    );
+
+    const { items: newPosts, hasMore } = result;
+
+    if (newPosts.length > 0) {
+      const uiPosts = newPosts.map(post => {
+        const author = getAuthorInfo(post);
+        return convertToUISocialPost(post, author);
       });
 
-      if (newPosts.length > 0) {
-        const uiPosts = newPosts.map(post => {
-          const author = getAuthorInfo(post);
-          return convertToUISocialPost(post, author);
-        });
-
-        store.appendTimeline(uiPosts, hasMore);
-      }
-    } catch (error) {
-      console.error('Failed to load more posts:', error);
-      setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
-    } finally {
-      setIsLoadingMorePosts(false);
+      store.appendTimeline(uiPosts, hasMore);
     }
+
+    setIsLoadingMorePosts(false);
   }, [user, hasMorePosts, isLoadingMorePosts, posts, getAuthorInfo, store]);
 
   /**
-   * 新しい投稿を作成
+   * 新しい投稿を作成（クライアント側のみで完結）
    */
   const createPost = useCallback(async (content: string) => {
     if (!user || !activeAccount) throw new Error('authError');
 
-    try {
-      setError(null);
-      const newPost = await createSocialPost(activeAccount.id, content); // activeAccount.idはstable_id
-
-      const author = {
-        id: activeAccount.id,
-        account_id: activeAccount.account_id,
-        name: activeAccount.name,
-        avatar: activeAccount.avatar
-      };
-
-      const uiPost = convertToUISocialPost(newPost, author);
-
-      // タイムラインの先頭に追加
-      const currentTimeline = store.timeline;
-      if (currentTimeline) {
-        store.setTimeline([uiPost, ...currentTimeline.posts], currentTimeline.hasMore);
-      } else {
-        store.setTimeline([uiPost], true);
-      }
-
-      return uiPost;
-    } catch (error) {
-      console.error('Failed to create post:', error);
-      setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
-      throw error;
+    // 入力値の検証
+    if (!content || content.trim().length === 0) {
+      throw new Error('投稿内容を入力してください');
     }
+    if (content.length > 500) {
+      throw new Error('投稿は500文字以内で入力してください');
+    }
+
+    setError(null);
+
+    // 現在時刻を取得し、10月28日の同時刻に固定
+    const now = new Date();
+    const fixedDate = new Date('2025-10-28');
+    fixedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+
+    const timestampId = generateTimestampId(fixedDate);
+
+    const newPost: SocialPost = {
+      id: timestampId,
+      authorId: activeAccount.id,
+      authorType: 'user',
+      content: content.trim(),
+      timestamp: fixedDate,
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      createdAt: fixedDate,
+      updatedAt: fixedDate,
+    };
+
+    const author = {
+      id: activeAccount.id,
+      account_id: activeAccount.account_id,
+      name: activeAccount.name,
+      avatar: activeAccount.avatar
+    };
+
+    const uiPost = convertToUISocialPost(newPost, author);
+
+    // タイムラインに追加してタイムスタンプでソート
+    const currentTimeline = store.timeline;
+    if (currentTimeline) {
+      const updatedPosts = [...currentTimeline.posts, uiPost].sort((a, b) =>
+        b.timestamp.getTime() - a.timestamp.getTime()
+      );
+      store.setTimeline(updatedPosts, currentTimeline.hasMore);
+    } else {
+      store.setTimeline([uiPost], true);
+    }
+
+    // アカウント投稿にも追加
+    const currentAccountPosts = store.accountPosts[activeAccount.id];
+    if (currentAccountPosts) {
+      const updatedAccountPosts = [...currentAccountPosts.posts, uiPost].sort((a, b) =>
+        b.timestamp.getTime() - a.timestamp.getTime()
+      );
+      store.setAccountPosts(activeAccount.id, updatedAccountPosts, currentAccountPosts.hasMore);
+    } else {
+      store.setAccountPosts(activeAccount.id, [uiPost], true);
+    }
+
+    return uiPost;
   }, [user, activeAccount, store]);
 
   /**
@@ -311,23 +364,25 @@ export const useSocial = (
     setContactsLoading(true);
     setError(null);
 
-    try {
-      // ストアから読み込み
-      const cached = store.contacts[activeAccount.id];
-      if (cached) {
-        setContactsLoading(false);
-        return;
-      }
-
-      // サーバーから取得
-      const fetchedContacts = await getSocialContacts(activeAccount.id);
-      store.setContacts(activeAccount.id, fetchedContacts);
-    } catch (error) {
-      console.error('Failed to load contacts:', error);
-      setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
-    } finally {
+    // ストアから読み込み
+    const cached = store.contacts[activeAccount.id];
+    if (cached) {
       setContactsLoading(false);
+      return;
     }
+
+    // サーバーから取得
+    const fetchedContacts = await handleServerAction(
+      () => getSocialContacts(activeAccount.id),
+      (error) => {
+        console.error('Failed to load contacts:', error);
+        setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+      }
+    );
+
+    store.setContacts(activeAccount.id, fetchedContacts);
+
+    setContactsLoading(false);
   }, [user, activeAccount, store]);
 
   /**
@@ -339,29 +394,31 @@ export const useSocial = (
     setMessagesLoading(true);
     setError(null);
 
-    try {
-      // ストアから読み込み
-      const cached = store.messages[`${activeAccount.id}_${contactId}`];
-      if (cached) {
-        setMessagesLoading(false);
-        return;
-      }
+    // ストアから読み込み
+    const cached = store.messages[`${activeAccount.id}_${contactId}`];
+    if (cached) {
+      setMessagesLoading(false);
+      return;
+    }
 
-      // サーバーから取得
-      const { items: newMessages, hasMore } = await getSocialMessages({
+    // サーバーから取得
+    const result = await handleServerAction(
+      () => getSocialMessages({
         accountId: activeAccount.id,
         contactId,
         limit: SOCIAL_MESSAGES_PER_PAGE
-      });
+      }),
+      (error) => {
+        console.error('Failed to load messages:', error);
+        setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+      }
+    );
 
-      const uiMessages = newMessages.map(convertToUISocialDMMessage);
-      store.setMessages(activeAccount.id, contactId, uiMessages, hasMore);
-    } catch (error) {
-      console.error('Failed to load messages:', error);
-      setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
-    } finally {
-      setMessagesLoading(false);
-    }
+    const { items: newMessages, hasMore } = result;
+    const uiMessages = newMessages.map(convertToUISocialDMMessage);
+    store.setMessages(activeAccount.id, contactId, uiMessages, hasMore);
+
+    setMessagesLoading(false);
   }, [user, activeAccount, store]);
 
   /**
@@ -373,24 +430,26 @@ export const useSocial = (
     setIsLoadingMoreMessages(true);
     const oldestMessage = messages[0];
 
-    try {
-      const { items: newMessages, hasMore } = await getSocialMessages({
+    const result = await handleServerAction(
+      () => getSocialMessages({
         accountId: activeAccount.id,
         contactId: selectedContact.id,
         limit: SOCIAL_MESSAGES_PER_PAGE,
         cursor: oldestMessage.id
-      });
-
-      if (newMessages.length > 0) {
-        const uiMessages = newMessages.map(convertToUISocialDMMessage);
-        store.appendMessages(activeAccount.id, selectedContact.id, uiMessages, hasMore);
+      }),
+      (error) => {
+        console.error('Failed to load more messages:', error);
+        setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
       }
-    } catch (error) {
-      console.error('Failed to load more messages:', error);
-      setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
-    } finally {
-      setIsLoadingMoreMessages(false);
+    );
+
+    const { items: newMessages, hasMore } = result;
+    if (newMessages.length > 0) {
+      const uiMessages = newMessages.map(convertToUISocialDMMessage);
+      store.appendMessages(activeAccount.id, selectedContact.id, uiMessages, hasMore);
     }
+
+    setIsLoadingMoreMessages(false);
   }, [user, activeAccount, selectedContact, hasMoreMessages, isLoadingMoreMessages, messages, store]);
 
   /**
@@ -399,34 +458,34 @@ export const useSocial = (
   const addNewContact = useCallback(async (npcId: string, npcName: string) => {
     if (!user || !activeAccount) throw new Error('authError');
 
-    try {
-      setError(null);
+    setError(null);
 
-      // 既存の連絡先をチェック
-      const existingContact = contacts.find(c => c.id === npcId);
-      if (existingContact) {
-        return existingContact;
-      }
-
-      // 新しい連絡先を作成
-      const newContact: SocialContact = {
-        id: npcId,
-        name: npcName,
-        type: 'npc'
-      };
-
-      // Firestoreに保存
-      await addSocialContact(activeAccount.id, newContact);
-
-      // ストアを更新
-      const updatedContacts = [newContact, ...contacts];
-      store.setContacts(activeAccount.id, updatedContacts);
-      return newContact;
-    } catch (error) {
-      console.error('Failed to add contact:', error);
-      setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
-      throw error;
+    // 既存の連絡先をチェック
+    const existingContact = contacts.find(c => c.id === npcId);
+    if (existingContact) {
+      return existingContact;
     }
+
+    // 新しい連絡先を作成
+    const newContact: SocialContact = {
+      id: npcId,
+      name: npcName,
+      type: 'npc'
+    };
+
+    // Firestoreに保存
+    await handleServerAction(
+      () => addSocialContact(activeAccount.id, newContact),
+      (error) => {
+        console.error('Failed to add contact:', error);
+        setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+      }
+    );
+
+    // ストアを更新
+    const updatedContacts = [newContact, ...contacts];
+    store.setContacts(activeAccount.id, updatedContacts);
+    return newContact;
   }, [user, activeAccount, contacts, store]);
 
   /**
@@ -435,34 +494,40 @@ export const useSocial = (
   const updateUserProfile = useCallback(async (profileData: SocialAccount) => {
     if (!user || !activeAccount) throw new Error('authError');
 
-    try {
-      setError(null);
+    setError(null);
 
-      // SocialAccountProviderの updateAccount を使用
-      if (updateAccount) {
-        await updateAccount(activeAccount.id, profileData);
-      } else {
-        // フォールバック: 直接Firestoreを更新
-        await updateSocialAccount(activeAccount.id, profileData);
-      }
-
-      // アカウントキャッシュを更新
-      const cached = store.accounts;
-      if (cached) {
-        const updatedAccounts = cached.accounts.map((account: SocialAccount) =>
-          account.id === activeAccount.id
-            ? { ...account, ...profileData }
-            : account
-        );
-        store.setAccounts(updatedAccounts);
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-      setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
-      throw error;
+    // SocialAccountProviderの updateAccount を使用
+    if (updateAccount) {
+      await handleServerAction(
+        () => updateAccount(activeAccount.id, profileData),
+        (error) => {
+          console.error('Failed to update profile:', error);
+          setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+        }
+      );
+    } else {
+      // フォールバック: 直接Firestoreを更新
+      await handleServerAction(
+        () => updateSocialAccount(activeAccount.id, profileData),
+        (error) => {
+          console.error('Failed to update profile:', error);
+          setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+        }
+      );
     }
+
+    // アカウントキャッシュを更新
+    const cached = store.accounts;
+    if (cached) {
+      const updatedAccounts = cached.accounts.map((account: SocialAccount) =>
+        account.id === activeAccount.id
+          ? { ...account, ...profileData }
+          : account
+      );
+      store.setAccounts(updatedAccounts);
+    }
+
+    return true;
   }, [user, activeAccount, store, updateAccount]);
 
   /**
@@ -490,96 +555,117 @@ export const useSocial = (
 
     addMessageToState(userMessage);
 
-    try {
-      setError(null);
+    setError(null);
 
-      // ユーザーメッセージを保存
-      await addSocialMessage(activeAccount.id, selectedContact.id, {
+    // ユーザーメッセージを保存
+    await handleServerAction(
+      () => addSocialMessage(activeAccount.id, selectedContact.id, {
         id: messageId,
         sender: 'user',
         text,
         timestamp: userMessage.timestamp,
-      });
+      }),
+      (error) => {
+        console.error('Failed to save user message:', error);
+        setError("メッセージの送信に失敗しました");
+      }
+    );
 
-      // AI応答を生成（過去の履歴を含める、最新N件に制限）
-      const recentMessages = messages.slice(-MAX_SOCIAL_CONVERSATION_HISTORY_LENGTH);
-      const chatHistory = recentMessages.map(msg => ({
-        role: msg.sender === 'me' ? 'user' as const : 'model' as const,
-        parts: [{ text: msg.text }]
-      }));
+    // AI応答を生成（過去の履歴を含める、最新N件に制限）
+    const recentMessages = messages.slice(-MAX_SOCIAL_CONVERSATION_HISTORY_LENGTH);
+    const chatHistory = recentMessages.map(msg => ({
+      role: msg.sender === 'me' ? 'user' as const : 'model' as const,
+      parts: [{ text: msg.text }]
+    }));
 
-      // 新しいAI応答生成関数を使用（プロフィールと関係性情報を含む）
-      const aiResponse = await generateSocialAIResponse({
+    // 新しいAI応答生成関数を使用（プロフィールと関係性情報を含む）
+    const aiResponse = await handleServerAction(
+      () => generateSocialAIResponse({
         message: text,
         chatHistory,
         npcId: selectedContact.id,
         userProfile: activeAccount,
         accountId: activeAccount.id
-      });
-      const aiText = aiResponse.responseText;
+      }),
+      async (error) => {
+        console.error('Failed to generate AI response:', error);
+        setError("AI応答の生成に失敗しました");
 
-      const aiTimestamp = new Date();
-      const aiMessageId = generateTimestampId(aiTimestamp);
-      const aiMessage: UISocialDMMessage = {
-        id: aiMessageId,
-        sender: 'other',
-        text: aiText,
-        time: aiTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: aiTimestamp,
-      };
+        // エラーメッセージをFirestoreから取得
+        const errorType = error instanceof Error ? error.message as SocialErrorType : 'general';
+        const errorMessages = await handleServerAction(
+          () => getErrorMessage(selectedContact.id),
+          (err) => console.error('Failed to get error message:', err)
+        );
+        const customErrorText = errorMessages?.[errorType];
 
-      // AI応答を保存
-      await addSocialMessage(activeAccount.id, selectedContact.id, {
+        // Firestoreからの取得に失敗した場合は固定フォールバックメッセージを使用
+        const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
+
+        const errorTimestamp = new Date();
+        const errorMessage: UISocialDMMessage = {
+          id: generateTimestampId(errorTimestamp),
+          sender: 'other',
+          text: errorText,
+          time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: errorTimestamp,
+        };
+
+        // NPCエラーメッセージを保存・表示
+        await handleServerAction(
+          () => addSocialMessage(activeAccount.id, selectedContact.id, {
+            id: errorMessage.id,
+            sender: 'npc',
+            text: errorText,
+            timestamp: errorMessage.timestamp,
+          }),
+          (err) => console.error('Failed to save error message:', err)
+        );
+        addMessageToState(errorMessage);
+      }
+    );
+
+    const aiText = aiResponse.responseText;
+
+    const aiTimestamp = new Date();
+    const aiMessageId = generateTimestampId(aiTimestamp);
+    const aiMessage: UISocialDMMessage = {
+      id: aiMessageId,
+      sender: 'other',
+      text: aiText,
+      time: aiTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: aiTimestamp,
+    };
+
+    // AI応答を保存
+    await handleServerAction(
+      () => addSocialMessage(activeAccount.id, selectedContact.id, {
         id: aiMessageId,
         sender: 'npc',
         text: aiText,
         timestamp: aiMessage.timestamp,
-      });
-      addMessageToState(aiMessage);
-
-      // ゲームオーバー対象NPCかどうかをチェック
-      const currentNPC = npcs.find(npc => npc.id === selectedContact.id);
-      if (currentNPC?.isGameOverTarget) {
-        // 警戒度の閾値チェック
-        if (aiResponse.newCaution >= CAUTION_GAME_OVER_THRESHOLD) {
-          setTimeout(() => {
-            triggerGameOver('social-relationship', `ターゲットに完全に警戒され、これ以上の情報収集が不可能になりました。`)
-          }, 3000);
-          return;
-        }
+      }),
+      (error) => {
+        console.error('Failed to save AI message:', error);
+        setError("AI応答の保存に失敗しました");
       }
-    } catch (error) {
-      console.error('Failed to send message:', error);
+    );
+    addMessageToState(aiMessage);
 
-      // エラーメッセージをFirestoreから取得
-      const errorType = error instanceof Error ? error.message as SocialErrorType : 'general';
-      const errorMessages = await getErrorMessage(selectedContact.id);
-      const customErrorText = errorMessages?.[errorType];
-
-      // Firestoreからの取得に失敗した場合は固定フォールバックメッセージを使用
-      const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
-
-      const errorTimestamp = new Date();
-      const errorMessage: UISocialDMMessage = {
-        id: generateTimestampId(errorTimestamp),
-        sender: 'other',
-        text: errorText,
-        time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: errorTimestamp,
-      };
-
-      // NPCエラーメッセージを保存・表示
-      await addSocialMessage(activeAccount.id, selectedContact.id, {
-        id: errorMessage.id,
-        sender: 'npc',
-        text: errorText,
-        timestamp: errorMessage.timestamp,
-      });
-      addMessageToState(errorMessage);
-
-    } finally {
-      setIsWaitingForAI(false);
+    // ゲームオーバー対象NPCかどうかをチェック
+    const currentNPC = npcs.find(npc => npc.id === selectedContact.id);
+    if (currentNPC?.isGameOverTarget) {
+      // 警戒度の閾値チェック
+      if (aiResponse.newCaution >= CAUTION_GAME_OVER_THRESHOLD) {
+        setTimeout(() => {
+          triggerGameOver('social-relationship', `ターゲットに完全に警戒され、これ以上の情報収集が不可能になりました。`)
+        }, 3000);
+        setIsWaitingForAI(false);
+        return;
+      }
     }
+
+    setIsWaitingForAI(false);
   }, [user, activeAccount, selectedContact, messages, store, isWaitingForAI, npcs, triggerGameOver]);
 
   // 初期データ読み込み
@@ -626,41 +712,42 @@ export const useSocial = (
    * キャッシュ付きで個別NPCプロフィールを取得
    */
   const getNPCProfile = useCallback(async (npcId: string): Promise<SocialNPC | null> => {
-    try {
-      // NPCリストから検索
-      const npc = npcs.find(n => n.id === npcId);
-      if (npc) {
-        return npc;
-      }
-
-      // サーバーから取得
-      const fetchedNPC = await getSocialNPC(npcId);
-      return fetchedNPC;
-    } catch (error) {
-      console.error('Failed to get NPC profile:', error);
-      return null;
+    // NPCリストから検索
+    const npc = npcs.find(n => n.id === npcId);
+    if (npc) {
+      return npc;
     }
+
+    // サーバーから取得
+    const fetchedNPC = await handleServerAction(
+      () => getSocialNPC(npcId),
+      (error) => {
+        console.error('Failed to get NPC profile:', error);
+      }
+    );
+    return fetchedNPC || null;
   }, [npcs]);
 
   /**
    * キャッシュ付きでソーシャルアカウントリストを取得
    */
   const loadSocialAccounts = useCallback(async (): Promise<SocialAccount[]> => {
-    try {
-      // ストアから読み込み
-      const cached = store.accounts;
-      if (cached) {
-        return cached.accounts;
-      }
-
-      // サーバーから取得（認証済みユーザーのアカウントのみ）
-      const accounts = await getSocialAccounts();
-      store.setAccounts(accounts);
-      return accounts;
-    } catch (error) {
-      console.error('Failed to load social accounts:', error);
-      throw error;
+    // ストアから読み込み
+    const cached = store.accounts;
+    if (cached) {
+      return cached.accounts;
     }
+
+    // サーバーから取得（認証済みユーザーのアカウントのみ）
+    const accounts = await handleServerAction(
+      () => getSocialAccounts(),
+      (error) => {
+        console.error('Failed to load social accounts:', error);
+      }
+    );
+
+    store.setAccounts(accounts);
+    return accounts;
   }, [store]);
 
 
@@ -733,6 +820,124 @@ export const useSocial = (
     return matches.slice(0, targetLimit);
   }, [posts, hasMorePosts, loadMorePosts, postsLoading, loadInitialTimeline, store]);
 
+  /**
+   * NPC投稿を初期読み込み
+   */
+  const loadInitialNPCPosts = useCallback(async (npcId: string) => {
+    if (!user) return;
+
+    // ストアから読み込み
+    const cached = store.npcPosts[npcId];
+    if (cached) {
+      return;
+    }
+
+    // サーバーから取得
+    const result = await handleServerAction(
+      () => getNPCPosts(npcId, SOCIAL_POSTS_PER_PAGE),
+      (error) => {
+        console.warn('Failed to load NPC posts:', error);
+      }
+    );
+
+    if (result) {
+      store.setNPCPosts(npcId, result.items, result.hasMore);
+    }
+  }, [user, store]);
+
+  /**
+   * NPC投稿を追加読み込み
+   */
+  const loadMoreNPCPosts = useCallback(async (npcId: string) => {
+    const cached = store.npcPosts[npcId];
+    if (!cached || !cached.hasMore || cached.posts.length === 0) return;
+
+    const lastPost = cached.posts[cached.posts.length - 1];
+
+    const result = await handleServerAction(
+      () => getNPCPosts(npcId, SOCIAL_POSTS_PER_PAGE, lastPost.id),
+      (error) => {
+        console.error('Failed to load more NPC posts:', error);
+      }
+    );
+
+    if (result && result.items.length > 0) {
+      store.appendNPCPosts(npcId, result.items, result.hasMore);
+    }
+  }, [store]);
+
+  /**
+   * NPC投稿を取得（storeから、時刻表示を再計算）
+   */
+  const npcPosts = useCallback((npcId: string): { posts: UISocialPost[]; hasMore: boolean } => {
+    const npcPostsData = store.npcPosts[npcId];
+    if (!npcPostsData) {
+      return { posts: [], hasMore: true };
+    }
+
+    // タイムスタンプでフィルタリング＋時刻表示を再計算
+    const now = new Date();
+    const baseDate = new Date('2025-10-28');
+    baseDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+
+    const filteredPosts = npcPostsData.posts
+      .filter(post => post.timestamp <= baseDate)
+      .map(post => {
+        // SocialPostの形に戻してからconvertToUISocialPostで再変換
+        const socialPost = {
+          id: post.id,
+          authorId: post.authorId,
+          authorType: post.authorType,
+          content: post.content,
+          timestamp: post.timestamp,
+          likes: post.likes,
+          comments: post.comments,
+          shares: post.shares,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+        };
+
+        return convertToUISocialPost(socialPost, post.author);
+      });
+
+    return { posts: filteredPosts, hasMore: npcPostsData.hasMore };
+  }, [store.npcPosts]);
+
+  /**
+   * アカウント投稿を取得（storeから、時刻表示を再計算）
+   */
+  const accountPosts = useCallback((accountId: string): UISocialPost[] => {
+    const accountPostsData = store.accountPosts[accountId];
+    if (!accountPostsData) {
+      return [];
+    }
+
+    // タイムスタンプでフィルタリング＋時刻表示を再計算
+    const now = new Date();
+    const baseDate = new Date('2025-10-28');
+    baseDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+
+    return accountPostsData.posts
+      .filter(post => post.timestamp <= baseDate)
+      .map(post => {
+        // SocialPostの形に戻してからconvertToUISocialPostで再変換
+        const socialPost = {
+          id: post.id,
+          authorId: post.authorId,
+          authorType: post.authorType,
+          content: post.content,
+          timestamp: post.timestamp,
+          likes: post.likes,
+          comments: post.comments,
+          shares: post.shares,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+        };
+
+        return convertToUISocialPost(socialPost, post.author);
+      });
+  }, [store.accountPosts]);
+
   // エラーの自動クリア
   useEffect(() => {
     if (error) {
@@ -788,5 +993,13 @@ export const useSocial = (
     // リフレッシュ
     refreshTimeline,
     refreshContacts: loadContacts,
+
+    // アカウント投稿
+    accountPosts,
+
+    // NPC投稿
+    loadInitialNPCPosts,
+    loadMoreNPCPosts,
+    npcPosts,
   };
 };

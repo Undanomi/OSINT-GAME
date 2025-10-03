@@ -1,0 +1,50 @@
+[
+  {
+    "id": "sample_high_school",
+    "title": "サンプル高等学校 - ホームページ",
+    "url": "https://sample-hs.ed.jp/",
+    "description": "サンプル高等学校の公式ホームページです。普通科・商業科を設置。大学進学率80%。",
+    "template": "HighSchoolPage",
+    "content": {
+      "schoolName": "サンプル高等学校",
+      "englishName": "Sample High School",
+      "principal": "田中 次郎",
+      "address": "〒000-0000 東京都サンプル市3-3-3",
+      "phone": "03-2222-2222",
+      "fax": "03-2222-2223",
+      "email": "info@sample-hs.ed.jp",
+      "established": "1985年4月",
+      "studentCount": 600,
+      "schoolImage": "gs://your-project.firebasestorage.app/path/to/image",
+      "motto": "誠実・努力・挑戦",
+      "message": "サンプル高等学校は「誠実・努力・挑戦」を校訓に掲げ、生徒の成長を支えます。",
+      "news": [
+        {
+          "date": "2024年3月15日",
+          "category": "行事",
+          "title": "卒業式を挙行しました",
+          "content": "第30回卒業式を挙行しました。"
+        }
+      ],
+      "departments": [
+        {
+          "name": "普通科",
+          "description": "幅広い教養を身につけ大学進学を目指します。",
+          "features": ["進学指導", "補習授業"]
+        },
+        {
+          "name": "商業科",
+          "description": "ビジネスに関する基礎を学びます。",
+          "features": ["資格取得支援", "インターンシップ"]
+        }
+      ],
+      "careerData": {
+        "universityRate": 80,
+        "employmentRate": 15
+      }
+    },
+    "keywords": ["サンプル高等学校", "高校", "教育"],
+    "domainStatus": "active",
+    "archivedDate": "2024-01-01"
+  }
+]

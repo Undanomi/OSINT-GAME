@@ -1,0 +1,40 @@
+[
+  {
+    "id": "sample_junior_high_school",
+    "title": "サンプル中学校 - ホームページ",
+    "url": "https://sample-jhs.ed.jp/",
+    "description": "サンプル中学校の公式ホームページです。生徒数400名。自主・協調・創造を育みます。",
+    "template": "JuniorHighSchoolPage",
+    "content": {
+      "schoolName": "サンプル中学校",
+      "principal": "佐藤 太郎",
+      "address": "〒000-0000 東京都サンプル市2-2-2",
+      "phone": "03-1111-1111",
+      "fax": "03-1111-1112",
+      "email": "info@sample-jhs.ed.jp",
+      "established": "1995年5月",
+      "studentCount": 400,
+      "schoolImage": "gs://your-project.firebasestorage.app/path/to/image",
+      "philosophy": "自主・協調・創造",
+      "greeting": "サンプル中学校は「自主・協調・創造」の精神で学びを広げます。",
+      "news": [
+        {
+          "date": "2024年3月18日",
+          "category": "行事",
+          "title": "卒業式を挙行しました",
+          "content": "第20回卒業式を挙行しました。"
+        }
+      ],
+      "clubs": [
+        {
+          "name": "サッカー部",
+          "description": "基礎練習と試合を中心に活動。",
+          "achievement": "地区大会ベスト4"
+        }
+      ]
+    },
+    "keywords": ["サンプル中学校", "中学校", "教育"],
+    "domainStatus": "active",
+    "archivedDate": "2024-01-01"
+  }
+]

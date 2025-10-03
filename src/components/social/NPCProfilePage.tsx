@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, UIEvent } from 'react';
 import { SocialNPC, UISocialPost, getDisplayUserId } from '@/types/social';
 import { PostComponent } from './PostComponent';
-import { getNPCPosts } from '@/actions/social';
 import {
   ArrowLeft,
   Mail,
@@ -18,6 +17,9 @@ interface NPCProfilePageProps {
   onStartDM: (contact: { id: string; name: string }) => void;
   onBack: () => void;
   onUserSelect: (userId: string) => void;
+  loadInitialNPCPosts: (npcId: string) => Promise<void>;
+  loadMoreNPCPosts: (npcId: string) => Promise<void>;
+  npcPosts: (npcId: string) => { posts: UISocialPost[]; hasMore: boolean };
 }
 
 /**
@@ -27,85 +29,37 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
   npc,
   onStartDM,
   onBack,
-  onUserSelect
+  onUserSelect,
+  loadInitialNPCPosts,
+  loadMoreNPCPosts,
+  npcPosts
 }) => {
   const [posts, setPosts] = useState<UISocialPost[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [cursor, setCursor] = useState<string | undefined>();
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-
-  const loadNPCPostsRef = useRef<((reset?: boolean) => Promise<void>) | null>(null);
-
-  // NPC投稿を読み込む関数
-  const loadNPCPosts = useCallback(async (reset = false) => {
-    if ((reset ? loading : isLoadingMore) || (!hasMore && !reset)) return;
-
-    if (reset) {
-      setLoading(true);
-    } else {
-      setIsLoadingMore(true);
-    }
-
-    try {
-      const result = await getNPCPosts(
-        npc.id,
-        10,
-        reset ? undefined : cursor
-      );
-
-      const now = new Date();
-      const baseDate = new Date("2025-10-28");
-      baseDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
-      const uiPosts = result.items.filter(post => post.timestamp <= baseDate);
-
-      if (reset) {
-        setPosts(uiPosts);
-      } else {
-        setPosts(prev => [...prev, ...uiPosts]);
-      }
-
-      // 投稿が0件の場合は確実にhasMoreをfalseに設定
-      if (result.items.length === 0) {
-        setHasMore(false);
-        setCursor(undefined);
-      } else {
-        setHasMore(result.hasMore);
-        setCursor(result.lastCursor);
-      }
-    } catch (error) {
-      console.error('Failed to load NPC posts:', error);
-      // エラー時もhasMoreをfalseに設定して無限ループを防ぐ
-      setHasMore(false);
-      setCursor(undefined);
-    } finally {
-      if (reset) {
-        setLoading(false);
-      } else {
-        setIsLoadingMore(false);
-      }
-    }
-  }, [npc.id, loading, isLoadingMore, hasMore, cursor]);
-
-  // refに最新の関数を保存
-  loadNPCPostsRef.current = loadNPCPosts;
 
   // 初回読み込み
   useEffect(() => {
-    if (loadNPCPostsRef.current) {
-      loadNPCPostsRef.current(true);
-    }
-  }, [npc.id]);
+    loadInitialNPCPosts(npc.id);
+  }, [npc.id, loadInitialNPCPosts]);
+
+  // storeから投稿を取得
+  useEffect(() => {
+    const { posts: postsData, hasMore: hasMoreData } = npcPosts(npc.id);
+    setPosts(postsData);
+    setHasMore(hasMoreData);
+  }, [npc.id, npcPosts]);
 
   // 無限スクロール処理
-  const handleScroll = useCallback((e: UIEvent<HTMLDivElement>) => {
+  const handleScroll = useCallback(async (e: UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     if (scrollHeight - scrollTop - clientHeight < 100 && hasMore && !isLoadingMore) {
-      loadNPCPosts(false);
+      setIsLoadingMore(true);
+      await loadMoreNPCPosts(npc.id);
+      setIsLoadingMore(false);
     }
-  }, [hasMore, isLoadingMore, loadNPCPosts]);
+  }, [hasMore, isLoadingMore, npc.id, loadMoreNPCPosts]);
 
 
   if (!npc) return <div className="p-6">プロフィールが見つかりません。</div>;
@@ -197,11 +151,6 @@ export const NPCProfilePage: React.FC<NPCProfilePageProps> = ({
                 </div>
               )}
             </>
-          ) : loading ? (
-            <div className="p-6 text-center">
-              <Loader2 size={24} className="animate-spin mx-auto text-gray-400" />
-              <p className="text-gray-500 mt-2">投稿を読み込んでいます...</p>
-            </div>
           ) : (
             <p className="p-6 text-gray-500">まだ投稿がありません。</p>
           )}
