@@ -7,7 +7,6 @@ import { useGameStore } from '@/store/gameStore';
 import { handleServerAction } from '@/utils/handleServerAction';
 import {
   getTimeline,
-  createSocialPost,
   getSocialContacts,
   addSocialContact,
   getSocialMessages,
@@ -17,7 +16,8 @@ import {
   getSocialNPC,
   getSocialAccounts,
   updateSocialAccount,
-  getErrorMessage
+  getErrorMessage,
+  getNPCPosts
 } from '@/actions/social';
 import {
   SocialPost,
@@ -59,6 +59,9 @@ export const useSocial = (
   const { user } = useAuthContext();
   const store = useSocialStore();
   const { triggerGameOver } = useGameStore();
+
+  // storeのメソッドを分離して依存配列で使用できるようにする
+  const { setTimeline } = store;
 
   // ローディング状態
   const [postsLoading, setPostsLoading] = useState(false);
@@ -221,10 +224,11 @@ export const useSocial = (
    * タイムスタンプを更新（キャッシュは保持）
    */
   const refreshTimeline = useCallback(() => {
-    if (!user || !store.timeline) return;
+    const currentTimeline = store.timeline;
+    if (!user || !currentTimeline) return;
 
     // 現在のタイムラインの投稿に対してタイムスタンプのみを再計算
-    const updatedPosts = store.timeline.posts.map(post => {
+    const updatedPosts = currentTimeline.posts.map(post => {
       // SocialPostの形に戻してからconvertToUISocialPostで再変換
       const socialPost = {
         id: post.id,
@@ -243,8 +247,9 @@ export const useSocial = (
     });
 
     // ストアを更新
-    store.setTimeline(updatedPosts, store.timeline.hasMore);
-  }, [user, store]);
+    setTimeline(updatedPosts, currentTimeline.hasMore);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, setTimeline]);
 
   /**
    * タイムラインの追加読み込み（無限スクロール）
@@ -281,19 +286,40 @@ export const useSocial = (
   }, [user, hasMorePosts, isLoadingMorePosts, posts, getAuthorInfo, store]);
 
   /**
-   * 新しい投稿を作成
+   * 新しい投稿を作成（クライアント側のみで完結）
    */
   const createPost = useCallback(async (content: string) => {
     if (!user || !activeAccount) throw new Error('authError');
 
+    // 入力値の検証
+    if (!content || content.trim().length === 0) {
+      throw new Error('投稿内容を入力してください');
+    }
+    if (content.length > 500) {
+      throw new Error('投稿は500文字以内で入力してください');
+    }
+
     setError(null);
-    const newPost = await handleServerAction(
-      () => createSocialPost(activeAccount.id, content),
-      (error) => {
-        console.error('Failed to create post:', error);
-        setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
-      }
-    );
+
+    // 現在時刻を取得し、10月28日の同時刻に固定
+    const now = new Date();
+    const fixedDate = new Date('2025-10-28');
+    fixedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+
+    const timestampId = generateTimestampId(fixedDate);
+
+    const newPost: SocialPost = {
+      id: timestampId,
+      authorId: activeAccount.id,
+      authorType: 'user',
+      content: content.trim(),
+      timestamp: fixedDate,
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      createdAt: fixedDate,
+      updatedAt: fixedDate,
+    };
 
     const author = {
       id: activeAccount.id,
@@ -304,12 +330,26 @@ export const useSocial = (
 
     const uiPost = convertToUISocialPost(newPost, author);
 
-    // タイムラインの先頭に追加
+    // タイムラインに追加してタイムスタンプでソート
     const currentTimeline = store.timeline;
     if (currentTimeline) {
-      store.setTimeline([uiPost, ...currentTimeline.posts], currentTimeline.hasMore);
+      const updatedPosts = [...currentTimeline.posts, uiPost].sort((a, b) =>
+        b.timestamp.getTime() - a.timestamp.getTime()
+      );
+      store.setTimeline(updatedPosts, currentTimeline.hasMore);
     } else {
       store.setTimeline([uiPost], true);
+    }
+
+    // アカウント投稿にも追加
+    const currentAccountPosts = store.accountPosts[activeAccount.id];
+    if (currentAccountPosts) {
+      const updatedAccountPosts = [...currentAccountPosts.posts, uiPost].sort((a, b) =>
+        b.timestamp.getTime() - a.timestamp.getTime()
+      );
+      store.setAccountPosts(activeAccount.id, updatedAccountPosts, currentAccountPosts.hasMore);
+    } else {
+      store.setAccountPosts(activeAccount.id, [uiPost], true);
     }
 
     return uiPost;
@@ -780,6 +820,124 @@ export const useSocial = (
     return matches.slice(0, targetLimit);
   }, [posts, hasMorePosts, loadMorePosts, postsLoading, loadInitialTimeline, store]);
 
+  /**
+   * NPC投稿を初期読み込み
+   */
+  const loadInitialNPCPosts = useCallback(async (npcId: string) => {
+    if (!user) return;
+
+    // ストアから読み込み
+    const cached = store.npcPosts[npcId];
+    if (cached) {
+      return;
+    }
+
+    // サーバーから取得
+    const result = await handleServerAction(
+      () => getNPCPosts(npcId, SOCIAL_POSTS_PER_PAGE),
+      (error) => {
+        console.warn('Failed to load NPC posts:', error);
+      }
+    );
+
+    if (result) {
+      store.setNPCPosts(npcId, result.items, result.hasMore);
+    }
+  }, [user, store]);
+
+  /**
+   * NPC投稿を追加読み込み
+   */
+  const loadMoreNPCPosts = useCallback(async (npcId: string) => {
+    const cached = store.npcPosts[npcId];
+    if (!cached || !cached.hasMore || cached.posts.length === 0) return;
+
+    const lastPost = cached.posts[cached.posts.length - 1];
+
+    const result = await handleServerAction(
+      () => getNPCPosts(npcId, SOCIAL_POSTS_PER_PAGE, lastPost.id),
+      (error) => {
+        console.error('Failed to load more NPC posts:', error);
+      }
+    );
+
+    if (result && result.items.length > 0) {
+      store.appendNPCPosts(npcId, result.items, result.hasMore);
+    }
+  }, [store]);
+
+  /**
+   * NPC投稿を取得（storeから、時刻表示を再計算）
+   */
+  const npcPosts = useCallback((npcId: string): { posts: UISocialPost[]; hasMore: boolean } => {
+    const npcPostsData = store.npcPosts[npcId];
+    if (!npcPostsData) {
+      return { posts: [], hasMore: true };
+    }
+
+    // タイムスタンプでフィルタリング＋時刻表示を再計算
+    const now = new Date();
+    const baseDate = new Date('2025-10-28');
+    baseDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+
+    const filteredPosts = npcPostsData.posts
+      .filter(post => post.timestamp <= baseDate)
+      .map(post => {
+        // SocialPostの形に戻してからconvertToUISocialPostで再変換
+        const socialPost = {
+          id: post.id,
+          authorId: post.authorId,
+          authorType: post.authorType,
+          content: post.content,
+          timestamp: post.timestamp,
+          likes: post.likes,
+          comments: post.comments,
+          shares: post.shares,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+        };
+
+        return convertToUISocialPost(socialPost, post.author);
+      });
+
+    return { posts: filteredPosts, hasMore: npcPostsData.hasMore };
+  }, [store.npcPosts]);
+
+  /**
+   * アカウント投稿を取得（storeから、時刻表示を再計算）
+   */
+  const accountPosts = useCallback((accountId: string): UISocialPost[] => {
+    const accountPostsData = store.accountPosts[accountId];
+    if (!accountPostsData) {
+      return [];
+    }
+
+    // タイムスタンプでフィルタリング＋時刻表示を再計算
+    const now = new Date();
+    const baseDate = new Date('2025-10-28');
+    baseDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+
+    return accountPostsData.posts
+      .filter(post => post.timestamp <= baseDate)
+      .map(post => {
+        // SocialPostの形に戻してからconvertToUISocialPostで再変換
+        const socialPost = {
+          id: post.id,
+          authorId: post.authorId,
+          authorType: post.authorType,
+          content: post.content,
+          timestamp: post.timestamp,
+          likes: post.likes,
+          comments: post.comments,
+          shares: post.shares,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+        };
+
+        return convertToUISocialPost(socialPost, post.author);
+      });
+  }, [store.accountPosts]);
+
   // エラーの自動クリア
   useEffect(() => {
     if (error) {
@@ -835,5 +993,13 @@ export const useSocial = (
     // リフレッシュ
     refreshTimeline,
     refreshContacts: loadContacts,
+
+    // アカウント投稿
+    accountPosts,
+
+    // NPC投稿
+    loadInitialNPCPosts,
+    loadMoreNPCPosts,
+    npcPosts,
   };
 };
