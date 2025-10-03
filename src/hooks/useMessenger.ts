@@ -6,6 +6,7 @@ import { getContacts, getMessages, addMessage, addContact, getIntroductionMessag
 import { MessengerContact, UIMessage, convertFirestoreToUIMessage, defaultMessengerContacts, ChatMessage } from '@/types/messenger';
 import { useMessengerStore } from '@/store/messengerStore';
 import { appNotifications } from '@/utils/notifications';
+import { handleServerAction } from '@/utils/handleServerAction';
 
 
 
@@ -47,19 +48,18 @@ export const useMessenger = () => {
     }
 
     // 2. キャッシュがない場合はサーバーから取得
-    try {
-      setContactsLoading(true);
-      const fetchedContacts = await getContacts();
-      setContacts(fetchedContacts);
-      setCachedContacts(fetchedContacts);
-      if (!selectedContact && fetchedContacts.length > 0) {
-        setSelectedContact(fetchedContacts[0]);
-      }
-    } catch (error) {
-      console.error('Failed to load contacts', error);
-    } finally {
-      setContactsLoading(false);
+    setContactsLoading(true);
+    const fetchedContacts = await handleServerAction(
+      () => getContacts(),
+      (error) => console.error('Failed to load contacts', error)
+    );
+
+    setContacts(fetchedContacts);
+    setCachedContacts(fetchedContacts);
+    if (!selectedContact && fetchedContacts.length > 0) {
+      setSelectedContact(fetchedContacts[0]);
     }
+    setContactsLoading(false);
   }, [user, selectedContact, getCachedContacts, setCachedContacts]);
 
   const loadInitialMessages = useCallback(async (contactId: string) => {
@@ -77,19 +77,22 @@ export const useMessenger = () => {
     }
 
     // 2. キャッシュがない場合はサーバーから取得
-    try {
-      const { messages: newMessages, hasMore: newHasMore } = await getMessages(contactId);
-      const uiMessages = newMessages.map(convertFirestoreToUIMessage);
+    const result = await handleServerAction(
+      () => getMessages(contactId),
+      (error) => {
+        console.error('Failed to load messages', error);
+        setMessages([]);
+      }
+    );
 
-      setMessages(uiMessages);
-      setHasMore(newHasMore);
-      setCachedMessages(contactId, uiMessages, newHasMore);
-    } catch (error) {
-      console.error('Failed to load messages', error);
-      setMessages([]);
-    } finally {
-      setMessagesLoading(false);
-    }
+    const { messages: newMessages, hasMore: newHasMore } = result;
+    const uiMessages = newMessages.map(convertFirestoreToUIMessage);
+
+    setMessages(uiMessages);
+    setHasMore(newHasMore);
+    setCachedMessages(contactId, uiMessages, newHasMore);
+
+    setMessagesLoading(false);
   }, [user, getCachedMessages, setCachedMessages]);
 
   const loadMoreMessages = useCallback(async () => {
@@ -98,25 +101,23 @@ export const useMessenger = () => {
     setIsLoadingMore(true);
     const oldestMessage = messages[0];
 
-    try {
-      const timestampISO = oldestMessage.timestamp instanceof Date
-        ? oldestMessage.timestamp.toISOString()
-        : new Date(oldestMessage.timestamp).toISOString();
+    const timestampISO = oldestMessage.timestamp instanceof Date
+      ? oldestMessage.timestamp.toISOString()
+      : new Date(oldestMessage.timestamp).toISOString();
 
-      const { messages: newMessages, hasMore: newHasMore } = await getMessages(
-        selectedContact.id,
-        timestampISO
-      );
-      if (newMessages.length > 0) {
-        const uiMessages = newMessages.map(convertFirestoreToUIMessage);
-        setMessages(prev => [...uiMessages, ...prev]);
-      }
-      setHasMore(newHasMore);
-    } catch (error) {
-      console.error('Failed to load more messages', error);
-    } finally {
-      setIsLoadingMore(false);
+    const result = await handleServerAction(
+      () => getMessages(selectedContact.id, timestampISO),
+      (error) => console.error('Failed to load more messages', error)
+    );
+
+    const { messages: newMessages, hasMore: newHasMore } = result;
+    if (newMessages.length > 0) {
+      const uiMessages = newMessages.map(convertFirestoreToUIMessage);
+      setMessages(prev => [...uiMessages, ...prev]);
     }
+    setHasMore(newHasMore);
+
+    setIsLoadingMore(false);
   }, [user, selectedContact, messages, hasMore, isLoadingMore]);
 
   const addMessageToState = useCallback((message: UIMessage) => {
@@ -141,48 +142,56 @@ export const useMessenger = () => {
 
   // 初期化関数群
   const initializeUserContacts = useCallback(async (): Promise<void> => {
-    try {
-      for (const contact of defaultMessengerContacts) {
-        const { id, ...contactData } = contact;
-        await addContact(contactData, id);
-      }
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error initializing user contacts:', error);
-      }
-      throw error;
+    for (const contact of defaultMessengerContacts) {
+      const { id, ...contactData } = contact;
+      await handleServerAction(
+        () => addContact(contactData, id),
+        (error) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error initializing user contacts:', error);
+          }
+        }
+      );
     }
   }, []);
 
   const sendIntroductionMessage = useCallback(async (): Promise<void> => {
-    try {
-      const introData = await getIntroductionMessageFromFirestore('darkOrganization');
-      const introText = introData?.text || 'ようこそ。あなたが我々に興味を持ってくれたことを知っています。まずは簡単な質問から始めましょうか。何か知りたいことはありますか？';
-      const contactId = 'dark_organization';
-
-      const introMessage: ChatMessage = {
-        id: `intro-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        sender: 'npc',
-        text: introText,
-        timestamp: new Date(),
-      };
-
-      await addMessage(contactId, introMessage);
-
-      const previewText = introText.length > 50 ? `${introText.substring(0, 50)}...` : introText;
-      appNotifications.fromApp(
-        'messenger',
-        '闇の組織からの新着メッセージ',
-        previewText,
-        'info',
-        5000
-      );
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error in sendIntroductionMessage:', error);
+    const introData = await handleServerAction(
+      () => getIntroductionMessageFromFirestore('darkOrganization'),
+      (error) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error getting introduction message:', error);
+        }
       }
-      throw error;
-    }
+    );
+
+    const introText = introData?.text || 'ようこそ。あなたが我々に興味を持ってくれたことを知っています。まずは簡単な質問から始めましょうか。何か知りたいことはありますか？';
+    const contactId = 'dark_organization';
+
+    const introMessage: ChatMessage = {
+      id: `intro-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      sender: 'npc',
+      text: introText,
+      timestamp: new Date(),
+    };
+
+    await handleServerAction(
+      () => addMessage(contactId, introMessage),
+      (error) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error sending introduction message:', error);
+        }
+      }
+    );
+
+    const previewText = introText.length > 50 ? `${introText.substring(0, 50)}...` : introText;
+    appNotifications.fromApp(
+      'messenger',
+      '闇の組織からの新着メッセージ',
+      previewText,
+      'info',
+      5000
+    );
   }, []);
 
   const initializeMessenger = useCallback(async () => {
@@ -217,13 +226,6 @@ export const useMessenger = () => {
         error instanceof Error && error.message.includes('認証が必要');
 
       if (isAuthError) {
-        appNotifications.fromApp(
-          'messenger',
-          '認証エラー',
-          'ログイン状態を確認できませんでした。再ログインしてください。',
-          'error',
-          5000
-        );
         // 認証エラー時は再試行ループに入らないようフラグを維持する
         initializationExecuted.current = true;
       } else {

@@ -29,7 +29,7 @@ export function initializeFirebaseAdmin(): admin.app.App {
       if (!projectId) missingVars.push('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
       if (!clientEmail) missingVars.push('FIREBASE_CLIENT_EMAIL');
       if (!privateKey) missingVars.push('FIREBASE_PRIVATE_KEY');
-      
+
       throw new Error(
         `Firebase Admin環境変数が設定されていません: ${missingVars.join(', ')}\n` +
         'これらの環境変数を .env.local に設定してください。\n' +
@@ -85,4 +85,12 @@ export async function verifyIdToken(idToken: string): Promise<string | null> {
     }
     return null;
   }
+}
+
+/**
+ * Admin Firestore インスタンスを取得
+ */
+export function getAdminFirestore(): admin.firestore.Firestore {
+  const app = getFirebaseAdmin();
+  return app.firestore()
 }
