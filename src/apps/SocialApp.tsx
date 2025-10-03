@@ -78,7 +78,7 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
   // 初回マウント時にタイムラインをリフレッシュ（時刻表示を更新）
   useEffect(() => {
     refreshTimeline();
-  }, []);
+  }, [refreshTimeline]);
 
   // 無限スクロール処理
   const handleTimelineScroll = useCallback((e: UIEvent<HTMLDivElement>) => {

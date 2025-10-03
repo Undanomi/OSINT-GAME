@@ -60,6 +60,9 @@ export const useSocial = (
   const store = useSocialStore();
   const { triggerGameOver } = useGameStore();
 
+  // storeのメソッドを分離して依存配列で使用できるようにする
+  const { setTimeline } = store;
+
   // ローディング状態
   const [postsLoading, setPostsLoading] = useState(false);
   const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false);
@@ -221,10 +224,11 @@ export const useSocial = (
    * タイムスタンプを更新（キャッシュは保持）
    */
   const refreshTimeline = useCallback(() => {
-    if (!user || !store.timeline) return;
+    const currentTimeline = store.timeline;
+    if (!user || !currentTimeline) return;
 
     // 現在のタイムラインの投稿に対してタイムスタンプのみを再計算
-    const updatedPosts = store.timeline.posts.map(post => {
+    const updatedPosts = currentTimeline.posts.map(post => {
       // SocialPostの形に戻してからconvertToUISocialPostで再変換
       const socialPost = {
         id: post.id,
@@ -243,8 +247,9 @@ export const useSocial = (
     });
 
     // ストアを更新
-    store.setTimeline(updatedPosts, store.timeline.hasMore);
-  }, [user, store]);
+    setTimeline(updatedPosts, currentTimeline.hasMore);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, setTimeline]);
 
   /**
    * タイムラインの追加読み込み（無限スクロール）
