@@ -109,9 +109,10 @@ export const YuhiShinbunPage: React.FC<YuhiShinbunPageProps> = ({ documentId, in
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+    <div className="h-full overflow-hidden relative">
+      <div className="h-full overflow-auto bg-gray-50">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Left section */}
@@ -423,31 +424,32 @@ export const YuhiShinbunPage: React.FC<YuhiShinbunPageProps> = ({ documentId, in
           </div>
         </div>
       </footer>
+      </div>
 
       {/* Image Modal */}
       {selectedImage && (
         <>
           <div
-            className="fixed inset-0 bg-black/70 z-40"
+            className="absolute inset-0 bg-black/70 z-40"
             onClick={handleCloseModal}
           />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-            <div className="relative pointer-events-auto">
-              <button
-                className="absolute -top-10 right-0 text-white bg-black/50 rounded-full p-2 hover:bg-black/70"
-                onClick={handleCloseModal}
-              >
-                <X className="w-6 h-6" />
-              </button>
+          <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="relative inline-block pointer-events-auto max-w-[75%] max-h-[75%]">
               <Image
                 src={selectedImage}
                 alt="拡大画像"
                 width={1000}
                 height={700}
-                className="object-contain max-w-[90vw] max-h-[80vh] w-auto h-auto rounded"
+                className="object-contain w-auto h-auto max-w-full max-h-full rounded"
                 unoptimized
                 onClick={(e) => e.stopPropagation()}
               />
+              <button
+                className="absolute -top-8 -right-8 text-white bg-black/50 rounded-full p-2 hover:bg-black/70 z-10"
+                onClick={handleCloseModal}
+              >
+                <X className="w-6 h-6" />
+              </button>
             </div>
           </div>
         </>
