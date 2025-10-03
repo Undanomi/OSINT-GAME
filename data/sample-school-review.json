@@ -1,0 +1,75 @@
+[
+  {
+    "id": "school_review_sample_elementary",
+    "title": "サンプル第一小学校の口コミ・評判 - 学校口コミナビ",
+    "url": "https://school-reviews.com/schools/sample-elementary",
+    "description": "サンプル第一小学校の口コミ・評判を掲載。保護者や卒業生の生の声から学校の雰囲気を知ることができます。",
+    "template": "SchoolReviewPage",
+    "content": {
+      "schoolName": "サンプル第一小学校",
+      "schoolType": "公立小学校",
+      "location": "サンプル県サンプル市中央1-2-3",
+      "averageRating": 4.1,
+      "totalReviews": 26,
+      "reviews": [
+        {
+          "reviewer": "在校生の保護者",
+          "date": "2024年3月10日",
+          "rating": 5,
+          "category": "教育方針",
+          "title": "子どもをよく見てくれる学校",
+          "content": "サンプル第一小学校に子どもを通わせています。先生方が個性を大切にし、子ども一人ひとりに合わせた指導をしてくれるのが良いと思います。",
+          "helpful": 40
+        },
+        {
+          "reviewer": "卒業生の保護者",
+          "date": "2024年2月28日",
+          "rating": 4,
+          "category": "学校施設",
+          "title": "施設は新しいが運動場は少し狭い",
+          "content": "校舎は明るくきれいで、ICT設備も整っています。ただ運動場がやや狭く、大きな行事の際には窮屈さを感じることもありました。",
+          "helpful": 33
+        },
+        {
+          "reviewer": "在校生の保護者",
+          "date": "2024年2月15日",
+          "rating": 5,
+          "category": "学校行事",
+          "title": "イベントが充実している",
+          "content": "運動会や発表会、地域交流イベントなどが多く、子どもが楽しんで学校生活を送っています。",
+          "helpful": 37
+        },
+        {
+          "reviewer": "卒業生",
+          "date": "2024年1月20日",
+          "rating": 4,
+          "category": "友人関係",
+          "title": "和やかな雰囲気の学校",
+          "content": "卒業してから数年経ちますが、友人とは今でも交流があります。雰囲気が良く、居心地の良い学校でした。",
+          "helpful": 28
+        },
+        {
+          "reviewer": "在校生の保護者",
+          "date": "2024年1月8日",
+          "rating": 4,
+          "category": "地域との関係",
+          "title": "地域と学校が協力している",
+          "content": "地域の方々が行事に協力してくださったり、子どもたちを見守ってくださるので安心です。",
+          "helpful": 30
+        },
+        {
+          "reviewer": "在校生の保護者",
+          "date": "2023年12月22日",
+          "rating": 3,
+          "category": "通学環境",
+          "title": "通学路に改善の余地あり",
+          "content": "交通量の多い道路を通る必要があり、やや不安を感じることがあります。地域と連携した安全対策がもっと進むと良いと思います。",
+          "helpful": 21
+        }
+      ]
+    },
+    "keywords": ["サンプル第一小学校", "口コミ", "評判", "学校", "レビュー"],
+    "domainStatus": "active",
+    "archivedDate": "2024-03-10"
+  }
+]
