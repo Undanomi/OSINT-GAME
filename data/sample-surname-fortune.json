@@ -1,0 +1,34 @@
+[
+  {
+    "id": "surname_fortune_sample",
+    "title": "佐藤 - 名字占い結果",
+    "url": "https://sample-uranai.com/result/sato",
+    "description": "佐藤さんの名字占い結果です。運勢、相性、ラッキーアイテムなどを詳しく占います。",
+    "template": "SurnameFortunePage",
+    "content": {
+      "surname": "佐藤",
+      "reading": "さとう",
+      "origin": "佐藤という名字は、平安時代から広まったとされ、日本でも特に多い名字の一つです。",
+      "meaning": "「佐藤」という名字は、支える・助けるという意味と、藤原氏に由来する藤を表しています。",
+      "totalScore": 75,
+      "luckyColor": "青色",
+      "luckyNumber": 3,
+      "luckyItem": "招き猫",
+      "fortuneCategories": [
+        {
+          "category": "仕事運",
+          "score": 76,
+          "description": "新しいアイデアが評価されやすい時期です。"
+        }
+      ],
+      "compatibility": {
+        "good": ["高橋", "田中", "鈴木"],
+        "bad": ["森田", "石川"]
+      },
+      "advice": "柔軟な発想を大切にして行動すると良いでしょう。"
+    },
+    "keywords": ["佐藤", "名字占い", "運勢", "占い"],
+    "domainStatus": "active",
+    "archivedDate": "2024-01-01"
+  }
+]

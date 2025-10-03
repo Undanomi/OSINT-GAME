@@ -1,0 +1,52 @@
+[
+  {
+    "id": "sample_university",
+    "title": "サンプル大学 - ホームページ",
+    "url": "https://sample-univ.ac.jp/",
+    "description": "サンプル大学の公式ホームページです。4学部8学科を持つ総合大学。学生数3,000名。",
+    "template": "UniversityPage",
+    "content": {
+      "universityName": "サンプル大学",
+      "englishName": "Sample University",
+      "president": "鈴木 一郎",
+      "address": "東京都サンプル市5-5-5",
+      "phone": "03-3333-3333",
+      "email": "info@sample-univ.ac.jp",
+      "established": "1970年",
+      "studentCount": 3000,
+      "campusImage": "gs://your-project.firebasestorage.app/path/to/image",
+      "vision": "学びと共生の大学",
+      "presidentMessage": "サンプル大学は「学びと共生」を理念とし、社会で活躍する人材を育てます。",
+      "news": [
+        {
+          "date": "2024年3月25日",
+          "category": "入試",
+          "title": "2024年度入試情報公開",
+          "summary": "入試情報を公開しました。"
+        }
+      ],
+      "faculties": [
+        {
+          "name": "経済学部",
+          "description": "経済学と経営学を学びます。",
+          "departments": ["経済学科", "経営学科"]
+        },
+        {
+          "name": "理工学部",
+          "description": "科学技術を幅広く学びます。",
+          "departments": ["情報工学科", "機械工学科"]
+        }
+      ],
+      "campuses": [
+        {
+          "name": "本キャンパス",
+          "address": "東京都サンプル市5-5-5",
+          "description": "主要学部が設置されています。"
+        }
+      ]
+    },
+    "keywords": ["サンプル大学", "大学", "教育"],
+    "domainStatus": "active",
+    "archivedDate": "2024-01-01"
+  }
+]

@@ -1,6 +1,7 @@
 import type { EmailData } from '@/types/email';
 import { getGogglesMail } from '@/actions/gogglesMail';
 import { LOCAL_STORAGE_KEYS, CACHE_EXPIRY } from '@/types/localStorage';
+import { handleServerAction } from '@/utils/handleServerAction';
 
 /**
  * メールデータをローカルストレージに保存
@@ -104,27 +105,33 @@ export function hasGogglesMailCache(): boolean {
  * @returns Promise<EmailData[]>
  */
 export async function loadGogglesMailData(): Promise<EmailData[]> {
-  try {
-    // キャッシュが有効な場合
-    if (isGogglesMailCacheValid()) {
-      // 期限を更新してキャッシュを使用
-      const cachedEmails = getGogglesMailFromCache();
-      if (cachedEmails.length > 0) {
-        localStorage.setItem(LOCAL_STORAGE_KEYS.GOGGLES_MAIL_CACHE_TIMESTAMP, Date.now().toString());
-        console.log('既存のメールキャッシュの期限を更新しました:', cachedEmails.length + '件');
-        return cachedEmails;
-      }
+  // キャッシュが有効な場合
+  if (isGogglesMailCacheValid()) {
+    // 期限を更新してキャッシュを使用
+    const cachedEmails = getGogglesMailFromCache();
+    if (cachedEmails.length > 0) {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.GOGGLES_MAIL_CACHE_TIMESTAMP, Date.now().toString());
+      console.log('既存のメールキャッシュの期限を更新しました:', cachedEmails.length + '件');
+      return cachedEmails;
     }
+  }
 
-    // キャッシュが無効または存在しない場合、新しく取得
-    clearGogglesMailCache(); // 古いキャッシュを削除
-    const emailData = await getGogglesMail();
+  // キャッシュが無効または存在しない場合、新しく取得
+  clearGogglesMailCache(); // 古いキャッシュを削除
+
+  const emailData = await handleServerAction(
+    () => getGogglesMail(),
+    (error) => {
+      console.error('Error loading Goggles Mail data:', error);
+    }
+  );
+
+  if (emailData) {
     saveGogglesMailToCache(emailData);
-
     console.log('メールデータをローカルストレージにキャッシュしました:', emailData.length + '件');
     return emailData;
-  } catch (error) {
-    console.error('Error loading Goggles Mail data:', error);
-    throw error;
   }
+
+  // エラー時は空の配列を返す
+  return [];
 }

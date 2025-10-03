@@ -1,18 +1,7 @@
 'use server';
 
-import { db } from '@/lib/firebase';
-import {
-  doc,
-  setDoc,
-  getDocs,
-  getDoc,
-  collection,
-  query,
-  orderBy,
-  limit,
-  startAfter,
-  Timestamp,
-} from 'firebase/firestore';
+import { getAdminFirestore } from '@/lib/auth/firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
 import { requireAuth } from '@/lib/auth/server';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
 // prompts以下は廃止予定のため削除
@@ -36,9 +25,13 @@ const userRateLimit = new Map<string, RateLimitInfo>();
  * ユーザーの全てのメッセンジャー連絡先を取得する
  */
 export const getContacts = requireAuth(async (userId: string): Promise<MessengerContact[]> => {
+  const db = getAdminFirestore();
   try {
-    const contactsRef = collection(db, 'users', userId, 'messages');
-    const snapshot = await getDocs(query(contactsRef, orderBy('name', 'asc')));
+    if (!userId) {
+      throw new Error('authError');
+    }
+    const contactsRef = db.collection('users').doc(userId).collection('messages');
+    const snapshot = await contactsRef.orderBy('name', 'asc').get();
 
     if (snapshot.empty) return [];
 
@@ -59,9 +52,13 @@ export const getContacts = requireAuth(async (userId: string): Promise<Messenger
  * 新しいメッセンジャー連絡先を追加する
  */
 export const addContact = requireAuth(async (userId: string, contact: Omit<MessengerContact, 'id'>, contactId: string): Promise<void> => {
+  const db = getAdminFirestore();
   try {
-    const contactRef = doc(db, 'users', userId, 'messages', contactId);
-    await setDoc(contactRef, contact);
+    if (!userId) {
+      throw new Error('authError');
+    }
+    const contactRef = db.collection('users').doc(userId).collection('messages').doc(contactId);
+    await contactRef.set(contact);
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
         console.error('Error adding contact:', error);
@@ -78,29 +75,27 @@ export const getMessages = requireAuth(async (
   contactId: string,
   cursorTimestamp?: string
 ): Promise<{ messages: ChatMessage[], hasMore: boolean }> => {
+  const db = getAdminFirestore();
   try {
+    if (!userId) {
+      throw new Error('authError');
+    }
     if (!contactId) return { messages: [], hasMore: false };
 
-    const historyRef = collection(db, 'users', userId, 'messages', contactId, 'history');
+    const historyRef = db.collection('users').doc(userId).collection('messages').doc(contactId).collection('history');
 
     // タイムスタンプフィールドでソート（インデックス自動作成）
-    let q = query(
-      historyRef,
-      orderBy('timestamp', 'desc'),
-      limit(MESSAGES_PER_PAGE + 1)
-    );
+    let q = historyRef.orderBy('timestamp', 'desc').limit(MESSAGES_PER_PAGE + 1);
 
     if (cursorTimestamp) {
       // カーソルタイムスタンプより古いメッセージを取得
-      q = query(
-        historyRef,
-        orderBy('timestamp', 'desc'),
-        startAfter(Timestamp.fromDate(new Date(cursorTimestamp))),
-        limit(MESSAGES_PER_PAGE + 1)
-      );
+      q = historyRef
+        .orderBy('timestamp', 'desc')
+        .startAfter(Timestamp.fromDate(new Date(cursorTimestamp)))
+        .limit(MESSAGES_PER_PAGE + 1);
     }
 
-    const snapshot = await getDocs(q);
+    const snapshot = await q.get();
     const messages: ChatMessage[] = snapshot.docs.map(doc => ({
       id: doc.id,
       sender: doc.data().sender,
@@ -124,9 +119,13 @@ export const getMessages = requireAuth(async (
  * メッセージをFirestoreに追加する
  */
 export const addMessage = requireAuth(async (userId: string, contactId: string, message: ChatMessage): Promise<void> => {
+  const db = getAdminFirestore();
   try {
-    const messageRef = doc(db, 'users', userId, 'messages', contactId, 'history', message.id);
-    await setDoc(messageRef, {
+    if (!userId) {
+      throw new Error('authError');
+    }
+    const messageRef = db.collection('users').doc(userId).collection('messages').doc(contactId).collection('history').doc(message.id);
+    await messageRef.set({
       sender: message.sender,
       text: message.text,
       timestamp: Timestamp.fromDate(message.timestamp),
@@ -374,16 +373,20 @@ export const generateAIResponse = requireAuth(async (
 /**
  * 指定されたNPCのイントロダクションメッセージを取得
  */
-export async function getIntroductionMessageFromFirestore(npcType: string): Promise<IntroductionMessage | null> {
+export const getIntroductionMessageFromFirestore = requireAuth(async (
+  _userId: string,
+  npcType: string
+): Promise<IntroductionMessage | null> => {
+  const db = getAdminFirestore();
   try {
-    const docRef = doc(db, 'messenger', npcType, 'config', 'introductionMessage');
-    const docSnap = await getDoc(docRef);
+    const docRef = db.collection('messenger').doc(npcType).collection('config').doc('introductionMessage');
+    const docSnap = await docRef.get();
 
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
       const data = docSnap.data();
       return {
-        text: data.text,
-        fallbackText: data.fallbackText,
+        text: data?.text,
+        fallbackText: data?.fallbackText,
       };
     }
 
@@ -392,20 +395,21 @@ export async function getIntroductionMessageFromFirestore(npcType: string): Prom
     console.error('Error getting introduction message:', error);
     throw error;
   }
-}
+});
 
 /**
  * 指定されたNPCのシステムプロンプトを取得
  */
-export async function getSystemPromptFromFirestore(npcType: string): Promise<SystemPrompt | null> {
+export const getSystemPromptFromFirestore = requireAuth(async (_userId: string, npcType: string): Promise<SystemPrompt | null> => {
+  const db = getAdminFirestore();
   try {
-    const docRef = doc(db, 'messenger', npcType, 'config', 'systemPrompts');
-    const docSnap = await getDoc(docRef);
+    const docRef = db.collection('messenger').doc(npcType).collection('config').doc('systemPrompts');
+    const docSnap = await docRef.get();
 
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
       const data = docSnap.data();
       return {
-        prompt: data.prompt,
+        prompt: data?.prompt,
       };
     }
 
@@ -414,17 +418,18 @@ export async function getSystemPromptFromFirestore(npcType: string): Promise<Sys
     console.error('Error getting system prompt:', error);
     throw error;
   }
-}
+});
 
 /**
  * 指定されたNPCの全エラーメッセージを取得
  */
-export async function getErrorMessage(npcType: string): Promise<Record<string, string> | null> {
+export const getErrorMessage = requireAuth(async (_userId: string, npcType: string): Promise<Record<string, string> | null> => {
+  const db = getAdminFirestore();
   try {
-    const docRef = doc(db, 'messenger', npcType, 'config', 'errorMessages');
-    const docSnap = await getDoc(docRef);
+    const docRef = db.collection('messenger').doc(npcType).collection('config').doc('errorMessages');
+    const docSnap = await docRef.get();
 
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
       const data = docSnap.data();
       return data || null;
     }
@@ -434,19 +439,20 @@ export async function getErrorMessage(npcType: string): Promise<Record<string, s
     console.error('Error getting error messages:', error);
     return null;
   }
-}
+});
 
 /**
  * 提出問題を取得
  */
-export async function getSubmissionQuestions(npcType: string): Promise<SubmissionQuestion[]> {
+export const getSubmissionQuestions = requireAuth(async (_userId: string, npcType: string): Promise<SubmissionQuestion[]> => {
+  const db = getAdminFirestore();
   try {
-    const docRef = doc(db, 'messenger', npcType, 'config', 'submissionQuestions');
-    const docSnap = await getDoc(docRef);
+    const docRef = db.collection('messenger').doc(npcType).collection('config').doc('submissionQuestions');
+    const docSnap = await docRef.get();
 
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
       const data = docSnap.data();
-      return data.questions || [];
+      return data?.questions || [];
     }
 
     return [];
@@ -454,7 +460,7 @@ export async function getSubmissionQuestions(npcType: string): Promise<Submissio
     console.error('Error getting submission questions:', error);
     throw error;
   }
-}
+});
 
 /**
  * 提出された回答を検証
@@ -464,6 +470,7 @@ export const validateSubmission = requireAuth(async (
   answers: string[],
   npcType: string = 'darkOrganization'
 ): Promise<SubmissionResult> => {
+  const db = getAdminFirestore();
   try {
     checkRateLimit(userId);
 
@@ -483,9 +490,9 @@ export const validateSubmission = requireAuth(async (
 
     const success = correctAnswers === questions.length;
 
-    const explanationDocRef = doc(db, 'messenger', npcType, 'config', 'submissionExplanation');
-    const explanationSnap = await getDoc(explanationDocRef);
-    const explanationText = explanationSnap.exists() ? explanationSnap.data().text : undefined;
+    const explanationDocRef = db.collection('messenger').doc(npcType).collection('config').doc('submissionExplanation');
+    const explanationSnap = await explanationDocRef.get();
+    const explanationText = explanationSnap.exists ? explanationSnap.data()?.text : undefined;
 
     return {
       success,

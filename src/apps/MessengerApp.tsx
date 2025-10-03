@@ -10,6 +10,7 @@ import { useMessenger } from '@/hooks/useMessenger';
 import { UIMessage, ErrorType, SubmissionQuestion } from '@/types/messenger';
 import { useGameStore } from '@/store/gameStore';
 import { useSubmissionStore } from '@/store/submissionStore';
+import { handleServerAction } from '@/utils/handleServerAction';
 
 /**
  * タイムスタンプベースのメッセージID生成
@@ -52,34 +53,36 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const startSubmissionMode = useCallback(async () => {
     if (!selectedContact || selectedContact.type !== 'darkOrganization') return;
 
-    try {
-      const questions = await getSubmissionQuestions('darkOrganization');
-      setSubmissionQuestions(questions);
-      setSubmissionMode(true);
-
-      const firstQuestion = questions[0];
-      if (firstQuestion) {
-        const questionTimestamp = new Date();
-        const questionMessage: UIMessage = {
-          id: generateTimestampId(questionTimestamp),
+    const questions = await handleServerAction(
+      () => getSubmissionQuestions('darkOrganization'),
+      () => {
+        const errorTimestamp = new Date();
+        const errorMessage: UIMessage = {
+          id: generateTimestampId(errorTimestamp),
           sender: 'other',
-          text: firstQuestion.text,
-          time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-          timestamp: questionTimestamp,
-          isSubmissionMessage: true,
+          text: 'エラーが発生しました。自動応答モードを開始できません。',
+          time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: errorTimestamp,
         };
-        addTemporaryMessage(questionMessage);
+        addTemporaryMessage(errorMessage);
       }
-    } catch {
-      const errorTimestamp = new Date();
-      const errorMessage: UIMessage = {
-        id: generateTimestampId(errorTimestamp),
+    );
+
+    setSubmissionQuestions(questions);
+    setSubmissionMode(true);
+
+    const firstQuestion = questions[0];
+    if (firstQuestion) {
+      const questionTimestamp = new Date();
+      const questionMessage: UIMessage = {
+        id: generateTimestampId(questionTimestamp),
         sender: 'other',
-        text: 'エラーが発生しました。自動応答モードを開始できません。',
-        time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: errorTimestamp,
+        text: firstQuestion.text,
+        time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: questionTimestamp,
+        isSubmissionMessage: true,
       };
-      addTemporaryMessage(errorMessage);
+      addTemporaryMessage(questionMessage);
     }
   }, [selectedContact, setSubmissionMode, addTemporaryMessage]);
 
@@ -114,60 +117,62 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     // 提出モード中の処理
     if (submissionState.isInSubmissionMode && selectedContact.type === 'darkOrganization') {
       addTemporaryMessage(userMessage);
-      try {
-        addSubmissionAnswer(currentInput);
+      addSubmissionAnswer(currentInput);
 
-        if (submissionState.currentQuestion < submissionState.totalQuestions) {
-          // 次の質問を表示
-          const nextQuestionIndex = submissionState.currentQuestion;
-          const nextQuestion = submissionQuestions[nextQuestionIndex];
+      if (submissionState.currentQuestion < submissionState.totalQuestions) {
+        // 次の質問を表示
+        const nextQuestionIndex = submissionState.currentQuestion;
+        const nextQuestion = submissionQuestions[nextQuestionIndex];
 
-          if (nextQuestion) {
-            setSubmissionQuestion(submissionState.currentQuestion + 1);
-            const questionTimestamp = new Date();
-            const questionMessage: UIMessage = {
-              id: generateTimestampId(questionTimestamp),
-              sender: 'other',
-              text: nextQuestion.text,
-              time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-              timestamp: questionTimestamp,
-              isSubmissionMessage: true,
-            };
-            addTemporaryMessage(questionMessage);
-          }
-        } else {
-          // 全ての質問が完了、結果を検証
-          const allAnswers = [...submissionState.answers, currentInput];
-          const result = await validateSubmission(allAnswers, 'darkOrganization');
-          const validationTimestamp = new Date();
-          const resultMessage: UIMessage = {
-            id: generateTimestampId(validationTimestamp),
+        if (nextQuestion) {
+          setSubmissionQuestion(submissionState.currentQuestion + 1);
+          const questionTimestamp = new Date();
+          const questionMessage: UIMessage = {
+            id: generateTimestampId(questionTimestamp),
             sender: 'other',
-            text: `検証中...`,
-            time: validationTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-            timestamp: validationTimestamp,
+            text: nextQuestion.text,
+            time: questionTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+            timestamp: questionTimestamp,
             isSubmissionMessage: true,
           };
-          addTemporaryMessage(resultMessage);
-
-          // 結果をsubmissionStoreに保存
-          setSubmissionResult(result);
-
-          // 3秒後にシーン遷移
-          setTimeout(() => {
-            completeSubmission(result.success);
-          }, 3000);
+          addTemporaryMessage(questionMessage);
         }
-      } catch {
-        const errorTimestamp = new Date();
-        const errorMessage: UIMessage = {
-          id: generateTimestampId(errorTimestamp),
+      } else {
+        // 全ての質問が完了、結果を検証
+        const allAnswers = [...submissionState.answers, currentInput];
+        const result = await handleServerAction(
+          () => validateSubmission(allAnswers, 'darkOrganization'),
+          () => {
+            const errorTimestamp = new Date();
+            const errorMessage: UIMessage = {
+              id: generateTimestampId(errorTimestamp),
+              sender: 'other',
+              text: '提出処理中にエラーが発生しました。',
+              time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+              timestamp: errorTimestamp,
+            };
+            addTemporaryMessage(errorMessage);
+          }
+        );
+
+        const validationTimestamp = new Date();
+        const resultMessage: UIMessage = {
+          id: generateTimestampId(validationTimestamp),
           sender: 'other',
-          text: '提出処理中にエラーが発生しました。',
-          time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-          timestamp: errorTimestamp,
+          text: `検証中...`,
+          time: validationTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: validationTimestamp,
+          isSubmissionMessage: true,
         };
-        addTemporaryMessage(errorMessage);
+        addTemporaryMessage(resultMessage);
+
+        // 結果をsubmissionStoreに保存
+        setSubmissionResult(result);
+
+        // 3秒後にシーン遷移
+        setTimeout(() => {
+          completeSubmission(result.success);
+        }, 3000);
       }
       return;
     }
@@ -176,67 +181,110 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     setIsWaitingForAI(true);
     addMessageToState(userMessage);
 
-    try {
-      // ユーザーメッセージ保存
-      await addMessage(selectedContact.id, {
+    // ユーザーメッセージ保存
+    await handleServerAction(
+      () => addMessage(selectedContact.id, {
         id: messageId,
         sender: 'user',
         text: currentInput,
         timestamp: userMessage.timestamp,
-      });
+      }),
+      async (error) => {
+        // エラーメッセージをFirestoreから取得
+        const errorType = error instanceof Error ? error.message as ErrorType : 'general';
+        const errorMessages = await handleServerAction(
+          () => getErrorMessage(selectedContact.type),
+          () => {}
+        );
+        const customErrorText = errorMessages?.[errorType];
 
-      // AI応答生成
-      const aiText = await generateAIResponse(currentInput, messages, selectedContact.type);
+        // Firestoreからの取得に失敗した場合はgeneral固定メッセージを使用
+        const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
 
-      const aiTimestamp = new Date();
-      const aiMessageId = generateTimestampId(aiTimestamp);
-      const aiMessage: UIMessage = {
-        id: aiMessageId,
-        sender: 'other',
-        text: aiText,
-        time: aiTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: aiTimestamp,
-      };
+        const errorTimestamp = new Date();
+        const errorMessage: UIMessage = {
+          id: generateTimestampId(errorTimestamp),
+          sender: 'other',
+          text: errorText,
+          time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: errorTimestamp,
+        };
 
-      // AI応答保存
-      await addMessage(selectedContact.id, {
+        // NPCエラーメッセージを保存・表示
+        await handleServerAction(
+          () => addMessage(selectedContact.id, {
+            id: errorMessage.id,
+            sender: 'npc',
+            text: errorText,
+            timestamp: errorMessage.timestamp,
+          }),
+          () => {}
+        );
+        addMessageToState(errorMessage);
+      }
+    );
+
+    // AI応答生成
+    const aiText = await handleServerAction(
+      () => generateAIResponse(currentInput, messages, selectedContact.type),
+      async (error) => {
+        // エラーメッセージをFirestoreから取得
+        const errorType = error instanceof Error ? error.message as ErrorType : 'general';
+        const errorMessages = await handleServerAction(
+          () => getErrorMessage(selectedContact.type),
+          () => {}
+        );
+        const customErrorText = errorMessages?.[errorType];
+
+        // Firestoreからの取得に失敗した場合はgeneral固定メッセージを使用
+        const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
+
+        const errorTimestamp = new Date();
+        const errorMessage: UIMessage = {
+          id: generateTimestampId(errorTimestamp),
+          sender: 'other',
+          text: errorText,
+          time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: errorTimestamp,
+        };
+
+        // NPCエラーメッセージを保存・表示
+        await handleServerAction(
+          () => addMessage(selectedContact.id, {
+            id: errorMessage.id,
+            sender: 'npc',
+            text: errorText,
+            timestamp: errorMessage.timestamp,
+          }),
+          () => {}
+        );
+        addMessageToState(errorMessage);
+      }
+    );
+
+    const aiTimestamp = new Date();
+    const aiMessageId = generateTimestampId(aiTimestamp);
+    const aiMessage: UIMessage = {
+      id: aiMessageId,
+      sender: 'other',
+      text: aiText,
+      time: aiTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: aiTimestamp,
+    };
+
+    // AI応答保存
+    await handleServerAction(
+      () => addMessage(selectedContact.id, {
         id: aiMessageId,
         sender: 'npc',
         text: aiText,
         timestamp: aiMessage.timestamp,
-      });
-      addMessageToState(aiMessage);
+      }),
+      () => {}
+    );
+    addMessageToState(aiMessage);
 
-    } catch (error) {
-      // エラーメッセージをFirestoreから取得
-      const errorType = error instanceof Error ? error.message as ErrorType : 'general';
-      const errorMessages = await getErrorMessage(selectedContact.type);
-      const customErrorText = errorMessages?.[errorType];
-
-      // Firestoreからの取得に失敗した場合はgeneral固定メッセージを使用
-      const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
-
-      const errorTimestamp = new Date();
-      const errorMessage: UIMessage = {
-        id: generateTimestampId(errorTimestamp),
-        sender: 'other',
-        text: errorText,
-        time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: errorTimestamp,
-      };
-
-      // NPCエラーメッセージを保存・表示
-      await addMessage(selectedContact.id, {
-        id: errorMessage.id,
-        sender: 'npc',
-        text: errorText,
-        timestamp: errorMessage.timestamp,
-      });
-      addMessageToState(errorMessage);
-
-    } finally {
-      setIsWaitingForAI(false);
-    }
+    setIsWaitingForAI(false);
   }, [inputText, selectedContact, user, submissionState, submissionQuestions, addMessageToState, addTemporaryMessage, startSubmissionMode, addSubmissionAnswer, setSubmissionQuestion, setSubmissionResult, completeSubmission, messages, isWaitingForAI]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

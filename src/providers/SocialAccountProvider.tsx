@@ -15,6 +15,7 @@ import {
   SocialAccountContextType,
   createDefaultSocialAccount
 } from '@/types/social';
+import { handleServerAction } from '@/utils/handleServerAction';
 
 const SocialAccountContext = createContext<SocialAccountContextType | null>(null);
 
@@ -42,20 +43,22 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
       return;
     }
 
-    try {
-      setError(null);
-      const fetchedAccounts = await getSocialAccounts();
-      setAccounts(fetchedAccounts);
+    setError(null);
+    const fetchedAccounts = await handleServerAction(
+      () => getSocialAccounts(),
+      (error) => {
+        console.error('Failed to load social accounts:', error);
+        setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
+      }
+    );
 
-      // アクティブアカウントを設定
-      const active = fetchedAccounts.find(account => account.isActive) || fetchedAccounts[0] || null;
-      setActiveAccount(active);
-    } catch (error) {
-      console.error('Failed to load social accounts:', error);
-      setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
-    } finally {
-      setLoading(false);
-    }
+    setAccounts(fetchedAccounts);
+
+    // アクティブアカウントを設定
+    const active = fetchedAccounts.find(account => account.isActive) || fetchedAccounts[0] || null;
+    setActiveAccount(active);
+
+    setLoading(false);
   }, [user]);
 
   /**
@@ -64,23 +67,24 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
   const switchAccount = useCallback(async (accountId: string) => {
     if (!user) throw new Error('authError');
 
-    try {
-      setError(null);
-      await switchActiveAccount(accountId);
+    setError(null);
+    await handleServerAction(
+      () => switchActiveAccount(accountId),
+      (error) => {
+        console.error('Failed to switch account:', error);
+        setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
+        throw error;
+      }
+    );
 
-      // ローカル状態を更新
-      setAccounts(prev => prev.map(account => ({
-        ...account,
-        isActive: account.id === accountId
-      })));
+    // ローカル状態を更新
+    setAccounts(prev => prev.map(account => ({
+      ...account,
+      isActive: account.id === accountId
+    })));
 
-      const newActiveAccount = accounts.find(account => account.id === accountId) || null;
-      setActiveAccount(newActiveAccount);
-    } catch (error) {
-      console.error('Failed to switch account:', error);
-      setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
-      throw error;
-    }
+    const newActiveAccount = accounts.find(account => account.id === accountId) || null;
+    setActiveAccount(newActiveAccount);
   }, [user, accounts]);
 
   /**
@@ -91,28 +95,29 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
   ): Promise<SocialAccount> => {
     if (!user) throw new Error('authError');
 
-    try {
-      setError(null);
+    setError(null);
 
-      // アカウントデータをそのまま使用（重複チェックは呼び出し側で実行）
-      const newAccount = await createSocialAccount(accountData);
+    // アカウントデータをそのまま使用（重複チェックは呼び出し側で実行）
+    const newAccount = await handleServerAction(
+      () => createSocialAccount(accountData),
+      (error) => {
+        console.error('Failed to create account:', error);
+        setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
+        throw error;
+      }
+    );
 
-      // ローカル状態を更新
-      setAccounts(prev => {
-        const updated = [...prev, newAccount];
-        // 最初のアカウントの場合はアクティブに設定
-        if (prev.length === 0) {
-          setActiveAccount(newAccount);
-        }
-        return updated;
-      });
+    // ローカル状態を更新
+    setAccounts(prev => {
+      const updated = [...prev, newAccount];
+      // 最初のアカウントの場合はアクティブに設定
+      if (prev.length === 0) {
+        setActiveAccount(newAccount);
+      }
+      return updated;
+    });
 
-      return newAccount;
-    } catch (error) {
-      console.error('Failed to create account:', error);
-      setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
-      throw error;
-    }
+    return newAccount;
   }, [user]);
 
   /**
@@ -124,25 +129,26 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
   ) => {
     if (!user) throw new Error('authError');
 
-    try {
-      setError(null);
-      await updateSocialAccount(accountId, updates);
-
-      // ローカル状態を更新
-      setAccounts(prev => prev.map(account =>
-        account.id === accountId
-          ? { ...account, ...updates }
-          : account
-      ));
-
-      // アクティブアカウントも更新
-      if (activeAccount?.id === accountId) {
-        setActiveAccount(prev => prev ? { ...prev, ...updates } : null);
+    setError(null);
+    await handleServerAction(
+      () => updateSocialAccount(accountId, updates),
+      (error) => {
+        console.error('Failed to update account:', error);
+        setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
+        throw error;
       }
-    } catch (error) {
-      console.error('Failed to update account:', error);
-      setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
-      throw error;
+    );
+
+    // ローカル状態を更新
+    setAccounts(prev => prev.map(account =>
+      account.id === accountId
+        ? { ...account, ...updates }
+        : account
+    ));
+
+    // アクティブアカウントも更新
+    if (activeAccount?.id === accountId) {
+      setActiveAccount(prev => prev ? { ...prev, ...updates } : null);
     }
   }, [user, activeAccount]);
 
@@ -152,27 +158,35 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
   const deleteAccount = useCallback(async (accountId: string) => {
     if (!user) throw new Error('authError');
 
-    try {
-      setError(null);
-      await deleteSocialAccount(accountId);
-
-      // ローカル状態を更新
-      const remainingAccounts = accounts.filter(account => account.id !== accountId);
-      setAccounts(remainingAccounts);
-
-      // 削除されたアカウントがアクティブだった場合、他のアカウントをアクティブに
-      if (activeAccount?.id === accountId) {
-        const newActiveAccount = remainingAccounts[0] || null;
-        setActiveAccount(newActiveAccount);
-
-        if (newActiveAccount) {
-          await switchActiveAccount(newActiveAccount.id);
-        }
+    setError(null);
+    await handleServerAction(
+      () => deleteSocialAccount(accountId),
+      (error) => {
+        console.error('Failed to delete account:', error);
+        setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
+        throw error;
       }
-    } catch (error) {
-      console.error('Failed to delete account:', error);
-      setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
-      throw error;
+    );
+
+    // ローカル状態を更新
+    const remainingAccounts = accounts.filter(account => account.id !== accountId);
+    setAccounts(remainingAccounts);
+
+    // 削除されたアカウントがアクティブだった場合、他のアカウントをアクティブに
+    if (activeAccount?.id === accountId) {
+      const newActiveAccount = remainingAccounts[0] || null;
+      setActiveAccount(newActiveAccount);
+
+      if (newActiveAccount) {
+        await handleServerAction(
+          () => switchActiveAccount(newActiveAccount.id),
+          (error) => {
+            console.error('Failed to switch account:', error);
+            setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
+            throw error;
+          }
+        );
+      }
     }
   }, [user, accounts, activeAccount]);
 
@@ -189,32 +203,35 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
   const createDefaultAccountIfNeeded = useCallback(async () => {
     if (!user || accounts.length > 0 || loading || isCreatingDefaults) return;
 
-    try {
-      setIsCreatingDefaults(true);
-      console.log('Creating default accounts for user:', user.uid);
+    setIsCreatingDefaults(true);
+    console.log('Creating default accounts for user:', user.uid);
 
-      // Firestoreから全てのデフォルト設定を取得
-      const allDefaultSettings = await getAllDefaultSocialAccountSettings();
-      if (!allDefaultSettings || allDefaultSettings.length === 0) {
-        console.warn('No default account settings found in Firestore');
-        return;
+    // Firestoreから全てのデフォルト設定を取得
+    const allDefaultSettings = await handleServerAction(
+      () => getAllDefaultSocialAccountSettings(),
+      (error) => {
+        console.error('Failed to create default accounts:', error);
+        // デフォルトアカウント作成エラーは重要ではないため、ログのみ
       }
+    );
 
-      console.log(`Found ${allDefaultSettings.length} default settings`);
-
-      // 各設定に基づいてアカウントを作成（1設定につき1アカウント）
-      for (const settings of allDefaultSettings) {
-        console.log('Creating account for setting:', settings.id, settings.name);
-        const defaultAccountData = createDefaultSocialAccount(settings);
-        await createAccount(defaultAccountData);
-        console.log('Account created successfully');
-      }
-    } catch (error) {
-      console.error('Failed to create default accounts:', error);
-      // デフォルトアカウント作成エラーは重要ではないため、ログのみ
-    } finally {
+    if (allDefaultSettings.length === 0) {
+      console.warn('No default account settings found in Firestore');
       setIsCreatingDefaults(false);
+      return;
     }
+
+    console.log(`Found ${allDefaultSettings.length} default settings`);
+
+    // 各設定に基づいてアカウントを作成（1設定につき1アカウント）
+    for (const settings of allDefaultSettings) {
+      console.log('Creating account for setting:', settings.id, settings.name);
+      const defaultAccountData = createDefaultSocialAccount(settings);
+      await createAccount(defaultAccountData);
+      console.log('Account created successfully');
+    }
+
+    setIsCreatingDefaults(false);
   }, [user, accounts.length, loading, isCreatingDefaults, createAccount]);
 
   // ユーザー変更時にアカウントを読み込み
