@@ -12,6 +12,13 @@ export function initializeFirebaseAdmin(): admin.app.App {
   }
 
   try {
+    // 既にデフォルトアプリが初期化済みの場合は再利用する
+    if (admin.apps.length > 0) {
+      adminApp = admin.app();
+      console.log('Firebase Admin SDK already initialized, reusing the existing instance.');
+      return adminApp;
+    }
+
     // 環境変数から認証情報を取得
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
