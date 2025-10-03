@@ -60,6 +60,12 @@ export const filterSearchResults = async (
     playbackKeywords.some(playbackKeyword => keyword.includes(playbackKeyword))
   );
 
+  // Goggles Mail関連の検索キーワード
+  const gogglesMailKeywords = ['goggles', 'mail', 'メール', 'ログイン', 'login', 'gmail', 'email'];
+  const isGogglesMailSearch = keywords.some(keyword =>
+    gogglesMailKeywords.some(gogglesMailKeyword => keyword.includes(gogglesMailKeyword))
+  );
+
   // Playback Machineを検索結果に追加
   const staticResults: SearchResult[] = [];
   if (isPlaybackSearch) {
@@ -68,6 +74,17 @@ export const filterSearchResults = async (
       title: 'Playback Machine - インターネットアーカイブ',
       url: 'https://playback.archive',
       description: '過去にアーカイブされたウェブページを閲覧できます。削除されたページや失効したドメインのサイトも表示可能です。',
+      type: 'directory' as const,
+    });
+  }
+
+  // Goggles Mailログインページを検索結果に追加
+  if (isGogglesMailSearch) {
+    staticResults.push({
+      id: 'goggles-mail-login-static',
+      title: 'Goggles Mail - ログイン',
+      url: 'https://mail.goggles.com/login',
+      description: 'Goggles Mailアカウントにログインして、メール、連絡先、カレンダーなどにアクセスできます。',
       type: 'directory' as const,
     });
   }
