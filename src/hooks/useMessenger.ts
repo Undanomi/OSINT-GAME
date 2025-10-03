@@ -226,13 +226,6 @@ export const useMessenger = () => {
         error instanceof Error && error.message.includes('認証が必要');
 
       if (isAuthError) {
-        appNotifications.fromApp(
-          'messenger',
-          '認証エラー',
-          'ログイン状態を確認できませんでした。再ログインしてください。',
-          'error',
-          5000
-        );
         // 認証エラー時は再試行ループに入らないようフラグを維持する
         initializationExecuted.current = true;
       } else {
