@@ -1,7 +1,6 @@
 'use server';
 
-import { doc, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getAdminFirestore } from '@/lib/auth/firebase-admin';
 import { getAuthenticatedUserId } from '@/lib/auth/server';
 
 /**
@@ -9,6 +8,7 @@ import { getAuthenticatedUserId } from '@/lib/auth/server';
  * メインドキュメントを削除すると、Cloud Functionが自動的にサブコレクションを削除
  */
 export async function resetUserData(): Promise<void> {
+  const db = getAdminFirestore();
   const userId = await getAuthenticatedUserId();
 
   if (!userId) {
@@ -16,18 +16,18 @@ export async function resetUserData(): Promise<void> {
   }
 
   try {
-    const userDocRef = doc(db, 'users', userId);
+    const userDocRef = db.collection('users').doc(userId);
 
     // 削除前にドキュメントの存在確認
-    const docSnapshot = await getDoc(userDocRef);
+    const docSnapshot = await userDocRef.get();
 
     // 親ドキュメントが存在しない場合は作成（Cloud Functionトリガーのため）
-    if (!docSnapshot.exists()) {
-      await setDoc(userDocRef, { createdAt: new Date() });
+    if (!docSnapshot.exists) {
+      await userDocRef.set({ createdAt: new Date() });
     }
 
     // メインドキュメントを削除（Cloud Functionトリガー発火）
-    await deleteDoc(userDocRef);
+    await userDocRef.delete();
   } catch (error) {
     console.error('Failed to reset user data:', error);
     throw new Error('ユーザーデータのリセットに失敗しました');

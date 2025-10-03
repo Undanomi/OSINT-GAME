@@ -5,6 +5,7 @@ import { Search, ArrowLeft, ArrowRight, RotateCcw, Home } from 'lucide-react';
 import { UnifiedSearchResult } from '@/types/search';
 import { filterSearchResults, SearchResult } from '@/actions/searchResults';
 import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
+import { handleServerAction } from '@/utils/handleServerAction';
 
 // 各ページコンポーネントのインポート
 import { GenericPage } from './pages/GenericPage';
@@ -187,17 +188,18 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * キャッシュされたデータに対して部分一致検索を実行する関数
    */
   const performSearchOnCache = async (cache: UnifiedSearchResult[], query: string) => {
-    try {
-      const filteredResults = await filterSearchResults(cache, query);
+    const filteredResults = await handleServerAction(
+      () => filterSearchResults(cache, query),
+      (error) => {
+        console.error('Failed to filter results:', error);
+      }
+    );
 
-      console.log('検索結果:', filteredResults);
-      console.log('検索結果数:', filteredResults.length);
-      
-      setSearchResults(filteredResults);
-      navigateTo(VIEW_SEARCH_RESULTS); // 検索結果ページに遷移
-    } catch (error) {
-      console.error('Failed to filter results:', error);
-    }
+    console.log('検索結果:', filteredResults);
+    console.log('検索結果数:', filteredResults.length);
+
+    setSearchResults(filteredResults);
+    navigateTo(VIEW_SEARCH_RESULTS); // 検索結果ページに遷移
   };
 
   /**

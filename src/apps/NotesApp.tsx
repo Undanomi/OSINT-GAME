@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PlusIcon, TrashIcon, SearchIcon, CloudIcon, CloudOffIcon } from 'lucide-react';
 import { useAuthContext } from '@/providers/AuthProvider';
 import { motion, AnimatePresence } from 'framer-motion';
+import { handleServerAction } from '@/utils/handleServerAction';
 import {
   getNotesList,
   getNote,
@@ -83,26 +84,28 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
 
     // Server Actionでメモを取得（非同期で実行）
     (async () => {
-      try {
-        const fetchedNotes = await getNotesList();
-        setNotes(fetchedNotes);
-        setSyncError(null);
-      } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Error fetching notes:', error);
+      const fetchedNotes = await handleServerAction(
+        () => getNotesList(),
+        (error) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error fetching notes:', error);
+          }
+          setSyncError('メモの取得に失敗しました');
+          // エラー時はローカルストレージから読み込み
+          const savedNotes = localStorage.getItem(LOCAL_STORAGE_KEYS.NOTES);
+          if (savedNotes) {
+            const parsedNotes = JSON.parse(savedNotes);
+            setNotes(parsedNotes.map((note: Note) => ({
+              ...note,
+              createdAt: new Date(note.createdAt),
+              updatedAt: new Date(note.updatedAt)
+            })));
+          }
         }
-        setSyncError('メモの取得に失敗しました');
-        // エラー時はローカルストレージから読み込み
-        const savedNotes = localStorage.getItem(LOCAL_STORAGE_KEYS.NOTES);
-        if (savedNotes) {
-          const parsedNotes = JSON.parse(savedNotes);
-          setNotes(parsedNotes.map((note: Note) => ({
-            ...note,
-            createdAt: new Date(note.createdAt),
-            updatedAt: new Date(note.updatedAt)
-          })));
-        }
-      }
+      );
+
+      setNotes(fetchedNotes);
+      setSyncError(null);
     })();
   }, [user]);
 
@@ -131,28 +134,29 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
 
     // フォーカスを失わないように非同期で実行
     setIsSyncing(true);
-    try {
-      // 各メモを保存（空のメモはスキップ）
-      for (const [id, data] of updates) {
-        // 空メモはスキップ（共通関数を使用）
-        if (isEmptyNote(data.title, data.content)) {
-          continue;
+
+    // 各メモを保存（空のメモはスキップ）
+    for (const [id, data] of updates) {
+      // 空メモはスキップ（共通関数を使用）
+      if (isEmptyNote(data.title, data.content)) {
+        continue;
+      }
+
+      // upsertNoteで新規作成と更新の両方に対応
+      await handleServerAction(
+        () => upsertNote(id, data.title, data.content),
+        (error) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error saving notes:', error);
+          }
+          setSyncError('メモの保存に失敗しました');
         }
-        
-        // upsertNoteで新規作成と更新の両方に対応
-        await upsertNote(id, data.title, data.content);
-      }
-      
-      pendingUpdatesRef.current.clear();
-      setSyncError(null);
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error saving notes:', error);
-      }
-      setSyncError('メモの保存に失敗しました');
-    } finally {
-      setIsSyncing(false);
+      );
     }
+
+    pendingUpdatesRef.current.clear();
+    setSyncError(null);
+    setIsSyncing(false);
   }, [user]);
 
   // コンポーネントのアンマウント時にタイマーをクリーンアップ
@@ -171,11 +175,14 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
             title: data.title,
             content: data.content
           }));
-          batchUpdateNotes(updates).catch(error => {
-            if (process.env.NODE_ENV === 'development') {
-              console.error('Batch update error:', error);
+          handleServerAction(
+            () => batchUpdateNotes(updates),
+            (error) => {
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Batch update error:', error);
+              }
             }
-          });
+          );
         }
       }
     };
@@ -298,14 +305,18 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
     // Server Actionで削除（非同期で実行）
     if (user) {
       (async () => {
-        try {
-          await deleteNote(id);
-          setSyncError(null);
-        } catch (error) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('Error deleting note:', error);
+        const result = await handleServerAction(
+          () => deleteNote(id),
+          (error) => {
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Error deleting note:', error);
+            }
+            setSyncError('メモの削除に失敗しました');
           }
-          setSyncError('メモの削除に失敗しました');
+        );
+
+        if (result !== undefined) {
+          setSyncError(null);
         }
       })();
     }
@@ -432,18 +443,20 @@ export const NotesApp: React.FC<AppProps> = ({ isActive, windowId }) => {
                     }
 
                     // サーバーに保存済みのメモのみサーバーから取得
-                    try {
-                      const fullNote = await getNote(note.id);
-                      if (fullNote) {
-                        setSelectedNote(fullNote);
-                        // キャッシュに保存
-                        noteCacheRef.current.set(note.id, fullNote);
-                        // ローカルのnotesも更新
-                        setNotes(prev => prev.map(n => n.id === fullNote.id ? fullNote : n));
+                    const fullNote = await handleServerAction(
+                      () => getNote(note.id),
+                      () => {
+                        // エラー時はリスト版を使用
+                        setSelectedNote(note);
                       }
-                    } catch {
-                      // エラー時はリスト版を使用
-                      setSelectedNote(note);
+                    );
+
+                    if (fullNote) {
+                      setSelectedNote(fullNote);
+                      // キャッシュに保存
+                      noteCacheRef.current.set(note.id, fullNote);
+                      // ローカルのnotesも更新
+                      setNotes(prev => prev.map(n => n.id === fullNote.id ? fullNote : n));
                     }
                   }}
                   className={`p-3 mb-2 rounded cursor-pointer transition-colors ${

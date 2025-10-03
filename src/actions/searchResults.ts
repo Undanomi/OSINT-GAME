@@ -1,8 +1,8 @@
 'use server'
 
-import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { getAdminFirestore } from '@/lib/auth/firebase-admin';
 import { UnifiedSearchResult } from '@/types/search';
+import { ensureAuth } from '@/lib/auth/server';
 
 /**
  * 検索結果アイテムのデータ構造を定義するインターフェース
@@ -23,9 +23,10 @@ export interface SearchResult {
 /**
  * Firebaseのsearch_resultsコレクションからデータを取得する
  */
-export const getSearchResults = async (): Promise<UnifiedSearchResult[]> => {
-	const searchResultsRef = collection(db, 'search_results');
-	const querySnapshot = await getDocs(searchResultsRef);
+export const getSearchResults = ensureAuth(async (): Promise<UnifiedSearchResult[]> => {
+	const db = getAdminFirestore();
+	const searchResultsRef = db.collection('search_results');
+	const querySnapshot = await searchResultsRef.get();
 	const firebaseResults: UnifiedSearchResult[] = [];
 	querySnapshot.forEach((doc) => {
 		const data = doc.data() as UnifiedSearchResult;
@@ -35,7 +36,7 @@ export const getSearchResults = async (): Promise<UnifiedSearchResult[]> => {
 		});
 	});
 	return firebaseResults;
-};
+});
 
 /**
  * キャッシュされたsearch_resultsに対して部分一致検索を実行する
@@ -131,9 +132,9 @@ export const filterSearchResults = async (
  */
 export const convertFirebaseResult = async (unifiedResult: UnifiedSearchResult): Promise<SearchResult> => {
   let type: SearchResult['type'] = 'directory';
-  
+
   // templateからページタイプを判定（NOTE: 将来不要）
-  if (unifiedResult.template === 'FacelookProfilePage' || 
+  if (unifiedResult.template === 'FacelookProfilePage' ||
       unifiedResult.template === 'LinkedInProfilePage') {
     type = 'social';
   } else if (unifiedResult.template === 'AbcCorpPage') {
