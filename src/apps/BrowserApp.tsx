@@ -5,7 +5,6 @@ import { Search, ArrowLeft, ArrowRight, RotateCcw, Home } from 'lucide-react';
 import { UnifiedSearchResult } from '@/types/search';
 import { filterSearchResults, SearchResult } from '@/actions/searchResults';
 import { LOCAL_STORAGE_KEYS } from '@/types/localStorage';
-import { handleServerAction } from '@/utils/handleServerAction';
 
 // 各ページコンポーネントのインポート
 import { GenericPage } from './pages/GenericPage';
@@ -19,6 +18,16 @@ const VIEW_HOME = 'view:home';                 // ホームページ
 const VIEW_SEARCH_RESULTS = 'view:search_results'; // 検索結果ページ
 
 /**
+ * スペル提案情報の型定義
+ */
+export type SuggestionInfo = {
+  /** 元のキーワード（ユーザーが入力したもの） */
+  original: string;
+  /** 提案後のキーワード */
+  suggested: string;
+} | null;
+
+/**
  * ブラウザアプリケーション - OSINT調査ゲーム用のブラウザシミュレータ
  * 検索機能、ナビゲーション履歴、カスタムページ表示機能を実装
  * 
@@ -27,10 +36,12 @@ const VIEW_SEARCH_RESULTS = 'view:search_results'; // 検索結果ページ
  * @returns JSX.Element - ブラウザアプリケーションのレンダリング結果
  */
 export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
-  // 検索クエリの状態管理
+  // 検索クエリの状態管理（検索バーに表示される値）
   const [searchQuery, setSearchQuery] = useState('');
   // 検索結果の状態管理
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  // スペル提案情報の状態管理
+  const [suggestionInfo, setSuggestionInfo] = useState<SuggestionInfo>(null);
   // URLバー入力の状態管理
   const [urlInput, setUrlInput] = useState('');
 
@@ -193,20 +204,26 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
 
   /**
    * キャッシュされたデータに対して部分一致検索を実行する関数
+   * @param skipSuggestion - スペルチェックをスキップするかどうか
    */
-  const performSearchOnCache = async (cache: UnifiedSearchResult[], query: string) => {
-    const filteredResults = await handleServerAction(
-      () => filterSearchResults(cache, query),
-      (error) => {
-        console.error('Failed to filter results:', error);
+  const performSearchOnCache = async (cache: UnifiedSearchResult[], query: string, skipSuggestion = false) => {
+    try {
+      const { results, suggestion } = await filterSearchResults(cache, query);
+      // 提案がある場合は、提案キーワードで再検索
+      if (suggestion && !skipSuggestion) {
+        const { results: suggestedResults } = await filterSearchResults(cache, suggestion);
+        setSearchResults(suggestedResults);
+        setSuggestionInfo({ original: query, suggested: suggestion });
+      } else {
+        // 提案がない場合、またはスキップする場合は通常通り
+        setSearchResults(results);
+        setSuggestionInfo(null);
       }
-    );
 
-    console.log('検索結果:', filteredResults);
-    console.log('検索結果数:', filteredResults.length);
-
-    setSearchResults(filteredResults);
-    navigateTo(VIEW_SEARCH_RESULTS); // 検索結果ページに遷移
+      navigateTo(VIEW_SEARCH_RESULTS); // 検索結果ページに遷移
+    } catch (error) {
+      console.error('Failed to filter results:', error);
+    }
   };
 
   /**
@@ -215,6 +232,19 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    */
   const handleResultClick = (targetUrl: string) => {
     navigateTo(targetUrl);
+  };
+
+  /**
+   * 提案キーワードのクリック処理
+   * 提案されたキーワードで再検索を実行
+   */
+  const handleSuggestionClick = (suggestedQuery: string) => {
+    setSearchQuery(suggestedQuery);
+    // キャッシュを使って検索を実行（スペルチェックをスキップ）
+    const cacheToUse = firebaseCache.length > 0 ? firebaseCache : loadCacheFromLocalStorage();
+    if (cacheToUse.length > 0) {
+      performSearchOnCache(cacheToUse, suggestedQuery, true);
+    }
   };
 
   /**
@@ -481,6 +511,8 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
           itemsPerPage={itemsPerPage}
           onResultClick={handleResultClick}
           onPageChange={setCurrentPage}
+          suggestionInfo={suggestionInfo}
+          onSuggestionClick={handleSuggestionClick}
         />
       );
     }
