@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { Play, FileText, Search, MapPin, Globe } from 'lucide-react';
-import { loadSearchResults } from '@/lib/cache/searchResultsCache';
-import { loadGogglesMailData } from '@/lib/cache/gogglesMailCache';
+import { checkUserDataExists } from '@/actions/user';
+import { handleServerAction } from '@/utils/handleServerAction';
 
 interface Scenario {
   id: string;
@@ -16,7 +16,7 @@ interface Scenario {
 }
 
 interface ScenarioSelectionProps {
-  onScenarioSelect: (scenarioId: string) => void;
+  onScenarioSelect: (scenarioId: string, shouldReset?: boolean) => void;
 }
 
 const scenarios: Scenario[] = [
@@ -85,11 +85,10 @@ const getDifficultyLabel = (difficulty: string) => {
 };
 
 export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenarioSelect }) => {
-  const [isLoading, setIsLoading] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [comingSoonScenario, setComingSoonScenario] = useState<string>('');
-  const [showError, setShowError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
 
   const handleScenarioClick = async (scenario: Scenario) => {
     if (!scenario.isImplemented) {
@@ -101,60 +100,34 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
       return;
     }
 
-    setIsLoading(true);
+    // ユーザーデータの存在をチェック
+    const hasData = await handleServerAction(
+      () => checkUserDataExists(scenario.id),
+      (error) => console.error('Failed to check user data:', error)
+    );
 
-    try {
-      // 検索結果とメールデータを取得
-      const [searchResults, emailData] = await Promise.all([
-        loadSearchResults(),
-        loadGogglesMailData()
-      ]);
+    if (hasData) {
+      // データが存在する場合は進行状況確認ダイアログを表示
+      setSelectedScenario(scenario);
+      setShowProgressDialog(true);
+      return;
+    }
 
-      // データが取得できているかチェック
-      if (!searchResults || searchResults.length === 0) {
-        console.error('検索結果の取得に失敗しました');
-        throw new Error;
-      }
-      if (!emailData || emailData.length === 0) {
-        console.error('メールデータの取得に失敗しました');
-        throw new Error;
-      }
-      console.log('シナリオデータの取得完了:', {
-        searchResults: searchResults.length + '件',
-        emailData: emailData.length + '件'
-      });
+    // データが存在しない場合はそのままシナリオを開始（リセット不要）
+    onScenarioSelect(scenario.id, false);
+  };
 
-      // アニメーション効果のための遅延
-      setTimeout(() => {
-        onScenarioSelect(scenario.id);
-      }, 1000);
-    } catch {
-      console.error('キャッシュの保存に失敗しました:');
-      setIsLoading(false);
-
-      // エラーメッセージを表示
-      const errorMsg = 'ゲームの読み込みに失敗しました。';
-      setErrorMessage(errorMsg);
-      setShowError(true);
-
-      // エラーメッセージを非表示
-      setTimeout(() => {
-        setShowError(false);
-      }, 5000);
+  const handleScenarioStart = (shouldReset: boolean) => {
+    setShowProgressDialog(false);
+    if (selectedScenario) {
+      onScenarioSelect(selectedScenario.id, shouldReset);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="w-screen h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 flex items-center justify-center overflow-hidden">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-3 border-white border-t-transparent rounded-full mx-auto mb-6"></div>
-          <h2 className="text-2xl font-bold text-white mb-4">シナリオを準備中...</h2>
-          <p className="text-cyan-300 text-lg">まもなく調査を開始します</p>
-        </div>
-      </div>
-    );
-  }
+  const handleCancelProgressDialog = () => {
+    setShowProgressDialog(false);
+    setSelectedScenario(null);
+  };
 
   return (
     <div className="w-screen h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 overflow-y-auto overflow-x-hidden relative">
@@ -167,7 +140,7 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
       {/* Coming Soon モーダル */}
       {showComingSoon && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 max-w-md mx-4 text-center border border-white/20">
+          <div className="bg-gray-900 rounded-lg p-8 max-w-md mx-4 text-center border border-gray-700">
             <h3 className="text-2xl font-bold text-white mb-4">Coming Soon!</h3>
             <p className="text-cyan-300 mb-4">
               「{comingSoonScenario}」は現在開発中です。
@@ -179,23 +152,40 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
         </div>
       )}
 
-      {/* エラーモーダル */}
-      {showError && (
+      {/* 進行状況確認ダイアログ */}
+      {showProgressDialog && selectedScenario && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-red-900/30 backdrop-blur-md rounded-xl p-8 max-w-md mx-4 text-center border border-red-500/30">
-            <h3 className="text-2xl font-bold text-white mb-4">エラー</h3>
-            <p className="text-red-300 mb-4">
-              {errorMessage}
+          <div className="bg-gray-900 rounded-lg p-8 max-w-md mx-4 text-center border border-gray-700">
+            <h3 className="text-2xl font-bold text-white mb-4">リプレイの確認</h3>
+            <p className="text-cyan-300 mb-4">
+              セーブデータが存在します。
             </p>
-            <p className="text-gray-300 text-sm">
-              インターネット接続を確認し、しばらくしてからお試しください。
+            <p className="text-gray-300 text-sm mb-6">
+              途中から続けますか？それとも最初からやり直しますか？
             </p>
-            <button
-              onClick={() => setShowError(false)}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-            >
-              閉じる
-            </button>
+            <div className="flex flex-col gap-3 mb-4">
+              <button
+                onClick={() => handleScenarioStart(false)}
+                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+              >
+                途中から続ける
+              </button>
+              <button
+                onClick={() => handleScenarioStart(true)}
+                className="w-full px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors"
+              >
+                最初からやり直す
+              </button>
+              <button
+                onClick={handleCancelProgressDialog}
+                className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors"
+              >
+                キャンセル
+              </button>
+            </div>
+            <p className="text-yellow-300 text-xs">
+              最初からやり直すとすべてのプレイデータが削除されます
+            </p>
           </div>
         </div>
       )}

@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
+import { loadSearchResults } from '@/lib/cache/searchResultsCache';
+import { loadGogglesMailData } from '@/lib/cache/gogglesMailCache';
+import { resetGameData } from '@/lib/gameReset';
 
 interface ScenarioLoadingProps {
   onComplete: () => void;
@@ -40,7 +43,8 @@ export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) 
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
-  const { selectedScenario } = useGameStore();
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const { selectedScenario, shouldResetData } = useGameStore();
 
   const scenarioInfo = getScenarioInfo(selectedScenario);
 
@@ -52,6 +56,43 @@ export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) 
     '調査ツールを初期化中...',
   ];
 
+  // 実際のデータ処理
+  useEffect(() => {
+    const loadScenarioData = async () => {
+      try {
+        // データリセットが必要な場合は実行
+        if (shouldResetData) {
+          await resetGameData();
+        }
+
+        // 検索結果とメールデータを並列で取得
+        const [searchResults, emailData] = await Promise.all([
+          loadSearchResults(),
+          loadGogglesMailData()
+        ]);
+
+        // データが取得できているかチェック
+        if (!searchResults || searchResults.length === 0) {
+          throw new Error('検索結果の取得に失敗しました');
+        }
+        if (!emailData || emailData.length === 0) {
+          throw new Error('メールデータの取得に失敗しました');
+        }
+
+        console.log('シナリオデータの取得完了:', {
+          searchResults: searchResults.length + '件',
+          emailData: emailData.length + '件'
+        });
+      } catch (error) {
+        console.error('シナリオデータの読み込みに失敗:', error);
+        setLoadingError('ゲームの準備に失敗しました。');
+      }
+    };
+
+    loadScenarioData();
+  }, [shouldResetData]);
+
+  // プログレスバーのアニメーション
   useEffect(() => {
     const timer = setInterval(() => {
       setProgress(prev => {
@@ -67,6 +108,7 @@ export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) 
     return () => clearInterval(timer);
   }, []);
 
+  // ステップ表示のアニメーション
   useEffect(() => {
     const stepTimer = setInterval(() => {
       setCurrentStep(prev => {
@@ -146,7 +188,17 @@ export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) 
 
             {/* 現在のステップ - 固定高さでレイアウト安定化 */}
             <div className="h-24 flex flex-col items-center justify-center">
-              {isCompleted ? (
+              {loadingError ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center space-x-2 text-red-400">
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-xl font-semibold">エラー</span>
+                  </div>
+                  <p className="text-gray-300">{loadingError}</p>
+                </div>
+              ) : isCompleted ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-center space-x-2 text-green-400">
                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -166,7 +218,11 @@ export const ScenarioLoading: React.FC<ScenarioLoadingProps> = ({ onComplete }) 
 
           {/* アクションセクション - 固定高さでレイアウト安定化 */}
           <div className="h-20 flex flex-col items-center justify-center mb-8">
-            {isCompleted ? (
+            {loadingError ? (
+              <p className="text-gray-400 text-sm">
+                ページをリロードして再度お試しください
+              </p>
+            ) : isCompleted ? (
               <div
                 onClick={onComplete}
                 className="cursor-pointer group inline-block"
