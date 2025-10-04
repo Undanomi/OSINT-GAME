@@ -223,6 +223,14 @@ export interface CachedNPCPosts {
 }
 
 /**
+ * キャッシュされた関係性履歴データ
+ */
+export interface CachedRelationshipHistory {
+  history: RelationshipHistoryWithMessage[];
+  timestamp: number;
+}
+
+/**
  * ソーシャルストア（ローカルキャッシュ）の型定義（単一ユーザー用）
  */
 export interface SocialStore {
@@ -254,6 +262,9 @@ export interface SocialStore {
   };
   messages: {
     [key: string]: CachedSocialMessages; // key format: `${accountId}_${contactId}`
+  };
+  relationshipHistories: {
+    [key: string]: CachedRelationshipHistory; // key format: `${accountId}_${contactId}`
   };
 }
 
@@ -322,6 +333,31 @@ export interface SocialRelationship {
   caution: number; // 警戒度 (0-100)
   lastInteractionAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * 関係性の履歴エントリ（Firestore用）
+ * path: users/{userId}/socialAccounts/{accountId}/Relationships/{contactId}/history/{messageId}
+ */
+export interface SocialRelationshipHistoryEntry {
+  messageId: string;
+  trust: number;
+  caution: number;
+  timestamp: Date;
+}
+
+/**
+ * メッセージと関係性の変化を含む統合データ（UI表示用）
+ */
+export interface RelationshipHistoryWithMessage {
+  messageId: string;
+  messageText: string;
+  sender: 'user' | 'npc';
+  timestamp: Date;
+  trust: number;
+  caution: number;
+  trustDiff?: number; // 前回からの変化量
+  cautionDiff?: number; // 前回からの変化量
 }
 
 /**

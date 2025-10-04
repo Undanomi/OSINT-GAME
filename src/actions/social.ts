@@ -14,7 +14,9 @@ import {
   SocialRelationship,
   SocialAIResponse,
   UISocialPost,
-  convertToUISocialPost
+  convertToUISocialPost,
+  SocialRelationshipHistoryEntry,
+  RelationshipHistoryWithMessage
 } from '@/types/social';
 import {
   SOCIAL_POSTS_PER_PAGE,
@@ -737,6 +739,175 @@ export const updateSocialRelationship = requireAuth(async (
     }, { merge: true });
   } catch (error) {
     console.error('Failed to update social relationship:', error);
+    throw new Error('dbError');
+  }
+});
+
+/**
+ * 関係性の履歴を保存
+ */
+export const saveRelationshipHistory = requireAuth(async (
+  userId: string,
+  accountId: string,
+  contactId: string,
+  messageId: string,
+  trust: number,
+  caution: number
+): Promise<void> => {
+  const db = getAdminFirestore();
+
+  try {
+    const historyRef = db.collection('users')
+      .doc(userId)
+      .collection('socialAccounts')
+      .doc(accountId)
+      .collection('Relationships')
+      .doc(contactId)
+      .collection('history')
+      .doc(messageId);
+
+    await historyRef.set({
+      trust: Math.max(0, Math.min(100, trust)),
+      caution: Math.max(0, Math.min(100, caution)),
+      timestamp: Timestamp.fromDate(new Date()),
+      messageId,
+    });
+  } catch (error) {
+    console.error('Failed to save relationship history:', error);
+    throw new Error('dbError');
+  }
+});
+
+/**
+ * 関係性の履歴を取得
+ */
+export const getRelationshipHistory = requireAuth(async (
+  userId: string,
+  accountId: string,
+  contactId: string,
+  limit: number = 50
+): Promise<SocialRelationshipHistoryEntry[]> => {
+  const db = getAdminFirestore();
+
+  try {
+    const historyRef = db.collection('users')
+      .doc(userId)
+      .collection('socialAccounts')
+      .doc(accountId)
+      .collection('Relationships')
+      .doc(contactId)
+      .collection('history');
+
+    const snapshot = await historyRef
+      .orderBy('timestamp', 'desc')
+      .limit(limit)
+      .get();
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        messageId: data.messageId,
+        trust: data.trust,
+        caution: data.caution,
+        timestamp: data.timestamp?.toDate() || new Date(),
+      };
+    });
+  } catch (error) {
+    console.error('Failed to get relationship history:', error);
+    throw new Error('dbError');
+  }
+});
+
+/**
+ * メッセージと関係性履歴を統合して取得
+ */
+export const getRelationshipHistoryWithMessages = requireAuth(async (
+  userId: string,
+  accountId: string,
+  contactId: string,
+  limit: number = 50
+): Promise<RelationshipHistoryWithMessage[]> => {
+  const db = getAdminFirestore();
+
+  try {
+    // すべてのメッセージを取得（時系列順）
+    const messagesRef = db.collection('users')
+      .doc(userId)
+      .collection('socialAccounts')
+      .doc(accountId)
+      .collection('Contacts')
+      .doc(contactId)
+      .collection('history');
+
+    const messagesSnapshot = await messagesRef
+      .orderBy('timestamp', 'asc')
+      .limit(limit * 2) // ユーザー+NPCメッセージを考慮
+      .get();
+
+    if (messagesSnapshot.empty) {
+      return [];
+    }
+
+    // 関係性履歴を取得
+    const relationshipHistory = await getRelationshipHistory(accountId, contactId, limit);
+
+    // 関係性履歴をマップに変換（messageIdをキーに）
+    const relationshipMap = new Map<string, { trust: number; caution: number }>();
+    relationshipHistory.forEach(entry => {
+      relationshipMap.set(entry.messageId, {
+        trust: entry.trust,
+        caution: entry.caution
+      });
+    });
+
+    // メッセージと関係性を統合
+    const history: RelationshipHistoryWithMessage[] = [];
+    let lastTrust = 30; // 初期値
+    let lastCaution = 70; // 初期値
+
+    messagesSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const messageId = doc.id;
+
+      // このメッセージに関係性情報があるか確認
+      const relationship = relationshipMap.get(messageId);
+
+      if (relationship) {
+        // 関係性情報がある場合（NPCメッセージ）
+        const trustDiff = relationship.trust - lastTrust;
+        const cautionDiff = relationship.caution - lastCaution;
+
+        history.push({
+          messageId,
+          messageText: data.text || '',
+          sender: data.sender || 'user',
+          timestamp: data.timestamp?.toDate() || new Date(),
+          trust: relationship.trust,
+          caution: relationship.caution,
+          trustDiff,
+          cautionDiff,
+        });
+
+        lastTrust = relationship.trust;
+        lastCaution = relationship.caution;
+      } else {
+        // 関係性情報がない場合（ユーザーメッセージ）- 前回の値を継承
+        history.push({
+          messageId,
+          messageText: data.text || '',
+          sender: data.sender || 'user',
+          timestamp: data.timestamp?.toDate() || new Date(),
+          trust: lastTrust,
+          caution: lastCaution,
+          trustDiff: undefined, // 変化なし
+          cautionDiff: undefined, // 変化なし
+        });
+      }
+    });
+
+    return history;
+  } catch (error) {
+    console.error('Failed to get relationship history with messages:', error);
     throw new Error('dbError');
   }
 });
