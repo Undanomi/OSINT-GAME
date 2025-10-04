@@ -20,6 +20,7 @@ import { SchoolReviewPage } from '../SchoolReviewPage';
 import { CompanyReviewPage } from '../CompanyReviewPage';
 import { ProductReviewBlogPage } from '../ProductReviewBlogPage';
 import { DictionaryPage } from '../DictionaryPage';
+import { OSINTricksPage } from '../OSINTricksPage';
 import { UnifiedSearchResult } from '@/types/search';
 
 /**
@@ -79,4 +80,6 @@ export const dynamicPageComponentMap: Record<string, (documentId: string, initia
     <ProductReviewBlogPage documentId={documentId} initialData={initialData} />,
   'DictionaryPage': (documentId, initialData) =>
     <DictionaryPage documentId={documentId} initialData={initialData} />,
+  'OSINTricksHomePage': (documentId, initialData) =>
+    <OSINTricksPage documentId={documentId} initialData={initialData} />,
 };

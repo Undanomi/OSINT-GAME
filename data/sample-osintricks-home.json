@@ -1,0 +1,41 @@
+[
+  {
+    "id": "sample_osintricks_home",
+    "title": "OSINTricks（サンプル）- オープン情報調査ガイド",
+    "url": "https://test-osintricks.dark/osintricks",
+    "description": "【サンプルデータ】教育・研修向けのダミー教材。実在の人物・団体・サービスとは無関係です。内容は安全・倫理・防御を重視した一般論に留めています。",
+    "template": "OSINTricksHomePage",
+    "domainStatus": "active",
+    "archivedDate": "2025-10-03",
+    "content": {
+      "title": "OSINTricks（サンプル教材）",
+      "description": "この資料は**サンプル用**のオープン情報調査（OSINT）ガイドです。実務の前提は**合法性・倫理・プライバシー尊重・再現性**。ここでの記述は教育目的の一般論に限定され、具体的な攻撃手順や不正アクセスの助長につながる内容は含みません。",
+      "subtitle": "安全・合法な情報収集の基本10則（サンプル）",
+      "tips": [
+        {
+          "id": "sample_osintricks_tip_1",
+          "tipNumber": 1,
+          "title": "調査目的と範囲を明確化する",
+          "description": "“何を・なぜ・どこまで・いつまでに”を先に決めると、無駄な収集を避けられます。",
+          "sections": [
+            {
+              "title": "目的設定のポイント",
+              "content": "具体的な問いに落とし込む（例: 「人物Aの現在の所属と役割の確認」）。曖昧な全方位収集は避ける。"
+            },
+            {
+              "title": "スコープ設計",
+              "content": "情報種類（プロフィール・所属・公開実績など）、情報源（公式発表・業界誌・公的データ）と期間を決める。"
+            },
+            {
+              "title": "整理術",
+              "content": "5W1Hや簡易マインドマップで必要/不要を仕分ける。"
+            }
+          ]
+        }
+      ]
+    },
+    "keywords": [
+      "サンプル"
+    ]
+  }
+]

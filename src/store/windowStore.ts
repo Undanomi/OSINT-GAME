@@ -19,6 +19,7 @@ export interface WindowState {
   title: string;
   isOpen: boolean;
   isMinimized: boolean;
+  isMaximized: boolean;
   isHidden: boolean;
   x: number;
   y: number;
@@ -26,6 +27,11 @@ export interface WindowState {
   height: number;
   zIndex: number;
   appType: string;
+  // 最大化前の状態を保存
+  previousX?: number;
+  previousY?: number;
+  previousWidth?: number;
+  previousHeight?: number;
 }
 
 /**
@@ -47,7 +53,9 @@ interface WindowStore {
   hideWindow: (id: string) => void;
   closeWindow: (id: string) => void;
   minimizeWindow: (id: string) => void;
-  restoreWindow: (id: string) => void;  // 新しく追加
+  restoreWindow: (id: string) => void;
+  maximizeWindow: (id: string) => void;
+  unmaximizeWindow: (id: string, newPosition?: { x: number; y: number }) => void;
   focusWindow: (id: string) => void;
   focusWindowOnInteraction: (id: string) => void; // ユーザー操作時のフォーカス
   updateWindowPosition: (id: string, x: number, y: number) => void;
@@ -102,6 +110,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       title: appConfig.title,
       isOpen: true,
       isMinimized: false,
+      isMaximized: false,
       isHidden: isHidden,
       x: randomX,
       y: randomY,
@@ -267,6 +276,67 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     set(state => ({
       windows: state.windows.map(w =>
         w.id === id ? { ...w, width, height } : w
+      ),
+    }));
+  },
+
+  // ウィンドウを最大化
+  maximizeWindow: (id) => {
+    const targetWindow = get().windows.find(w => w.id === id);
+    if (!targetWindow || targetWindow.isMaximized) return;
+
+    // 画面サイズを取得
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : DEFAULT_VIEWPORT_HEIGHT;
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : DEFAULT_VIEWPORT_WIDTH;
+
+    // 最大化時のサイズと位置を計算（タスクバーの高さを考慮）
+    const maxWidth = viewportWidth;
+    const maxHeight = viewportHeight - TASKBAR_HEIGHT;
+
+    set(state => ({
+      windows: state.windows.map(w =>
+        w.id === id
+          ? {
+              ...w,
+              isMaximized: true,
+              previousX: w.x,
+              previousY: w.y,
+              previousWidth: w.width,
+              previousHeight: w.height,
+              x: 0,
+              y: 0,
+              width: maxWidth,
+              height: maxHeight,
+            }
+          : w
+      ),
+    }));
+  },
+
+  // ウィンドウの最大化を解除
+  unmaximizeWindow: (id, newPosition?: { x: number; y: number }) => {
+    const targetWindow = get().windows.find(w => w.id === id);
+    if (!targetWindow || !targetWindow.isMaximized) return;
+
+    const restoredX = newPosition?.x ?? targetWindow.previousX ?? targetWindow.x;
+    const restoredY = newPosition?.y ?? targetWindow.previousY ?? targetWindow.y;
+
+    set(state => ({
+      windows: state.windows.map(w =>
+        w.id === id
+          ? {
+              ...w,
+              isMaximized: false,
+              x: restoredX,
+              y: restoredY,
+              width: w.previousWidth ?? w.width,
+              height: w.previousHeight ?? w.height,
+              previousX: undefined,
+              previousY: undefined,
+              previousWidth: undefined,
+              previousHeight: undefined,
+            }
+          : w
       ),
     }));
   },
