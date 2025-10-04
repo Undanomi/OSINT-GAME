@@ -17,7 +17,8 @@ import {
   getSocialAccounts,
   updateSocialAccount,
   getErrorMessage,
-  getNPCPosts
+  getNPCPosts,
+  saveRelationshipHistory
 } from '@/actions/social';
 import {
   SocialPost,
@@ -651,6 +652,21 @@ export const useSocial = (
       }
     );
     addMessageToState(aiMessage);
+
+    // 関係性の履歴を保存
+    await handleServerAction(
+      () => saveRelationshipHistory(
+        activeAccount.id,
+        selectedContact.id,
+        aiMessageId,
+        aiResponse.newTrust,
+        aiResponse.newCaution
+      ),
+      (error) => {
+        console.error('Failed to save relationship history:', error);
+        // 履歴保存失敗はユーザーに通知しない（非クリティカル）
+      }
+    );
 
     // ゲームオーバー対象NPCかどうかをチェック
     const currentNPC = npcs.find(npc => npc.id === selectedContact.id);
