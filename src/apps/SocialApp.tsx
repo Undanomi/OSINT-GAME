@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback, UIEvent } from 'react';
+import React, { useState, useRef, useCallback, UIEvent, useEffect } from 'react';
 import { BaseApp } from '@/components/BaseApp';
 import { AppProps } from '@/types/app';
 import { SocialAccountProvider, useSocialAccountContext } from '@/providers/SocialAccountProvider';
@@ -61,6 +61,10 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
     getNPCById,
     searchPosts,
     refreshTimeline,
+    accountPosts,
+    loadInitialNPCPosts,
+    loadMoreNPCPosts,
+    npcPosts,
   } = useSocial(activeAccount, accounts, updateAccount);
 
   const [currentView, setCurrentView] = useState<SocialView>('home');
@@ -70,6 +74,11 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [profileEditError, setProfileEditError] = useState<string>('');
   const timelineRef = useRef<HTMLDivElement>(null);
+
+  // 初回マウント時にタイムラインをリフレッシュ（時刻表示を更新）
+  useEffect(() => {
+    refreshTimeline();
+  }, [refreshTimeline]);
 
   // 無限スクロール処理
   const handleTimelineScroll = useCallback((e: UIEvent<HTMLDivElement>) => {
@@ -279,6 +288,7 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
             activeAccount={activeAccount}
             onUserSelect={handleUserSelect}
             onEditProfile={() => setCurrentView('edit-profile')}
+            accountPosts={accountPosts}
           />
         );
       case 'dm':
@@ -314,6 +324,9 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
             onStartDM={handleStartDM}
             onBack={() => setCurrentView('home')}
             onUserSelect={handleUserSelect}
+            loadInitialNPCPosts={loadInitialNPCPosts}
+            loadMoreNPCPosts={loadMoreNPCPosts}
+            npcPosts={npcPosts}
           />
         ) : (
           <div className="p-6">プロフィールが見つかりません。</div>
@@ -324,6 +337,7 @@ const SocialAppInner: React.FC<AppProps> = ({ windowId, isActive }) => {
             account={selectedInactiveUser}
             onBack={() => setCurrentView('home')}
             onUserSelect={handleUserSelect}
+            accountPosts={accountPosts}
           />
         ) : (
           <div className="p-6">プロフィールが見つかりません。</div>

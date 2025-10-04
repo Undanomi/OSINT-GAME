@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, UIEvent } from 'react';
 import { UISocialPost, SocialAccount, SocialNPC } from '@/types/social';
 import { PostComponent } from './PostComponent';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
+import { SOCIAL_POSTS_PER_PAGE } from '@/lib/social/constants';
 
 interface SearchPageProps {
   posts: UISocialPost[];
@@ -32,7 +33,10 @@ export const SearchPage: React.FC<SearchPageProps> = ({
   const query = searchQuery.toLowerCase();
   const [searchedPosts, setSearchedPosts] = useState<UISocialPost[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentLimit, setCurrentLimit] = useState(SOCIAL_POSTS_PER_PAGE);
   const lastSearchQueryRef = useRef<string>('');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // @マークで始まる場合はユーザーID検索
   const isUserIdSearch = query.startsWith('@');
@@ -48,13 +52,15 @@ export const SearchPage: React.FC<SearchPageProps> = ({
     const timeoutId = setTimeout(async () => {
       if (!searchQuery.trim() || searchQuery.startsWith('@')) {
         setSearchedPosts([]);
+        setCurrentLimit(SOCIAL_POSTS_PER_PAGE);
         lastSearchQueryRef.current = searchQuery;
         return;
       }
 
       setPostsLoading(true);
+      setCurrentLimit(SOCIAL_POSTS_PER_PAGE); // リセット
       try {
-        const results = await searchPosts(searchQuery, 20); // 20件まで検索
+        const results = await searchPosts(searchQuery, SOCIAL_POSTS_PER_PAGE);
         setSearchedPosts(results);
       } catch (error) {
         console.error('Failed to search posts:', error);
@@ -69,7 +75,33 @@ export const SearchPage: React.FC<SearchPageProps> = ({
     }, 300); // 300ms のデバウンス
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, searchPosts, posts]); // 必要な依存関係のみ
+  }, [searchQuery, searchPosts, posts]);
+
+  // 追加読み込み処理
+  const loadMoreSearchResults = useCallback(async () => {
+    if (isLoadingMore || !searchQuery.trim() || searchQuery.startsWith('@')) return;
+
+    setIsLoadingMore(true);
+    const newLimit = currentLimit + SOCIAL_POSTS_PER_PAGE;
+
+    try {
+      const results = await searchPosts(searchQuery, newLimit);
+      setSearchedPosts(results);
+      setCurrentLimit(newLimit);
+    } catch (error) {
+      console.error('Failed to load more search results:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, searchQuery, currentLimit, searchPosts]);
+
+  // 無限スクロール処理
+  const handleScroll = useCallback((e: UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop - clientHeight < 100 && !isLoadingMore && searchedPosts.length > 0) {
+      loadMoreSearchResults();
+    }
+  }, [isLoadingMore, searchedPosts.length, loadMoreSearchResults]);
 
   // 表示用の投稿リスト
   const filteredPosts = isUserIdSearch ? [] : searchedPosts;
@@ -128,7 +160,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
       </div>
 
       {/* 検索結果 */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto p-4" ref={scrollContainerRef} onScroll={handleScroll}>
         {searchQuery ? (
           <>
             {filteredUsers.length > 0 || filteredPosts.length > 0 ? (
@@ -171,11 +203,19 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                         <p>投稿を検索しています...</p>
                       </div>
                     ) : (
-                      <div className="divide-y divide-gray-200 bg-white rounded-lg border border-gray-200">
-                        {filteredPosts.map(post => (
-                          <PostComponent key={post.id} post={post} onUserSelect={onUserSelect} />
-                        ))}
-                      </div>
+                      <>
+                        <div className="divide-y divide-gray-200 bg-white rounded-lg border border-gray-200">
+                          {filteredPosts.map(post => (
+                            <PostComponent key={post.id} post={post} onUserSelect={onUserSelect} />
+                          ))}
+                        </div>
+                        {isLoadingMore && (
+                          <div className="p-4 text-center">
+                            <Loader2 size={16} className="animate-spin mx-auto text-gray-400" />
+                            <p className="text-gray-500 mt-2">さらに読み込み中...</p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
