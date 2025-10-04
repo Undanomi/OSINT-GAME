@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, Settings, Info, User as UserIcon } from 'lucide-react';
 import { useAuthContext } from '@/providers/AuthProvider';
 
@@ -8,11 +8,39 @@ interface TitleScreenProps {
   onGameStart: () => void;
 }
 
+interface ToggleSwitchProps {
+  enabled: boolean;
+  onChange: () => void;
+  label: string;
+}
+
+const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ enabled, onChange, label }) => {
+  return (
+    <div className="flex items-center justify-between py-3">
+      <span className="text-white font-medium">{label}</span>
+      <button
+        onClick={onChange}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 ${
+          enabled ? 'bg-cyan-600' : 'bg-gray-600'
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+            enabled ? 'translate-x-6' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    </div>
+  );
+};
+
 export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState('');
   const [showAbout, setShowAbout] = useState(false);
   const [hasReadAbout, setHasReadAbout] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const { user, loading, signInWithGoogle } = useAuthContext();
 
@@ -48,6 +76,32 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
     setShowAbout(false);
     await handleGoogleSignIn();
   };
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (error) {
+      console.error('フルスクリーンの切り替えに失敗しました:', error);
+    }
+  };
+
+  // フルスクリーン状態の監視
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -119,7 +173,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
             )}
           </button>
 
-          <button className="w-full max-w-xs mx-auto flex items-center justify-center space-x-3 bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg font-medium transition-all">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="w-full max-w-xs mx-auto flex items-center justify-center space-x-3 bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg font-medium transition-all"
+          >
             <Settings size={18} />
             <span>設定</span>
           </button>
@@ -134,9 +191,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
         </div>
 
         {/* フッター */}
-        <div className="text-white/60 text-sm">
+        <div className="text-white/60 text-sm space-y-2">
+          <p className="text-xs">
+            より没入感のある体験のため、フルスクリーンでのプレイを推奨します（設定から変更可能）
+          </p>
           {!user && (
-            <p className="mt-2 text-xs">
+            <p className="text-xs">
               ※ ゲームを開始するには「ゲームについて」をお読みいただき、Googleアカウントでのログインが必要です
             </p>
           )}
@@ -279,6 +339,38 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
               >
                 {user ? '閉じる' : 'キャンセル'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 設定ダイアログ */}
+      {showSettings && (
+        <div
+          onClick={() => setShowSettings(false)}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-slate-800 rounded-xl p-6 max-w-md w-full border border-white/20"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-white">設定</h3>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <ToggleSwitch
+                enabled={isFullscreen}
+                onChange={toggleFullscreen}
+                label="フルスクリーン"
+              />
             </div>
           </div>
         </div>
