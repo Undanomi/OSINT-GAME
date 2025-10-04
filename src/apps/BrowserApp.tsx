@@ -95,6 +95,9 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   // タブバーのref（幅監視用）
   const tabBarRef = useRef<HTMLDivElement>(null);
 
+  // URLバーのクリック回数
+  const urlBarClickCount = useRef(0);
+
   // Firebase検索結果のキャッシュ（全タブで共有）
   const [firebaseCache, setFirebaseCache] = useState<UnifiedSearchResult[]>([]);
   // Firebase初回読み込み完了フラグ
@@ -671,15 +674,28 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
             onFocus={(e) => {
               // フォーカス時に全選択（デフォルトのカーソル配置の後に実行）
               const target = e.target as HTMLInputElement;
+              urlBarClickCount.current = 0; // クリックカウントをリセット
               setTimeout(() => {
                 target.select();
               }, 0);
             }}
             onClick={(e) => {
-              // クリック時に全選択（デフォルトのカーソル配置の後に実行）
               const target = e.currentTarget;
               setTimeout(() => {
-                target.select();
+                const isFullySelected = target.selectionStart === 0 && target.selectionEnd === target.value.length;
+
+                if (isFullySelected) {
+                  urlBarClickCount.current += 1;
+
+                  if (urlBarClickCount.current >= 2) {
+                    // 2回目以降のクリックで選択解除
+                    const clickPosition = target.selectionStart || target.value.length;
+                    target.setSelectionRange(clickPosition, clickPosition);
+                    urlBarClickCount.current = 0;
+                  }
+                } else {
+                  urlBarClickCount.current = 0;
+                }
               }, 0);
             }}
             className="flex-1 outline-none text-sm"
