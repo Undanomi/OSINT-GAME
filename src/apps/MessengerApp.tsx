@@ -350,6 +350,17 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
                 </div>
               </div>
             ))}
+            {isWaitingForAI && (
+              <div className="flex justify-start">
+                <div className="max-w-md px-4 py-2.5 rounded-2xl text-sm bg-gradient-to-br from-blue-950/80 to-blue-900/60 text-gray-100 shadow-lg shadow-blue-900/20">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <div className="p-4 bg-[#2a2d35] border-t border-blue-900/20">
             <div className="flex items-end space-x-2">
