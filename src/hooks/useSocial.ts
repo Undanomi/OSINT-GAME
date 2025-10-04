@@ -558,130 +558,135 @@ export const useSocial = (
 
     setError(null);
 
-    // ユーザーメッセージを保存
-    await handleServerAction(
-      () => addSocialMessage(activeAccount.id, selectedContact.id, {
-        id: messageId,
-        sender: 'user',
-        text,
-        timestamp: userMessage.timestamp,
-      }),
-      (error) => {
-        console.error('Failed to save user message:', error);
-        setError("メッセージの送信に失敗しました");
-      }
-    );
+    try {
+      // ユーザーメッセージを保存
+      await handleServerAction(
+        () => addSocialMessage(activeAccount.id, selectedContact.id, {
+          id: messageId,
+          sender: 'user',
+          text,
+          timestamp: userMessage.timestamp,
+        }),
+        (error) => {
+          console.error('Failed to save user message:', error);
+          setError("メッセージの送信に失敗しました");
+        }
+      );
 
-    // AI応答を生成（過去の履歴を含める、最新N件に制限）
-    const recentMessages = messages.slice(-MAX_SOCIAL_CONVERSATION_HISTORY_LENGTH);
-    const chatHistory = recentMessages.map(msg => ({
-      role: msg.sender === 'me' ? 'user' as const : 'model' as const,
-      parts: [{ text: msg.text }]
-    }));
+      // AI応答を生成（過去の履歴を含める、最新N件に制限）
+      const recentMessages = messages.slice(-MAX_SOCIAL_CONVERSATION_HISTORY_LENGTH);
+      const chatHistory = recentMessages.map(msg => ({
+        role: msg.sender === 'me' ? 'user' as const : 'model' as const,
+        parts: [{ text: msg.text }]
+      }));
 
-    // 新しいAI応答生成関数を使用（プロフィールと関係性情報を含む）
-    const aiResponse = await handleServerAction(
-      () => generateSocialAIResponse({
-        message: text,
-        chatHistory,
-        npcId: selectedContact.id,
-        userProfile: activeAccount,
-        accountId: activeAccount.id
-      }),
-      async (error) => {
-        console.error('Failed to generate AI response:', error);
-        setError("AI応答の生成に失敗しました");
+      // 新しいAI応答生成関数を使用（プロフィールと関係性情報を含む）
+      const aiResponse = await handleServerAction(
+        () => generateSocialAIResponse({
+          message: text,
+          chatHistory,
+          npcId: selectedContact.id,
+          userProfile: activeAccount,
+          accountId: activeAccount.id
+        }),
+        async (error) => {
+          console.error('Failed to generate AI response:', error);
+          setError("AI応答の生成に失敗しました");
 
-        // エラーメッセージをFirestoreから取得
-        const errorType = error instanceof Error ? error.message as SocialErrorType : 'general';
-        const errorMessages = await handleServerAction(
-          () => getErrorMessage(selectedContact.id),
-          (err) => console.error('Failed to get error message:', err)
-        );
-        const customErrorText = errorMessages?.[errorType];
+          // エラーメッセージをFirestoreから取得
+          const errorType = error instanceof Error ? error.message as SocialErrorType : 'general';
+          const errorMessages = await handleServerAction(
+            () => getErrorMessage(selectedContact.id),
+            (err) => console.error('Failed to get error message:', err)
+          );
+          const customErrorText = errorMessages?.[errorType];
 
-        // Firestoreからの取得に失敗した場合は固定フォールバックメッセージを使用
-        const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
+          // Firestoreからの取得に失敗した場合は固定フォールバックメッセージを使用
+          const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
 
-        const errorTimestamp = new Date();
-        const errorMessage: UISocialDMMessage = {
-          id: generateTimestampId(errorTimestamp),
-          sender: 'other',
-          text: errorText,
-          time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-          timestamp: errorTimestamp,
-        };
-
-        // NPCエラーメッセージを保存・表示
-        await handleServerAction(
-          () => addSocialMessage(activeAccount.id, selectedContact.id, {
-            id: errorMessage.id,
-            sender: 'npc',
+          const errorTimestamp = new Date();
+          const errorMessage: UISocialDMMessage = {
+            id: generateTimestampId(errorTimestamp),
+            sender: 'other',
             text: errorText,
-            timestamp: errorMessage.timestamp,
-          }),
-          (err) => console.error('Failed to save error message:', err)
-        );
-        addMessageToState(errorMessage);
-      }
-    );
+            time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+            timestamp: errorTimestamp,
+          };
 
-    const aiText = aiResponse.responseText;
+          // NPCエラーメッセージを保存・表示
+          await handleServerAction(
+            () => addSocialMessage(activeAccount.id, selectedContact.id, {
+              id: errorMessage.id,
+              sender: 'npc',
+              text: errorText,
+              timestamp: errorMessage.timestamp,
+            }),
+            (err) => console.error('Failed to save error message:', err)
+          );
+          addMessageToState(errorMessage);
+        }
+      );
 
-    const aiTimestamp = new Date();
-    const aiMessageId = generateTimestampId(aiTimestamp);
-    const aiMessage: UISocialDMMessage = {
-      id: aiMessageId,
-      sender: 'other',
-      text: aiText,
-      time: aiTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-      timestamp: aiTimestamp,
-    };
+      const aiText = aiResponse.responseText;
 
-    // AI応答を保存
-    await handleServerAction(
-      () => addSocialMessage(activeAccount.id, selectedContact.id, {
+      const aiTimestamp = new Date();
+      const aiMessageId = generateTimestampId(aiTimestamp);
+      const aiMessage: UISocialDMMessage = {
         id: aiMessageId,
-        sender: 'npc',
+        sender: 'other',
         text: aiText,
-        timestamp: aiMessage.timestamp,
-      }),
-      (error) => {
-        console.error('Failed to save AI message:', error);
-        setError("AI応答の保存に失敗しました");
-      }
-    );
-    addMessageToState(aiMessage);
+        time: aiTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: aiTimestamp,
+      };
 
-    // 関係性の履歴を保存
-    await handleServerAction(
-      () => saveRelationshipHistory(
-        activeAccount.id,
-        selectedContact.id,
-        aiMessageId,
-        aiResponse.newTrust,
-        aiResponse.newCaution
-      ),
-      (error) => {
-        console.error('Failed to save relationship history:', error);
-        // 履歴保存失敗はユーザーに通知しない（非クリティカル）
-      }
-    );
+      // AI応答を保存
+      await handleServerAction(
+        () => addSocialMessage(activeAccount.id, selectedContact.id, {
+          id: aiMessageId,
+          sender: 'npc',
+          text: aiText,
+          timestamp: aiMessage.timestamp,
+        }),
+        (error) => {
+          console.error('Failed to save AI message:', error);
+          setError("AI応答の保存に失敗しました");
+        }
+      );
+      addMessageToState(aiMessage);
 
-    // ゲームオーバー対象NPCかどうかをチェック
-    const currentNPC = npcs.find(npc => npc.id === selectedContact.id);
-    if (currentNPC?.isGameOverTarget) {
-      // 警戒度の閾値チェック
-      if (aiResponse.newCaution >= CAUTION_GAME_OVER_THRESHOLD) {
-        setTimeout(() => {
-          triggerGameOver('social-relationship', `ターゲットに完全に警戒され、これ以上の情報収集が不可能になりました。`)
-        }, 3000);
-        setIsWaitingForAI(false);
-        return;
+      // 関係性の履歴を保存
+      await handleServerAction(
+        () => saveRelationshipHistory(
+          activeAccount.id,
+          selectedContact.id,
+          aiMessageId,
+          aiResponse.newTrust,
+          aiResponse.newCaution
+        ),
+        (error) => {
+          console.error('Failed to save relationship history:', error);
+          // 履歴保存失敗はユーザーに通知しない（非クリティカル）
+        }
+      );
+
+      // ゲームオーバー対象NPCかどうかをチェック
+      const currentNPC = npcs.find(npc => npc.id === selectedContact.id);
+      if (currentNPC?.isGameOverTarget) {
+        // 警戒度の閾値チェック
+        if (aiResponse.newCaution >= CAUTION_GAME_OVER_THRESHOLD) {
+          setTimeout(() => {
+            triggerGameOver('social-relationship', `ターゲットに完全に警戒され、これ以上の情報収集が不可能になりました。`)
+          }, 3000);
+          setIsWaitingForAI(false);
+          return;
+        }
       }
+    } catch (err) {
+      console.error('Unexpected error in sendMessage:', err);
+      setError("予期せぬエラーが発生しました。しばらく待ってから再試行してください。");
+    } finally {
+      setIsWaitingForAI(false);
     }
-
-    setIsWaitingForAI(false);
   }, [user, activeAccount, selectedContact, messages, store, isWaitingForAI, npcs, triggerGameOver]);
 
   // 初期データ読み込み
