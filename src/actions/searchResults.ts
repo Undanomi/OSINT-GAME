@@ -193,8 +193,8 @@ export const filterSearchResults = async (
   // キャッシュから部分一致で検索（expired状態のドメインは除外）
   // すべてのキーワードにマッチする結果を返す（AND検索）
   const filteredItems = cache.filter(item => {
-    // expired状態のドメインは検索結果から除外
-    if (item.domainStatus === 'expired') {
+    // expired・hidden状態のドメインは検索結果から除外
+    if (item.domainStatus === 'expired' || item.domainStatus === 'hidden') {
       return false;
     }
 

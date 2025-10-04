@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useGameStore } from '@/store/gameStore';
 import { RelationshipHistoryViewer } from './RelationshipHistoryViewer';
+import { ExplanationVideoViewer } from './ExplanationVideoViewer';
 import { getSocialNPCs, getSocialAccounts } from '@/actions/social';
 import { handleServerAction } from '@/utils/handleServerAction';
 import { SocialNPC, SocialAccount } from '@/types/social';
@@ -12,11 +12,11 @@ interface MissionCompleteProps {
 }
 
 export const MissionComplete: React.FC<MissionCompleteProps> = ({ onComplete }) => {
-  const { setGamePhase } = useGameStore();
   const [targetNPC, setTargetNPC] = useState<SocialNPC | null>(null);
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [showRelationshipHistory, setShowRelationshipHistory] = useState(false);
+  const [showExplanationVideo, setShowExplanationVideo] = useState(false);
 
   // ゲームオーバーターゲットNPCとアカウント情報を取得
   useEffect(() => {
@@ -39,9 +39,8 @@ export const MissionComplete: React.FC<MissionCompleteProps> = ({ onComplete }) 
     loadData();
   }, []);
 
-  const handleContinue = () => {
-    setGamePhase('game');
-    onComplete();
+  const handleShowExplanation = () => {
+    setShowExplanationVideo(true);
   };
 
   return (
@@ -69,38 +68,49 @@ export const MissionComplete: React.FC<MissionCompleteProps> = ({ onComplete }) 
 
         <div className="space-y-4">
           {/* 関係性履歴表示ボタン */}
-          {
-            <button
-              onClick={() => setShowRelationshipHistory(true)}
-              disabled={isHistoryLoading || !targetNPC}
-              className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-800 disabled:opacity-50 text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors flex items-center justify-center mx-auto"
-            >
-              {isHistoryLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  履歴を準備中...
-                </>
-              ) : (
-                'Beaconアプリでのターゲットの反応をみる'
-              )}
-            </button>
-          }
+          <button
+            onClick={() => setShowRelationshipHistory(true)}
+            disabled={isHistoryLoading || !targetNPC}
+            className="bg-purple-700 hover:bg-purple-800 disabled:bg-gray-800 disabled:opacity-50 text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors flex items-center justify-center mx-auto"
+          >
+            {isHistoryLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                履歴を準備中...
+              </>
+            ) : (
+              'Beaconアプリでのターゲットの反応をみる'
+            )}
+          </button>
 
           <button
-            onClick={handleContinue}
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors block mx-auto"
+            onClick={handleShowExplanation}
+            className="bg-blue-700 hover:bg-blue-800 text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors block mx-auto"
           >
-            解説に移る
+            解説動画を見る
+          </button>
+
+          <button
+            onClick={onComplete}
+            className="bg-green-700 hover:bg-green-800 disabled:bg-gray-800 disabled:opacity-50 text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors block mx-auto"
+          >
+            シナリオ選択に戻る
           </button>
         </div>
 
         {/* 関係性履歴モーダル */}
         {showRelationshipHistory && targetNPC && accounts.length > 0 && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-900 rounded-lg w-full max-w-7xl h-[90vh] flex flex-col border border-gray-700">
+          <div
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowRelationshipHistory(false)}
+          >
+            <div
+              className="bg-gray-900 rounded-lg w-full max-w-7xl h-[90vh] flex flex-col border border-gray-700"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between p-6 border-b border-gray-700">
                 <h2 className="text-2xl font-bold text-white">{targetNPC.name}との関係性の推移</h2>
                 <button
@@ -119,6 +129,11 @@ export const MissionComplete: React.FC<MissionCompleteProps> = ({ onComplete }) 
               </div>
             </div>
           </div>
+        )}
+
+        {/* 解説動画モーダル */}
+        {showExplanationVideo && (
+          <ExplanationVideoViewer onClose={() => setShowExplanationVideo(false)} />
         )}
       </div>
     </div>
