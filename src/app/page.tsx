@@ -45,7 +45,7 @@ export default function HomePage() {
   };
 
   const handleMissionComplete = () => {
-    // ミッション完了後はゲーム画面に戻る
+    setGamePhase('scenario-selection');
   };
 
   const handleGameOverComplete = () => {
