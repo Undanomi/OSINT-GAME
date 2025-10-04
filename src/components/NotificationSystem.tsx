@@ -225,7 +225,7 @@ const NotificationCenter: React.FC<{ isOpen: boolean; onClose: () => void }> = (
   return (
     <div
       className={`
-        fixed inset-y-0 right-0 z-[10000] w-80 bg-white shadow-xl border-l border-gray-200
+        fixed top-0 bottom-12 right-0 z-[10000] w-80 bg-white shadow-xl border-l border-gray-200
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : 'translate-x-full'}
       `}
