@@ -36,8 +36,8 @@ export default function HomePage() {
     setGamePhase('scenario-selection');
   };
 
-  const handleScenarioSelect = (scenarioId: string) => {
-    setSelectedScenario(scenarioId); // gamePhase を 'scenario-loading' に設定
+  const handleScenarioSelect = (scenarioId: string, shouldReset?: boolean) => {
+    setSelectedScenario(scenarioId, shouldReset); // gamePhase を 'scenario-loading' に設定
   };
 
   const handleScenarioLoadingComplete = () => {
@@ -45,7 +45,7 @@ export default function HomePage() {
   };
 
   const handleMissionComplete = () => {
-    // ミッション完了後はゲーム画面に戻る
+    setGamePhase('scenario-selection');
   };
 
   const handleGameOverComplete = () => {
