@@ -96,6 +96,21 @@ const getSpellingSuggestion = (query: string): string | undefined => {
     return SPELLING_SUGGESTIONS[normalizedQuery];
   }
 
+  // 部分一致チェック（キーワードを含んでいるか）
+  // 最長一致を優先する
+  const sortedKeys = Object.keys(SPELLING_SUGGESTIONS).sort((a, b) => b.length - a.length);
+  for (const key of sortedKeys) {
+    if (normalizedQuery.includes(key)) {
+      const suggestion = SPELLING_SUGGESTIONS[key];
+      // 提案キーワードが既に元のクエリに含まれている場合はスキップ
+      if (normalizedQuery.includes(suggestion)) {
+        continue;
+      }
+      // 該当部分だけを置換した文字列を返す
+      return normalizedQuery.replace(key, suggestion);
+    }
+  }
+
   return;
 };
 
@@ -128,31 +143,14 @@ export const filterSearchResults = async (
   cache: UnifiedSearchResult[],
   query: string
 ): Promise<SearchResultsWithSuggestion> => {
+  // クエリ全体に対してスペルチェックを行い、提案を取得
+  const suggestion = getSpellingSuggestion(query);
+
   // クエリを全角・半角スペース、「AND」、「&」で分割してキーワード配列を作成
   const keywords = query
     .split(/\s*(?:AND|&)\s*|[\s　]+/)  // AND、&（前後の空白含む）、またはスペースで分割
     .map(k => k.trim())
     .filter(k => k.length > 0);
-
-  // 各キーワードに対してスペルチェックを行い、提案を作成
-  let suggestion: string | undefined;
-  const suggestedKeywords: string[] = [];
-  let hasSuggestion = false;
-
-  for (const keyword of keywords) {
-    const keywordSuggestion = getSpellingSuggestion(keyword);
-    if (keywordSuggestion) {
-      suggestedKeywords.push(keywordSuggestion);
-      hasSuggestion = true;
-    } else {
-      suggestedKeywords.push(keyword);
-    }
-  }
-
-  // 提案があった場合、提案クエリを作成
-  if (hasSuggestion) {
-    suggestion = suggestedKeywords.join(' ');
-  }
 
   // 検索用に小文字化
   const keywordsLower = keywords.map(k => k.toLowerCase());
