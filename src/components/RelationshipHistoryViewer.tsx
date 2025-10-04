@@ -220,32 +220,28 @@ export const RelationshipHistoryViewer: React.FC<
           {(maxCautionIncreasePair || maxTrustIncreasePair) && (
             <div className="text-left space-y-4 pb-4">
               {maxCautionIncreasePair && maxCautionIncreasePair.userMessage && (
-                <div>
-                  <h4 className="text-base font-bold text-white mb-2">
+                <div className="bg-gray-900 rounded flex items-center gap-3 overflow-hidden border-l-4 p-3 border-red-400">
+                  <div className="text-base font-bold text-white whitespace-nowrap">
                     最も警戒度を上げたメッセージ{" "}
                     <span className="text-red-400">
                       (+{maxCautionIncreasePair.npcMessage.cautionDiff})
                     </span>
-                  </h4>
-                  <div className="bg-gray-900 rounded p-3 border-l-4 border-red-400">
-                    <p className="text-base text-gray-300">
-                      {maxCautionIncreasePair.userMessage.messageText}
-                    </p>
+                  </div>
+                  <div className="text-base text-gray-300  overflow-hidden whitespace-nowrap text-ellipsis flex-1">
+                    {maxCautionIncreasePair.userMessage.messageText}
                   </div>
                 </div>
               )}
               {maxTrustIncreasePair && maxTrustIncreasePair.userMessage && (
-                <div>
-                  <h4 className="text-base font-bold text-white mb-2">
+                <div className="bg-gray-900 rounded flex items-center gap-3 overflow-hidden border-l-4 p-3 border-green-400">
+                  <div className="text-base font-bold text-white whitespace-nowrap">
                     最も信頼度を上げたメッセージ{" "}
                     <span className="text-green-400">
                       (+{maxTrustIncreasePair.npcMessage.trustDiff})
                     </span>
-                  </h4>
-                  <div className="bg-gray-900 rounded p-3 border-l-4 border-green-400">
-                    <p className="text-base text-gray-300">
-                      {maxTrustIncreasePair.userMessage.messageText}
-                    </p>
+                  </div>
+                  <div className="text-base text-gray-300 overflow-hidden whitespace-nowrap text-ellipsis flex-1">
+                    {maxTrustIncreasePair.userMessage.messageText}
                   </div>
                 </div>
               )}
