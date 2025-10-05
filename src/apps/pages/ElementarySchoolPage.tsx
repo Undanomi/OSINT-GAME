@@ -67,62 +67,32 @@ export const ElementarySchoolPage: React.FC<ElementarySchoolPageProps> = ({ docu
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-yellow-50 to-pink-50 relative overflow-hidden">
-      {/* 背景装飾 */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {[...Array(30)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animation: `float ${3 + Math.random() * 4}s ease-in-out ${Math.random() * 2}s infinite`,
-            }}
-          >
-            {i % 3 === 0 ? (
-              <Star className="text-yellow-300 opacity-40" size={10 + Math.random() * 15} />
-            ) : i % 3 === 1 ? (
-              <Heart className="text-pink-300 opacity-40" size={10 + Math.random() * 15} />
-            ) : (
-              <Sparkles className="text-blue-300 opacity-40" size={10 + Math.random() * 15} />
-            )}
-          </div>
-        ))}
-      </div>
-
       {/* ヘッダー */}
-      <header className="bg-gradient-to-r from-blue-500 via-green-400 to-yellow-400 text-white shadow-2xl relative z-10 border-b-8 border-white">
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <div className="bg-white rounded-full p-3 shadow-lg">
-                <School className="w-12 h-12 text-blue-500" />
+      <header className="bg-gradient-to-r from-blue-500 via-green-400 to-yellow-400 text-white shadow-2xl relative z-10 border-b-4 border-white">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="bg-white rounded-full p-2 shadow-lg">
+                <School className="w-8 h-8 text-blue-500" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold drop-shadow-lg">{schoolData.schoolName}</h1>
-                <p className="text-lg opacity-90 flex items-center space-x-2 mt-1">
-                  <Sun className="w-5 h-5" />
+                <h1 className="text-2xl font-bold drop-shadow-lg">{schoolData.schoolName}</h1>
+                <p className="text-sm opacity-90 flex items-center space-x-1">
+                  <Sun className="w-4 h-4" />
                   <span>みんな なかよく げんきよく</span>
-                  <Smile className="w-5 h-5" />
+                  <Smile className="w-4 h-4" />
                 </p>
               </div>
             </div>
-            <nav className="hidden md:flex space-x-6">
-              <button className="hover:bg-white/20 px-4 py-2 rounded-lg transition-colors font-bold">ホーム</button>
-              <button className="hover:bg-white/20 px-4 py-2 rounded-lg transition-colors font-bold">学校紹介</button>
-              <button className="hover:bg-white/20 px-4 py-2 rounded-lg transition-colors font-bold">お知らせ</button>
-              <button className="hover:bg-white/20 px-4 py-2 rounded-lg transition-colors font-bold">行事予定</button>
+            <nav className="hidden md:flex space-x-4">
+              <button className="hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors font-bold text-sm">ホーム</button>
+              <button className="hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors font-bold text-sm">学校紹介</button>
+              <button className="hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors font-bold text-sm">お知らせ</button>
+              <button className="hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors font-bold text-sm">行事予定</button>
             </nav>
           </div>
         </div>
       </header>
-
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(180deg); }
-        }
-      `}} />
 
       {/* メインコンテンツ */}
       <main className="max-w-6xl mx-auto px-4 py-8 relative z-10">
@@ -326,9 +296,6 @@ export const ElementarySchoolPage: React.FC<ElementarySchoolPageProps> = ({ docu
                 リンク集
               </h2>
               <div className="space-y-3">
-                <button className="w-full text-left px-5 py-3 bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 rounded-xl text-purple-700 font-bold transition-colors border-2 border-purple-300 shadow-md">
-                  文部科学省
-                </button>
                 <button className="w-full text-left px-5 py-3 bg-gradient-to-r from-blue-100 to-cyan-100 hover:from-blue-200 hover:to-cyan-200 rounded-xl text-blue-700 font-bold transition-colors border-2 border-blue-300 shadow-md">
                   教育委員会
                 </button>

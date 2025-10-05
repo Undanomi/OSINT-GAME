@@ -124,7 +124,7 @@ export async function validateSMSCode(phoneNumber: string): Promise<PasswordRese
   // NOTE: ゲーム用に常に失敗するように設定
   return {
     success: false,
-    error: '電話番号が間違っています'
+    error: '正しい電話番号を入力してください。'
   };
 }
 

@@ -214,7 +214,7 @@ export const PlaybackMachinePage: React.FC<PlaybackMachinePageProps> = ({ url, o
 
   // Playback Machineホームページ
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-gray-900 to-gray-800 text-white">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-900 to-gray-800 text-white">
       {/* ヘッダー */}
       <div className="px-6 py-4 border-b border-gray-700">
         <div className="flex items-center space-x-3">
@@ -227,10 +227,10 @@ export const PlaybackMachinePage: React.FC<PlaybackMachinePageProps> = ({ url, o
       </div>
 
       {/* メインコンテンツ */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8">
+      <div className="flex-1 flex flex-col items-center justify-start pt-16 p-8">
         <div className="w-full max-w-3xl">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-light mb-4">
+            <h2 className="text-3xl font-bold mb-4">
               過去のウェブページを検索
             </h2>
             <p className="text-gray-400">
@@ -240,9 +240,6 @@ export const PlaybackMachinePage: React.FC<PlaybackMachinePageProps> = ({ url, o
 
           {/* 検索フィールド */}
           <div className="bg-gray-700 rounded-lg p-6 shadow-xl">
-            <label className="block text-sm font-medium mb-3">
-              URLを入力してください
-            </label>
             <input
               type="text"
               value={searchInput}
@@ -286,7 +283,7 @@ export const PlaybackMachinePage: React.FC<PlaybackMachinePageProps> = ({ url, o
       {/* フッター */}
       <div className="px-6 py-3 border-t border-gray-700 text-center">
         <p className="text-xs text-gray-500">
-          Playback Machine - デジタル文化の保存
+          Playback Machine - Digital Archive Service 2025
         </p>
       </div>
     </div>

@@ -22,7 +22,6 @@ export const GogglesMailPasswordQuestionsPage: React.FC<MailPageProps> = ({ onPh
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setIsSubmitting(true);
 
     if (!currentQuestionData) {
@@ -40,6 +39,7 @@ export const GogglesMailPasswordQuestionsPage: React.FC<MailPageProps> = ({ onPh
         if (result.nextQuestion) {
           // 次の質問に進む
           setCurrentQuestion(result.nextQuestion);
+          setError('');
           setAnswer('');
         } else if (result.completed) {
           // 全て正解した場合はパスワードリセットページに遷移
@@ -99,7 +99,7 @@ export const GogglesMailPasswordQuestionsPage: React.FC<MailPageProps> = ({ onPh
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-md">
               {error}
             </div>
           )}
