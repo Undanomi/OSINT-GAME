@@ -1,36 +1,38 @@
 # Firestore データ構造ガイド
 
 ## 概要
+このドキュメントでは、OSINT-GAMEプロジェクトで使用される6つのコンポーネントのFirestoreデータ構造について説明します：
 
-このドキュメントでは、OSINT-GAMEプロジェクトで使用される2つの主要システムのFirestoreデータ構造について説明します：
-
-1. **OSINT検索システム** - 偽サイトページの検索・表示システム
-2. **SNSアプリケーション** - ソーシャルメディア機能
-
+1. ブラウザ
+2. Z - SNSアプリ
+3. Beacon - メッセージアプリ
+4. メモ
+5. システム
+6. 解説ページ
 ---
 
-## 1. OSINT検索システム
+## 1. ブラウザ
 
 ### 統一されたデータ構造
-
-すべての偽サイトページは、`search_results` コレクションに統一された形式で保存されます。
-各ページは1ページ完結型として扱われ、リンクや遷移はありません。
+メールを除くサイトは、`search_results`コレクションに統一された形式で保存されます。
+各サイトは1ページ完結型として扱われ、リンクや遷移はありません。
 
 ### コレクション: `search_results`
+`search_results`に含まれる共通ドキュメント構造は`src/types/search.ts`に示されています。
+以下はサンプルのドキュメントです。
+サイトのテンプレートごとに`content`内の要素が変化します。
 
-#### ドキュメント構造
-
-```javascript
+```json
 {
-  "id": "facelook_test_taro",  // 一意のID（検索結果のIDと一致）
+  "id": "facelook_test_taro",  // 一意のドキュメントID（検索結果のIDと一致）
   "title": "テスト太郎 - Facelookプロフィール",
   "url": "https://facelook.com/test.taro",
   "description": "テストエンジニア at テスト株式会社. テスト大学卒。",
   "template": "FacelookProfilePage",  // 使用するReactコンポーネント名（アイコン判定にも使用）
-  "domainStatus": "active",  // "active" | "expired" - ドメインの状態
+  "domainStatus": "active",  // "active" | "expired" | "hidden" - ドメインの状態
   "archivedDate": "2024-03-15",  // アーカイブ日付（YYYY-MM-DD形式）
 
-  "content": {  // ページ固有のデータ（template毎に異なる）
+  "content": {  // サイト固有のデータ（テンプレート毎に異なる）
     // Facelookの場合の例
     "name": "テスト 太郎",
     "profileImage": "gs://...",  // Firebase Storage URL
@@ -67,212 +69,124 @@
 }
 ```
 
-## テンプレート別のcontent構造
+`domainStatus`フィールドはサイトの表示を制御します。
+- `domainStatus: "active"`
+  - 通常表示
+- `domainStatus: "expired"`
+  - 検索結果に表示されない、URLを直接入力した場合は通常のエラーページを表示する
+  - Playback Machineを使用した場合に表示される
+- `domainStatus: "hidden"`
+  - 検索結果に表示されない、URLを直接入力した場合に表示できる
+  - Playback Machineを使用した場合に表示される
 
-### FacelookProfilePage
+### テンプレート別の`content`構造
+テンプレートごとの`content`構造は`src/types`以下に示されています。
 
+<details>
+<summary>ファイル名とテンプレート名の対応表</summary>
+
+| ファイル名                | 対応テンプレート           |
+|-------------------------|-------------------------|
+| `bbs.ts`                | BBSThreadPage           |
+| `chiita.ts`             | ChiitaPage              |
+| `companyReview.ts`      | CompanyReviewPage       |
+| `dictionary.ts`         | DictionaryPage          |
+| `elementarySchool.ts`   | ElementarySchoolPage    |
+| `facelook.ts`           | FacelookProfilePage     |
+| `highSchool.ts`         | HighSchoolPage          |
+| `juniorHighSchool.ts`   | JuniorHighSchoolPage    |
+| `kyet.ts`               | KyetPage                |
+| `nittaBlog.ts`          | NittaBlogPage           |
+| `nyahooNews.ts`         | NyahooNewsPage          |
+| `nyahooQuestion.ts`     | NyahooQuestionPage      |
+| `osintrick.ts`          | OSINTricksHomePage      |
+| `productReviewBlog.ts`  | ProductReviewBlogPage   |
+| `rankedon.ts`           | RankedOnProfilePage     |
+| `schoolReview.ts`       | SchoolReviewPage        |
+| `surnameFortune.ts`     | SurnameFortunePage      |
+| `university.ts`         | UniversityPage          |
+| `usopedia.ts`           | UsopediaPage            |
+| `yuhishinbun.ts`        | YuhiShinbunPage         |
+
+</details>
+
+### コレクション: `goggles_mail`
+このコレクションには、ゲーム内に登場するメールサイト(Goggles Mail)で扱われるデータが保存されます。
 
 ```typescript
-interface FacelookContent {
-  name: string;
-  profileImage: string;
-  coverImage: string;
-  job?: string;
-  company?: string;
-  location?: string;
-  hometown?: string;
-  education?: string;
-  relationshipStatus?: string;
-  bio?: string;
-  friendsCount: number;
-  joined: string;
-  website?: string;
-  posts: Array<{
-    content: string;
-    image?: string;
-    timestamp: string;
-    likes: number;
-    comments: number;
-    shares?: number;
-  }>;
-  friends: Array<{
-    name: string;
-    profileImage: string;
-  }>;
-  photos: string[];
+// src/types/email.ts
+export interface EmailData {
+  id: number; // 一意の識別子
+  from: string; // 差出人
+  to?: string; // 宛先
+  subject: string; // メールの題名
+  content: string; // メールの内容
+  time: string; // 送信日時（タイムスタンプであることが必要）
+  unread: boolean; // 未読であるかのフラグ
+  starred: boolean; // スター付きのフラグ
+  folder: 'inbox' | 'sent' | 'trash'; // メールが配置されるボックス名
+  originalFolder?: 'inbox' | 'sent'; // メールが元々配置されていたボックス名
 }
 ```
 
-## Firestoreへのデータ追加例
+サンプルドキュメントは`data/sample-goggles-mail.json`に記載しています。
 
-Firebase Consoleから手動でデータを追加する場合：
-
-1. **Firestore Database** → **データ** タブを開く
-2. **+ コレクションを開始** をクリック
-3. コレクションID: `search_results` を入力
-4. ドキュメントIDを入力（例: `facelook_test_taro`）
-5. フィールドを追加:
-   - `id` (string): facelook_test_taro
-   - `title` (string): テスト太郎 - Facelookプロフィール
-   - `url` (string): https://facelook.com/test.taro
-   - `description` (string): テストエンジニア at テスト株式会社
-   - `template` (string): FacelookProfilePage
-   - `domainStatus` (string): active または expired
-   - `archivedDate` (string): 2024-03-15（YYYY-MM-DD形式）
-   - `content` (map): 上記の構造に従ってデータを入力
-   - `keywords` (array): 検索用キーワードを配列で入力
-
-## Firebase Storage構造
-
-1ページ完結型のため、各ページごとにフォルダを分けて管理：
-
-```
-/pages/
-  /facelook_test_taro/        # ドキュメントIDと同じフォルダ名
-    profile.jpg                # プロフィール画像
-    cover.jpg                  # カバー画像
-    post_001.jpg               # 投稿画像1
-    post_002.jpg               # 投稿画像2
-    friend_001.jpg             # 友達アイコン1
-    friend_002.jpg             # 友達アイコン2
-    photo_001.jpg              # フォトギャラリー1
-    photo_002.jpg              # フォトギャラリー2
-
-  /facelook_test_hanako/       # 別のユーザーページ
-    profile.jpg
-    cover.jpg
-    ...
-
+```json
+{
+  "id": 1,
+  "from": "test@goggles.com",
+  "subject": "【テスト】テストのお知らせ",
+  "content": "テスト...",
+  "unread": true,
+  "folder": "inbox",
+  "time": "2022-04-11T13:00:00",
+  "originalFolder": "",
+  "to": "sample@goggles.com",
+  "starred": true
+}
 ```
 
-Storage URLの形式：
-- `gs://[project-id].appspot.com/pages/facelook_test_taro/profile.jpg`
-- `gs://[project-id].appspot.com/pages/facelook_test_taro/post_001.jpg`
 
-## 実装の流れ
-
-1. **Firestoreにデータを追加**
-   - `search_results` コレクションにドキュメントを作成
-   - 上記の統一された構造に従ってデータを入力
-
-2. **BrowserAppで検索結果とマッピング(TODO, firestoreから動的にもってきて検索できるようにする)**
-   - documentIdをpageComponentsに追加
-   - 例: `<FacelookProfilePage documentId="facelook_test_taro" />`
-
-3. **ページコンポーネントでデータ取得**
-   - documentIdを使用してFirestoreからデータを取得
-   - templateフィールドで適切なコンポーネントを判定
-   - contentフィールドからページ固有のデータを展開
-
-## Playback Machine機能
+## Z
 
 ### 概要
-Playback Machineは、アーカイブされたウェブページを閲覧できるウェブアプリケーションです。
-ドメインが失効したサイトや、過去のスナップショットを表示できます。
-実際のWayback Machineのようなインターフェースを提供し、ブラウザ内で動作します。
-
-### 動作仕様
-
-1. **BrowserAppでの表示**
-   - `domainStatus: "active"` → 通常表示
-   - `domainStatus: "expired"` → 検索結果に表示されない、URLを直接入力した場合は通常のエラーページ表示
-
-2. **検索機能**
-   - `domainStatus: "expired"` のサイトは検索結果から除外される
-   - キーワード「playback」「archive」「アーカイブ」等でPlayback Machineが検索結果に表示される
-
-3. **Playback Machineでの表示**
-   - すべてのページを表示可能（domainStatusに関係なく）
-   - 各ページの`archivedDate`を使用してアーカイブ日を表示
-
-4. **URL形式**
-   - Playback Machineホーム: `https://playback.archive/`
-   - アーカイブページ: `https://playback.archive/web/20240315/https://facelook.com/test.taro`
-   - 日付形式: YYYYMMDD（archivedDateフィールドから変換）
-   - 日付部分は`archivedDate`フィールドから取得
-
-### OSINTゲームでの活用シナリオ
-
-1. **調査の流れ**
-   - プレイヤーがブラウザで人物やサイトを検索
-   - 一部のサイトは`domainStatus: "expired"`で検索結果に表示されない
-   - 調査を進める中で、Playback Machineの存在に気づく
-   - Playback Machineを使用して、失効したドメインのアーカイブページにアクセス
-   - 隠された情報を発見し、調査を完了する
-
-2. **実装のポイント**
-   - 現実的なブラウザ体験を提供（expired = 検索できない、エラーページ表示）
-   - Playback Machineは別途検索して発見する必要がある
-   - アーカイブされた日付によって、異なる情報が見られる可能性（将来の拡張）
-
-## 2. SNSアプリケーション
-
-### データ構造概要
-
-SNSアプリケーションでは、以下のような階層構造でデータを管理します：
-
-```
-users/
-  {userId}/
-    socialAccounts/
-      {accountId}/
-        posts/
-          {postId}
-    socialTimeline/
-      {postId}
-    socialContacts/
-      {contactId}/
-        history/
-          {messageId}
-
-socialNPCs/
-  {npcId}/
-    posts/
-      {postId}
-    config/
-      errorMessages
-
-socialNPCPosts/
-  {postId}
-
-defaultSocialAccountSettings/
-  {settingId}
+Zでは、以下のような階層構造でデータを管理します：
+```plaintext
+├── users/
+│   └── {userId}/
+│       └── socialAccounts/
+│           └── {accountId}/
+│               ├── Contacts/
+│               │   └── {npcId}/
+│               │       └── history/
+│               │           └── {messageId}
+│               └── Relationship/
+│                   └── {npcId}/
+│                       └── history/
+│                           └── {messageId}
+│
+├── socialNPCs/
+│   └── {npcId}/
+│       ├── posts/
+│       │   └── {postId}
+│       └── config/
+│           └── errorMessages
+│
+├── socialNPCPosts/
+│   └── {postId}
+│
+└── defaultSocialAccountSettings/
+    └── {accountId}
 ```
 
-### コレクション詳細
+### ユーザーデータ (`users/{userId}/socialAccounts/{accountId}`)
+ユーザーが当該アカウントで行なったアクティビティに応じて自動で記録されます。
 
-#### 1. ユーザーアカウント (`users/{userId}/socialAccounts/{stableId}`)
+### NPC投稿データ (`socialNPCs/{npcId}/posts`、`socialNPCPosts`)
+NPCの投稿データを管理するコレクションです。
 
-各ユーザーは最大3つのソーシャルアカウントを持てます。
-
-**デュアルIDシステム**：
-- `id` (stable_id): UUID形式の内部識別子（不変、投稿やフォロー関係で使用）
-- `account_id`: ユーザーが変更可能な表示用ID（検索や表示で使用）
-
-```typescript
-interface SocialAccount {
-  id: string;                    // stable_id: UUID形式の内部識別子（不変）
-  account_id: string;            // 表示用ID（ユーザーが変更可能、重複チェック有り）
-  name: string;                  // 表示名
-  avatar: string;                // アバター文字（A-Z）
-  bio: string;                   // 自己紹介
-  location: string;              // 所在地
-  company?: string;              // 会社名
-  position?: string;             // 役職
-  education?: string;            // 学歴
-  birthday?: string;             // 誕生日（YYYY-MM-DD）
-  isActive: boolean;             // アクティブアカウントフラグ
-  createdAt: Date;               // 作成日時
-  updatedAt: Date;               // 更新日時
-  followersCount: number;        // フォロワー数
-  followingCount: number;        // フォロー数
-  canDM: boolean;                // DM可能フラグ
-}
-```
-
-#### 2. ユーザー投稿 (`users/{userId}/socialAccounts/{accountId}/posts/{postId}`)
-
-各アカウントの投稿データです。
+`socialNPCs/{npcId}/posts`にNPCごとの投稿データが、`socialNPCPosts`にそれら全てをまとめた投稿データが記録されます。
+投稿データの構造は以下のようにで定義されるます。
 
 ```typescript
 interface SocialPost {
@@ -284,32 +198,18 @@ interface SocialPost {
   likes: number;                 // いいね数
   comments: number;              // コメント数
   shares: number;                // シェア数
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
-#### 3. ユーザータイムライン (`users/{userId}/socialTimeline/{postId}`)
-
-ユーザー個別のタイムライン表示用投稿データです。自分の投稿とNPC投稿が混在します。
-
-```typescript
-interface TimelinePost extends SocialPost {
-  // SocialPostと同じ構造
-  // ユーザー投稿とNPC投稿の両方を含む
-}
-```
-
-#### 4. NPC定義 (`socialNPCs/{stableId}`)
-
+### NPC定義 (`socialNPCs/{npcId}`)
 NPCキャラクターの基本情報です。
-
-**デュアルIDシステム**：
-- `id` (stable_id): UUID形式の内部識別子（不変、投稿やフォロー関係で使用）
-- `account_id`: 表示・検索用ID（固定、NPCの場合は管理者が設定）
 
 ```typescript
 interface SocialNPC {
-  id: string;                    // stable_id: UUID形式の内部識別子（不変）
-  account_id: string;            // 表示・検索用ID（固定）
+  id: string;                    // UUID形式の内部識別子
+  account_id: string;            // 表示・検索用ID
   name: string;                  // 表示名
   avatar: string;                // アバター文字
   bio: string;                   // 自己紹介
@@ -327,203 +227,62 @@ interface SocialNPC {
 }
 ```
 
-#### 5. NPC投稿 (`socialNPCs/{stableId}/posts/{postId}`)
+### NPCエラーメッセージ(`socialNPCs/{npcId}/config/errorMessages`)
 
-NPCの個別投稿データです。
+NPCごとのエラーメッセージを管理するコレクションです。
 
 ```typescript
-interface NPCPost extends SocialPost {
-  // SocialPostと同じ構造
-  // authorType は常に 'npc'
-  // authorId は NPC の stable_id を使用
+interface errorMessages {
+  aiResponseError: string;
+  aiServiceError: string;
+  authError: string;
+  dbError: string;
+  general: string;
+  networkError: string;
+  rateLimit: string;
 }
 ```
 
-#### 6. NPC統合投稿 (`socialNPCPosts/{postId}`)
+### デフォルトアカウント設定 (`defaultSocialAccountSettings/{accountId}`)
 
-すべてのNPC投稿を統合したコレクションです。タイムライン表示の効率化に使用されます。
+新規ユーザーのデフォルトアカウント設定です。
 
 ```typescript
-interface NPCCentralPost extends SocialPost {
-  // SocialPostと同じ構造
-  // すべてのNPC投稿のコピー
+interface SocialAccount {
+  id: string;              // バックエンドでの一意識別子
+  account_id: string;      // フロントエンド表示用ID
+  name: string;            // 表示名
+  avatar: string;          // アバター文字
+  bio: string;             // 自己紹介
+  location: string;        // 所在地
+  company?: string;        // 会社名
+  position?: string;       // 役職
+  education?: string;      // 学歴
+  birthday?: string;       // 誕生日
+  isActive: boolean;       // アクティブアカウントフラグ
+  createdAt: Date;         // 作成日時
+  updatedAt: Date;         // 更新日時
+  followersCount: number;  // フォロワー数
+  followingCount: number;  // フォロー数
+  canDM: boolean;          // DM可能フラグ
 }
 ```
 
-#### 7. DM連絡先 (`users/{userId}/socialContacts/{contactId}`)
-
-ユーザーのDM連絡先情報です。
-
-```typescript
-interface SocialContact {
-  id: string;                    // 連絡先ID（NPCのID）
-  name: string;                  // 表示名
-  type: 'npc' | 'default';       // 連絡先タイプ
-}
-```
-
-#### 8. DMメッセージ (`users/{userId}/socialContacts/{contactId}/history/{messageId}`)
-
-DM会話履歴です。
-
-```typescript
-interface SocialDMMessage {
-  id: string;                    // メッセージID
-  sender: 'user' | 'npc';        // 送信者タイプ
-  text: string;                  // メッセージ内容
-  timestamp: Date;               // 送信日時
-}
-```
-
-#### 9. デフォルトアカウント設定 (`defaultSocialAccountSettings/{stableId}`)
-
-新規ユーザー用のデフォルトアカウント設定です。
-
-**デュアルIDシステム**：
-- `id` (stable_id): UUID形式の内部識別子（テンプレート用）
-- `account_id`: 新規ユーザーのデフォルト表示ID
-
-```typescript
-interface DefaultSocialAccountSetting extends SocialAccount {
-  // SocialAccountと同じ構造（デュアルIDシステム含む）
-  // 新規ユーザー登録時に使用される
-}
-```
-
-### データフロー
-
-#### タイムライン表示ロジック
-
-1. **ローカルキャッシュ (socialStore) をチェック**
-   - 十分な投稿があれば表示
-
-2. **ユーザータイムライン (`users/{userId}/socialTimeline`) をチェック**
-   - 不足分を取得してキャッシュに追加
-
-3. **NPC統合投稿 (`socialNPCPosts`) をチェック**
-   - さらに不足分を取得
-   - ユーザータイムラインとキャッシュの両方に保存
-
-#### 投稿作成フロー
-
-**ユーザー投稿の場合:**
-1. `users/{userId}/socialAccounts/{stableId}/posts/{postId}` に保存
-2. `users/{userId}/socialTimeline/{postId}` にもコピー保存
-3. `authorId` には stable_id を使用
-
-**NPC投稿の場合:**
-1. `socialNPCs/{stableId}/posts/{postId}` に保存
-2. `socialNPCPosts/{postId}` にもコピー保存
-3. `authorId` には NPC の stable_id を使用
-
-### キャッシュ戦略
-
-- **ローカルストレージ**: ユーザー別・アカウント別にキャッシュを分離
-- **キャッシュ切り替え**: ユーザー切り替え時は新しいキャッシュセットを使用
-- **有効期限**: 5分間の新鮮度チェック、24時間で期限切れ
-
-### ページング仕様
-
-- **投稿取得**: 15件ずつページング
-- **メッセージ取得**: 20件ずつページング
-- **カーソル**: 最後の投稿/メッセージのIDを使用
-
-## 信頼度・警戒度システム
+## Beacon
 
 ### 概要
-SNSアプリケーションには、NPCとユーザーの関係性を管理する信頼度・警戒度システムが実装されています。
-特定のNPCとの関係が悪化すると、ゲームオーバーになります。
-
-### データ構造
-
-#### 関係性情報 (`users/{userId}/socialAccounts/{accountId}/Relationships/{contactId}`)
-
-```typescript
-interface SocialRelationship {
-  trust: number;                 // 信頼度 (0-100)
-  caution: number;               // 警戒度 (0-100)
-  lastInteractionAt: Date;       // 最後のやり取り日時
-  updatedAt: Date;               // 更新日時
-}
-```
-
-### ゲームオーバー条件
-
-#### 閾値設定
-- **警戒度**: 100でゲームオーバー
-
-#### 対象NPC制御
-- `isGameOverTarget: true` のNPCのみがゲームオーバー判定の対象
-- 通常のNPCは関係性が悪化してもゲームオーバーにならない
-
-#### AI応答フロー
-1. プレイヤーがDMを送信
-2. AI応答生成時に新しい信頼度・警戒度を算出
-3. 関係性データをFirestoreに自動更新
-4. ゲームオーバー対象NPCの場合、閾値チェックを実行
-5. 閾値に達した場合、`triggerGameOver('social-relationship', details)`を呼び出し
-
-### ゲームオーバー後の処理
-
-#### 選択肢
-- **途中からやり直す**: ゲーム画面に戻る（`social-relationship`の場合は非表示）
-- **はじめからやり直す**: ユーザーの全データを削除してシナリオ選択画面に戻る
-
-#### データ削除処理
-「はじめからやり直す」を選択した場合、Cloud Functionにより以下のデータが完全削除されます：
-- `users/{userId}` ドキュメント（メインドキュメント）
-- 全てのサブコレクション（`socialAccounts`, `socialContacts`, `socialTimeline`, `messengerChats`, `notes`等）
-- ネストしたサブコレクション（`posts`, `history`, `Relationships`等）
-
-### システム設計
-
-#### AI応答形式
-```typescript
-interface SocialAIResponse {
-  responseText: string;          // AI応答テキスト
-  newTrust: number;              // 更新後の信頼度
-  newCaution: number;            // 更新後の警戒度
-}
-```
-
-#### ゲームオーバー状態
-```typescript
-interface GameOverState {
-  reason: 'submission-failure' | 'social-relationship';
-  details?: string;              // 詳細なエラーメッセージ
-}
-```
-
-### 実装のポイント
-- 信頼度・警戒度は0-100の範囲で管理
-- 初期値は信頼度30、警戒度70
-- ゲームオーバー時は関係性悪化の場合「途中からやり直す」ボタンを非表示
-- Cloud Function (`cleanupSubcollections`) がサブコレクションの再帰削除を自動実行
-
-
-## メッセンジャー提出システム
-
-### 概要
-メッセンジャーアプリ内で `/submit` コマンドを実行すると、3つの質問が順次表示され、全問正解すると解説シーンに遷移、不正解の場合は失敗シーンに遷移するシステムです。
-
-### コレクション: `messenger`
-
-#### ドキュメント構造
-
 ```
 messenger/
-├── {npcType}/           # NPCタイプ（例: darkOrganization）
+├── darkOrganization/
     └── config/          # 設定データサブコレクション
         ├── submissionQuestions    # 提出問題データ
-        ├── submissionExplanation  # 解説データ
         ├── errorMessages         # エラーメッセージデータ
         ├── systemPrompts         # システムプロンプト
         └── introductionMessage   # イントロダクションメッセージ
 ```
-
-#### submissionQuestions ドキュメント
-
-```javascript
+### submissionQuestions ドキュメント
+ターゲットの認証情報窃取の送信フェーズにおける質問項目を記載します。
+```json
 {
   "questions": [
     {
@@ -545,15 +304,8 @@ messenger/
 }
 ```
 
-#### submissionExplanation ドキュメント
-
-```javascript
-{
-  "text": "解説文をここに記述\n\n複数行にわたる解説が可能\n最終的に成功シーンで表示される"
-}
-```
-
-#### errorMessages ドキュメント
+### errorMessages ドキュメント
+エラーメッセージを管理するドキュメントです。
 
 ```javascript
 {
@@ -568,7 +320,7 @@ messenger/
 ```
 
 #### systemPrompts ドキュメント
-
+闇の組織の応答を生成するAIに与えるシステムプロンプトを記載するドキュメントです。
 ```javascript
 {
   "prompt": "あなたは「闇の組織」のエージェントです。プレイヤーに対して冷静かつ簡潔に応答してください。\n\nプレイヤーが質問をした場合は、以下のJSON形式で応答してください：\n{\n  \"responseText\": \"実際の返答内容\"\n}\n\n応答は必ずJSON形式で返してください。"
@@ -576,36 +328,61 @@ messenger/
 ```
 
 #### introductionMessage ドキュメント
-
+ゲーム開始時に表示されるメッセージを記載するドキュメントです。
 ```javascript
 {
-  "text": "こんにちは。私はダークオーガニゼーションのエージェントです。何かご用件がありますか？",
+  "text": "こんにちは。何かご用件がありますか？",
   "fallbackText": "メッセージを受信しました。"
 }
 ```
 
-### フロー
-
-1. **提出開始**: `/submit` コマンド → `submissionQuestions` から質問を取得
-2. **質問進行**: 順次質問を表示、回答を `gameStore.submissionState` に蓄積
-3. **最終検証**: 全回答完了後、サーバーサイドで `validateSubmission` 実行
-4. **結果処理**:
-   - 全問正解 → `gamePhase: 'submission-explanation'`
-   - 不正解 → `gamePhase: 'submission-failure'`
-
-### データ型定義
-
+## メモ
+### 概要
+メモでは、以下のような階層構造でデータを管理します：
+```plaintext
+└── users/
+    └── {userId}/
+        └── notes/
+            └── {noteId}/
+```
+### ノート(`users/{userId}/notes/{noteId}`)
+メモではノートを単位としてコンテンツを記録します。
+ユーザーが行なったアクティビティに応じて自動で記録されます。
 ```typescript
-interface SubmissionQuestion {
+interface Note {
   id: string;
-  text: string;
-  correctAnswer: string;
+  title: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  userId?: string;
+}
+```
+
+## システム
+### 概要
+デフォルトでインストールされていないアプリのインストールの有無に関するデータを、以下のような階層構造で管理します
+```plaintext
+└── users/
+    └── {userId}/
+        └── installedApps/
+            └── {appName}/
+```
+### インストールされたアプリ(`/users/{usrId}/installedApps/{appName}`)
+インストールされたアプリはその名前のドキュメントが作成されます。。
+当該ドキュメントの構成は以下の通りです：
+```json
+{
+  "installDate": "2025年10月6日 3:32:50 UTC+9",
+  "lastUsed": "2025年10月6日 3:32:51 UTC+9",
+  "usageCount": 1
 }
 
-interface SubmissionResult {
-  success: boolean;
-  correctAnswers: number;
-  totalQuestions: number;
-  explanationText?: string;
+```
+## 解説ページ
+`/explanation/video`に解説ページで使用する動画のURLを記載します。
+```json
+{
+  "url": "URL"
 }
 ```
