@@ -9,7 +9,7 @@
 ## Issues
 次のIssueを受けつけています。
 - 使い方など本プロジェクトに関する質問
-- エラーや問題の報告新しい機能などの提案
+- エラーや問題の報告、新しい機能などの提案
 
 その他のIssueも歓迎しています。
 
@@ -86,7 +86,7 @@ FirestoreのAdmin SDKのセットアップ、データ構造、データ登録�
 ### ローカルにクローンする
 フォークしたリポジトリを、ご自身のPCにクローンします。
 ```
-git clone [https://github.com/YOUR_USERNAME/PROJECT_NAME.git](https://github.com/YOUR_USERNAME/PROJECT_NAME.git)
+git clone https://github.com/YOUR_USERNAME/PROJECT_NAME.git
 cd PROJECT_NAME
 ```
 
@@ -99,7 +99,7 @@ npm install
 `.env.local.sample`ファイルをコピーして`.env.local`という名前のファイルを作成します。
 その後、ファイル内の各項目を自身のFirebaseプロジェクトとGemini APIキーの情報で埋めてください。
 ```
-cp .env.sample .env.local
+cp .env.local.sample .env.local
 ```
 .env.local の内容例
 ```

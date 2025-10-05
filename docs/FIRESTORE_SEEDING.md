@@ -62,8 +62,9 @@ export GOOGLE_APPLICATION_CREDENTIALS=path/to/serviceAccountKey.json
 2. 「新しい秘密鍵の生成」をクリックします
 3. `scripts/serviceAccountKey.json` として保存する
 
-## 使い方
+サービスアカウントキーはFirebaseプロジェクトの全てを操作できるため、漏洩に注意する。
 
+## 使い方
 追加するデータの種類に応じて、スクリプトおよびJSONファイルを分けてください。
 JSONファイルパスは必須パラメータです。
 
