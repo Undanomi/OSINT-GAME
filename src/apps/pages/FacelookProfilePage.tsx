@@ -7,11 +7,11 @@ import { storage } from '@/lib/firebase';
 import { FacelookUser } from '@/types/facelook';
 import { UnifiedSearchResult } from '@/types/search';
 import { validateFacelookContent, convertFacelookContentToUser } from '@/actions/facelookValidation';
-import { 
-  Search, Home, Menu, 
-  MessageCircle, Bell, ChevronDown, ThumbsUp, MessageSquare, 
+import {
+  Search, Home, Menu,
+  MessageCircle, Bell, ChevronDown, ThumbsUp, MessageSquare,
   Share2, MoreHorizontal, MapPin, Briefcase, GraduationCap,
-  Heart, Calendar, Globe, Camera, X
+  Heart, Calendar, Globe, Camera, X, Cake
 } from 'lucide-react';
 
 interface FacelookProfilePageProps {
@@ -364,7 +364,7 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
                 {userData.education && (
                   <div className="flex items-center space-x-3">
                     <GraduationCap className="w-5 h-5 text-gray-500" />
-                    <span>{userData.education}に在学</span>
+                    <span>{userData.education}</span>
                   </div>
                 )}
                 {userData.location && (
@@ -383,6 +383,12 @@ export const FacelookProfilePage: React.FC<FacelookProfilePageProps> = ({ docume
                   <div className="flex items-center space-x-3">
                     <Heart className="w-5 h-5 text-gray-500" />
                     <span>{userData.relationshipStatus}</span>
+                  </div>
+                )}
+                {userData.birthdate && (
+                  <div className="flex items-center space-x-3">
+                    <Cake className="w-5 h-5 text-gray-500" />
+                    <span>{userData.birthdate}</span>
                   </div>
                 )}
                 {userData.joined && (

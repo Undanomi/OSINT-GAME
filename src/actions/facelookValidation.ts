@@ -32,6 +32,7 @@ const FacelookContentSchema = z.object({
   friendsCount: z.number(),
   joined: z.string(),
   website: z.string().optional(),
+  birthdate: z.string().optional(),
   posts: z.array(FacelookPostSchema),
   friends: z.array(FacelookFriendSchema),
   photos: z.array(z.string()),
@@ -71,6 +72,7 @@ export async function convertFacelookContentToUser(
     friendsCount: facelookContent.friendsCount,
     joined: facelookContent.joined,
     website: facelookContent.website,
+    birthdate: facelookContent.birthdate,
     posts: facelookContent.posts,
     friends: facelookContent.friends,
     photos: facelookContent.photos
