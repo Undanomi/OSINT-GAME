@@ -19,11 +19,9 @@ interface ChiitaPageProps {
   initialData: UnifiedSearchResult;
 }
 
-
-// Chiitaのマークダウンコンテンツレンダラー
 const ChiitaMarkdownContent: React.FC<{ content: string }> = ({ content }) => {
   return (
-    <div className="prose prose-lg max-w-none">
+    <div className="prose max-w-none">
       {parseMarkdown(content)}
     </div>
   );
@@ -111,27 +109,27 @@ export const ChiitaPage: React.FC<ChiitaPageProps> = ({ documentId, initialData 
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-14">
             {/* Left section */}
             <div className="flex items-center">
-              <div className="flex items-center mr-8">
-                <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center mr-3">
-                  <Code className="w-5 h-5 text-white" />
+              <div className="flex items-center mr-6">
+                <div className="w-7 h-7 bg-pink-500 rounded-lg flex items-center justify-center mr-2">
+                  <Code className="w-4 h-4 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-pink-600" style={{ fontFamily: 'monospace' }}>
                   Chiita
                 </div>
               </div>
-              <nav className="hidden lg:flex space-x-6">
-                <button className="text-gray-700 hover:text-pink-600 transition-colors flex items-center">
+              <nav className="hidden lg:flex space-x-4">
+                <button className="text-gray-700 hover:text-pink-600 transition-colors flex items-center text-sm">
                   <Home className="w-4 h-4 mr-1" />
                   ホーム
                 </button>
-                <button className="text-gray-700 hover:text-pink-600 transition-colors flex items-center">
+                <button className="text-gray-700 hover:text-pink-600 transition-colors flex items-center text-sm">
                   <BookOpen className="w-4 h-4 mr-1" />
                   記事
                 </button>
-                <button className="text-gray-700 hover:text-pink-600 transition-colors">
+                <button className="text-gray-700 hover:text-pink-600 transition-colors text-sm">
                   トレンド
                 </button>
               </nav>
@@ -163,20 +161,20 @@ export const ChiitaPage: React.FC<ChiitaPageProps> = ({ documentId, initialData 
       </header>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Profile Section */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-white text-lg font-medium">
+                <div className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center mr-3">
+                  <span className="text-white text-base font-medium">
                     {articleData.author.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-gray-900 text-lg">{articleData.author}</h3>
-                  <p className="text-sm text-gray-600">Chiita 編集者</p>
+                  <h3 className="font-bold text-gray-900 text-base">{articleData.author}</h3>
+                  <p className="text-xs text-gray-600">Chiita 編集者</p>
                 </div>
                 <button className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors text-sm">
                   フォロー
@@ -189,8 +187,8 @@ export const ChiitaPage: React.FC<ChiitaPageProps> = ({ documentId, initialData 
           <article className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               {/* Article Header */}
-              <div className="p-6 pb-4 border-b border-gray-100">
-                <div className="flex flex-wrap gap-2 mb-4">
+              <div className="p-4 pb-3 border-b border-gray-100">
+                <div className="flex flex-wrap gap-2 mb-3">
                   {articleData.tags.map((tag, idx) => (
                     <span
                       key={idx}
@@ -201,11 +199,11 @@ export const ChiitaPage: React.FC<ChiitaPageProps> = ({ documentId, initialData 
                   ))}
                 </div>
 
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 leading-tight">
                   {articleData.title}
                 </h1>
 
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center mr-2">
@@ -247,10 +245,10 @@ export const ChiitaPage: React.FC<ChiitaPageProps> = ({ documentId, initialData 
               </div>
 
               {/* Article Content */}
-              <div className="p-6">
+              <div className="p-4">
                 {articleData.content.chapters.map((chapter, index) => (
-                  <section key={index} className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                  <section key={index} id={`chapter-${index}`} className="mb-6 scroll-mt-20">
+                    <h2 className="text-xl font-bold text-gray-900 mb-3 pb-2 border-b border-gray-200">
                       {chapter.title}
                     </h2>
 
@@ -275,15 +273,15 @@ export const ChiitaPage: React.FC<ChiitaPageProps> = ({ documentId, initialData 
               </div>
 
               {/* Comments Section */}
-              <div className="border-t border-gray-200 p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+              <div className="border-t border-gray-200 p-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center">
                   <MessageCircle className="w-5 h-5 mr-2 text-pink-600" />
                   コメント ({articleData.comments.length})
                 </h3>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {articleData.comments.map((comment, index) => (
-                    <div key={index} className="bg-gray-50 rounded-lg p-4">
+                    <div key={index} className="bg-gray-50 rounded-lg p-3">
                       <div className="flex items-center mb-2">
                         <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center mr-2">
                           <span className="text-white text-xs font-medium">
@@ -303,16 +301,23 @@ export const ChiitaPage: React.FC<ChiitaPageProps> = ({ documentId, initialData 
 
           {/* Sidebar - Chapter List */}
           <aside className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-20">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-20">
               <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                 チャプター
                 <BookOpen className="w-4 h-4 ml-2 text-pink-600" />
               </h2>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {articleData.content.chapters.map((chapter, idx) => (
-                  <div key={idx} className="p-3 rounded-lg hover:bg-pink-50 transition-colors cursor-pointer border border-gray-100">
-                    <h3 className="font-medium text-sm text-gray-900 line-clamp-2">
+                  <div
+                    key={idx}
+                    className="p-2 rounded-lg hover:bg-pink-50 transition-colors cursor-pointer border border-gray-100"
+                    onClick={() => {
+                      const element = document.getElementById(`chapter-${idx}`);
+                      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                  >
+                    <h3 className="font-medium text-xs text-gray-900 line-clamp-2">
                       {idx + 1}. {chapter.title}
                     </h3>
                   </div>
@@ -323,19 +328,19 @@ export const ChiitaPage: React.FC<ChiitaPageProps> = ({ documentId, initialData 
         </div>
 
         {/* Related Articles at Bottom */}
-        <div className="mt-12">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+        <div className="mt-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
               関連記事
               <ChevronRight className="w-5 h-5 ml-2 text-pink-600" />
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {['React Router v6の新機能', 'TypeScript 5.0の変更点', 'Next.js 13 App Directory'].map((title, idx) => (
                 <div key={idx} className="p-4 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100">
-                  <div className="w-full h-32 bg-gradient-to-r from-pink-100 to-pink-200 rounded-lg mb-3 flex items-center justify-center">
-                    <div className="w-12 h-12 bg-pink-500 rounded-lg flex items-center justify-center">
-                      <Code className="w-6 h-6 text-white" />
+                  <div className="w-full h-24 bg-gradient-to-r from-pink-100 to-pink-200 rounded-lg mb-2 flex items-center justify-center">
+                    <div className="w-10 h-10 bg-pink-500 rounded-lg flex items-center justify-center">
+                      <Code className="w-5 h-5 text-white" />
                     </div>
                   </div>
                   <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
