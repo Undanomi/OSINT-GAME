@@ -30,6 +30,7 @@ export interface FacelookUser {
   photos: string[];
   joined?: string;
   website?: string;
+  birthdate?: string;
 }
 
 // Facelook用のコンテンツ型
@@ -47,6 +48,7 @@ export interface FacelookContent {
   friendsCount: number;
   joined: string;
   website?: string;
+  birthdate?: string;
   posts: Array<{
     content: string;
     image?: string;
