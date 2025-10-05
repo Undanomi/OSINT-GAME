@@ -1,84 +1,56 @@
 [
   {
     "id": "nyahoo_news_1",
-    "title": "新しいプログラミング言語「Zephyr」が開発者コミュニティで話題 - Nyahoo!ニュース",
-    "url": "https://test-news.nyahoo.co.jp/articles/tech/20240619001",
-    "description": "軽量かつ高性能な新言語「Zephyr」が、多くの開発者から注目を集めています。",
-    "template": "NyahooNewsPage",
+    "title": "新技術が話題に - サンプルニュース",
+    "url": "https://test-news.nyahoo.co.jp/sample",
+    "description": "新しい技術が注目を集めています。",
+    "template": "SampleNewsPage",
     "domainStatus": "active",
-    "archivedDate": "2025-06-18",
+    "archivedDate": "2025-01-01",
     "content": {
-      "title": "新プログラミング言語「Zephyr」がコード共有サイトで1位獲得、開発者が殺到",
-      "date": "6/18(木) 14:32",
-      "publisher": "テックタイムズ",
+      "title": "新技術が注目される理由",
+      "date": "1/1(水) 00:00",
+      "publisher": "サンプル通信",
       "image": "gs://your-project.firebasestorage.app/path/to/image",
-      "caption": "Zephyrのコード例を表示するプログラマーのモニター画面",
+      "caption": "技術デモンストレーションの様子",
       "category": "テクノロジー",
-      "content": "オープンソースの新プログラミング言語「Zephyr」が開発者コミュニティで大きな反響を呼んでいる。リリースからわずか2週間で大手コード共有サイトのスター数が5万を超え、多くの企業が採用検討を開始している。\n\nZephyrの開発者である山田太郎氏（仮名）は「RustとPythonの良いとこ取りを目指しました。メモリ安全性を保ちながら、学習コストを最小限に抑えています」と語る。実際に、既存のC++プロジェクトからZephyrへの移植事例では、コード量が30%削減され、処理速度も15%向上したという報告がある。\n\n特に注目されているのは、WebAssemblyとの親和性の高さだ。Zephyrで書かれたコードは自動的にWebAssemblyにコンパイルでき、ブラウザ上でネイティブレベルの性能を発揮する。大手ゲーム会社のエンジニアは「これまで困難だったブラウザゲームの高速化が実現できそう」と期待を寄せる。\n\n一方で、まだベータ版のため安定性に課題があるとの指摘もある。プロダクション環境での使用には慎重な検証が必要とされている。言語仕様の頻繁な変更により、初期のコードが動作しなくなるケースも報告されている。\n\n開発チームでは年内の正式リリースを目指しており、大手IT企業数社がスポンサーとして支援することも発表された。",
-      "likes": 2847,
-      "bads": 156,
-      "bookmarks": 943,
+      "content": "新技術が公開され、業界内で注目を集めている。詳細は今後の発表に期待が集まる。",
+      "likes": 100,
+      "bads": 5,
+      "bookmarks": 20,
       "comments": [
         {
-          "user": "nekochan_7",
-          "date": "6/19(木) 15:12",
-          "content": "WebAssemblyとの連携がすごい！早速試してみたいと思います。",
-          "likes": 234
+          "user": "user_001",
+          "date": "1/1(水) 10:00",
+          "content": "面白そうなニュースですね。",
+          "likes": 5
         },
         {
-          "user": "0xdeadbeef",
-          "date": "6/19(木) 15:45",
-          "content": "Rustほど複雑じゃなくて、Pythonより速いなら理想的ですね。ドキュメント充実を期待。",
-          "likes": 189
-        },
-        {
-          "user": "mikanjuice",
-          "date": "6/19(木) 16:03",
-          "content": "企業採用するにはまだ早いかな。1年後くらいに本格検討したいです。",
-          "likes": 67
-        },
-        {
-          "user": "8bitdreamer",
-          "date": "6/20(木) 16:28",
-          "content": "学習コストが低いなら、初心者にも良さそう！チュートリアルはありますか？",
-          "likes": 145
+          "user": "user_002",
+          "date": "1/1(水) 11:00",
+          "content": "今後に期待しています。",
+          "likes": 3
         }
       ],
       "relatedArticles": [
         {
-          "title": "WebAssembly市場が急成長、2025年は前年比300%の見込み",
-          "date": "9/18(水) 18:30",
-          "author": "市場調査部",
-          "likes": 892,
-          "bads": 45,
-          "replys": 234
+          "title": "関連ニュースA",
+          "date": "1/2(木) 12:00",
+          "author": "記者A",
+          "likes": 50,
+          "bads": 2,
+          "replys": 10
         },
         {
-          "title": "Rust言語の企業導入事例、メモリ安全性で選ばれる理由",
-          "date": "9/17(火) 12:15",
-          "author": "プログラミング言語研究会",
-          "likes": 1205,
-          "bads": 67,
-          "replys": 189
-        },
-        {
-          "title": "プログラマー転職市場で注目の技術スキル、新言語への対応力が鍵",
-          "date": "9/16(月) 09:45",
-          "author": "キャリアアドバイザー",
-          "likes": 734,
-          "bads": 23,
-          "replys": 145
-        },
-        {
-          "title": "オープンソース開発の収益化モデル、スポンサー制度の現状と課題",
-          "date": "9/15(日) 16:20",
-          "author": "OSS研究グループ",
-          "likes": 567,
-          "bads": 34,
-          "replys": 112
+          "title": "関連ニュースB",
+          "date": "1/3(金) 09:00",
+          "author": "記者B",
+          "likes": 30,
+          "bads": 1,
+          "replys": 5
         }
       ]
     },
-    "keywords": ["Nyahoo!ニュース", "プログラミング言語", "Zephyr", "WebAssembly", "オープンソース", "開発者"]
+    "keywords": ["サンプル", "ニュース", "技術", "開発", "話題"]
   }
 ]
