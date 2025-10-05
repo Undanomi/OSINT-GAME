@@ -366,7 +366,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * Enterキーで検索を実行（IME変換中は無視）
    */
   const handleHomePageSearch = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+    if (e.keyCode === 13 && !e.nativeEvent.isComposing) {
       performSearch(activeTab.searchQuery);
     }
   };
@@ -426,7 +426,7 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
    * URLかキーワードかを自動判定して適切な処理を実行
    */
   const handleUnifiedInputSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.nativeEvent.isComposing && activeTab.urlInput.trim()) {
+    if (e.keyCode === 13 && !e.nativeEvent.isComposing && activeTab.urlInput.trim()) {
       const input = activeTab.urlInput.trim();
 
       // URLかどうかを判定
@@ -711,19 +711,22 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
   const statusBar = `準備完了`;
 
   /**
-   * 現在のビューに応じてコンテンツをレンダリングする関数
+   * 指定されたタブのビューに応じてコンテンツをレンダリングする関数
    * ホーム、検索結果、カスタムページの表示を制御
    *
+   * @param tab - レンダリング対象のタブ
    * @returns JSX.Element - 表示するコンテンツ
    */
-  const renderContent = () => {
+  const renderContentForTab = (tab: BrowserTab) => {
+    const tabView = tab.history[tab.historyIndex];
+
     // 1. ホーム画面
-    if (currentView === VIEW_HOME) {
+    if (tabView === VIEW_HOME) {
       return (
         <GogglesHomePage
-          searchQuery={activeTab.searchQuery}
+          searchQuery={tab.searchQuery}
           onSearchQueryChange={(query) => updateActiveTab({ searchQuery: query })}
-          onSearch={() => performSearch(activeTab.searchQuery)}
+          onSearch={() => performSearch(tab.searchQuery)}
           onKeyPress={handleHomePageSearch}
           onNavigate={navigateTo}
         />
@@ -731,15 +734,15 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     }
 
     // 2. 検索結果画面
-    if (currentView === VIEW_SEARCH_RESULTS) {
+    if (tabView === VIEW_SEARCH_RESULTS) {
       return (
         <GogglesSearchResultsPage
-          searchResults={activeTab.searchResults}
-          currentPage={activeTab.currentPage}
+          searchResults={tab.searchResults}
+          currentPage={tab.currentPage}
           itemsPerPage={itemsPerPage}
           onResultClick={handleResultClick}
           onPageChange={(page) => updateActiveTab({ currentPage: page })}
-          suggestionInfo={activeTab.suggestionInfo}
+          suggestionInfo={tab.suggestionInfo}
           onSuggestionClick={handleSuggestionClick}
         />
       );
@@ -761,47 +764,53 @@ export const BrowserApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     // ドメイン失効チェック
     const checkDomainExpired = () => {
       const cache = firebaseCache.length > 0 ? firebaseCache : loadCacheFromLocalStorage();
-      const pageData = cache.find(item => item.url === currentView);
+      const pageData = cache.find(item => item.url === tabView);
       return pageData?.domainStatus === 'expired';
     };
 
     // ドメイン失効ページの表示（通常のエラーページを使用）
     if (checkDomainExpired()) {
-      return <ErrorPage url={currentView} />;
+      return <ErrorPage url={tabView} />;
     }
 
     // 動的コンポーネントが見つかった場合はそれを表示
-    if (activeTab.currentDynamicComponent) {
-      return activeTab.currentDynamicComponent;
+    if (tab.currentDynamicComponent) {
+      return tab.currentDynamicComponent;
     }
 
     // 静的ページが存在する場合はそれを表示
-    if (staticPages[currentView]) {
-      const page = staticPages[currentView];
-      return typeof page === 'function' ? page(currentView, navigateTo) : page;
+    if (staticPages[tabView]) {
+      const page = staticPages[tabView];
+      return typeof page === 'function' ? page(tabView, navigateTo) : page;
     }
 
     // Playback Machine URLの処理
-    if (currentView.includes('playback.archive')) {
+    if (tabView.includes('playback.archive')) {
       const page = staticPages['https://playback.archive'];
-      return typeof page === 'function' ? page(currentView, navigateTo) : page;
+      return typeof page === 'function' ? page(tabView, navigateTo) : page;
     }
 
     // URLが無効な場合はエラーページを表示
-    if (!isValidUrl(currentView)) {
-      return <ErrorPage url={currentView} />;
+    if (!isValidUrl(tabView)) {
+      return <ErrorPage url={tabView} />;
     }
 
     // それ以外はジェネリックページを表示
-    return <GenericPage url={currentView} />;
+    return <GenericPage url={tabView} />;
   };
 
   return (
     <BaseApp windowId={windowId} isActive={isActive} toolbar={toolbar} statusBar={statusBar}>
       <div className="relative h-full w-full bg-white overflow-hidden">
-        <div className="h-full w-full overflow-x-hidden overflow-y-auto">
-          {renderContent()}
-        </div>
+        {tabs.map((tab) => (
+          <div
+            key={tab.id}
+            className="h-full w-full overflow-x-hidden overflow-y-auto"
+            style={{ display: tab.id === activeTabId ? 'block' : 'none' }}
+          >
+            {renderContentForTab(tab)}
+          </div>
+        ))}
         {showFakeReload && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-100 z-100">
             <div className="flex items-center space-x-2">
