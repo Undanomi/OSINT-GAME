@@ -1,11 +1,12 @@
 # OSINT GAME
 ![title](./docs/img/title.png)
 
-[デモサイト](https://osint-game.vercel.app/)を公開しています。
+[デモサイト](https://osint-game.vercel.app/)と[ゲームクリア後の解説動画](https://youtu.be/DZABwppGMG8)を公開しています。
 
 ぜひ、OSINTの世界を体験してみてください！
 
-※本サイトは予告なくサービスを停止する場合があります。ご了承ください。
+※本サイトは予告なくサービスを停止する場合があります。
+また、サーバーの不調によりエラーが生じる場合がございますので、その際はお手数ですが一度ブラウザのリロードをお試しください。
 
 ## 目次
 - [OSINT GAME](#osint-game)
@@ -78,6 +79,7 @@ UN 頼みはシナリオの一例としてSNSを活用したOSINTとスピアフ
 | Yahoo!ニュース            | Nyahoo!ニュース                   |
 | Yahoo!知恵袋              | Nyahoo!無知袋                    |
 | Starbucks                | Skyducks                        |
+| タリーズコーヒー            | テリーズカフェ                    |
 | Weyback Machine          | Playback Machine                |
 
 詳細な解法は[公式Writeup](./docs/writeup.pdf)を参考にして下さい。
