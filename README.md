@@ -129,6 +129,8 @@ UN 頼みはシナリオの一例としてSNSを活用したOSINTとスピアフ
 バックエンドには Firebase サービス群（Auth・Firestore・Storage・Functions）と外部AI APIである Google Gemini 2.5 Flashを統合しています。
 ホスティングには Vercel を採用し、スケーラブルでデプロイ自動化された構成になっています。
 
+## デモサイトにおける画像について
+デモサイトで利用している画像は利用規約上問題のないことを確認した上で、生成AIサービスを利用して生成したものです。
 
 ## Contributing
 このプロジェクトはどんなContributingも歓迎します。
