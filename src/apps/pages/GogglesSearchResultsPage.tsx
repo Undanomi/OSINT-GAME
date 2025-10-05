@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { SearchResult } from '@/actions/searchResults';
+import { SuggestionInfo } from '@/apps/BrowserApp';
 
 interface GogglesSearchResultsPageProps {
   searchResults: SearchResult[];
@@ -8,6 +9,8 @@ interface GogglesSearchResultsPageProps {
   itemsPerPage: number;
   onResultClick: (url: string) => void;
   onPageChange: (page: number) => void;
+  suggestionInfo: SuggestionInfo;
+  onSuggestionClick: (suggestion: string) => void;
 }
 
 export const GogglesSearchResultsPage: React.FC<GogglesSearchResultsPageProps> = ({
@@ -16,6 +19,8 @@ export const GogglesSearchResultsPage: React.FC<GogglesSearchResultsPageProps> =
   itemsPerPage,
   onResultClick,
   onPageChange,
+  suggestionInfo,
+  onSuggestionClick,
 }) => {
   const topRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +51,30 @@ export const GogglesSearchResultsPage: React.FC<GogglesSearchResultsPageProps> =
 
   return (
     <div ref={topRef} className="p-4">
+      {/* 提案キーワードの表示 */}
+      {suggestionInfo && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
+          <p className="text-sm text-gray-700 mb-1">
+            <button
+              onClick={() => onSuggestionClick(suggestionInfo.suggested)}
+              className="text-blue-600 hover:underline font-medium"
+            >
+              {suggestionInfo.suggested}
+            </button>
+            <span className="font-medium">も含んだ検索結果を表示中</span>
+          </p>
+          <p className="text-sm text-gray-600">
+            <span className="font-medium">元のキーワード:</span>{' '}
+            <button
+              onClick={() => onSuggestionClick(suggestionInfo.original)}
+              className="text-blue-600 hover:underline font-medium"
+            >
+              {suggestionInfo.original}
+            </button>
+          </p>
+        </div>
+      )}
+
       {/* 検索結果の統計情報 */}
       {totalResults > 0 && (
         <div className="mb-4 pb-3 border-b">

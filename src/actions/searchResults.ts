@@ -21,6 +21,100 @@ export interface SearchResult {
 }
 
 /**
+ * 検索結果と提案を含むデータ構造
+ */
+export interface SearchResultsWithSuggestion {
+  /** 検索結果のリスト */
+  results: SearchResult[];
+  /** もしかしての提案キーワード（存在する場合） */
+  suggestion?: string;
+}
+
+/**
+ * よくある誤植とその提案の静的マッピング
+ */
+const SPELLING_SUGGESTIONS: Record<string, string> = {
+  // Facelook
+  'facelok': 'facelook',
+  'faceloook': 'facelook',
+  'facebook': 'facelook',
+  'facebok': 'facelook',
+  'faceboook': 'facelook',
+
+  // Goggles
+  'gogles': 'goggles',
+  'gogle': 'goggles',
+  'goggels': 'goggles',
+  'goggle': 'goggles',
+  'google': 'goggles',
+  'googles': 'goggles',
+
+  // RankedOn
+  'rankedin': 'rankedon',
+  'linkedin': 'rankedon',
+  'linkedon': 'rankedon',
+
+  // Playback Machine
+  'wayback': 'playback',
+
+  // Nyahoo
+  'yahoo': 'nyahoo',
+  'yahoo!': 'nyahoo',
+  'nyaho': 'nyahoo',
+  'nyahooo': 'nyahoo',
+  'nyaho!': 'nyahoo',
+  'nyahooo!': 'nyahoo',
+
+  // Chiita
+  'chitta': 'chiita',
+  'chiiita': 'chiita',
+  'qiita': 'chiita',
+  'qiiita': 'chiita',
+
+  // Usopedia
+  'wikipedia': 'usopedia',
+  'wiki' : 'usopedia',
+
+  // 日本語サービス名
+  'むち袋': '無知袋',
+  '無地袋': '無知袋',
+  '夕陽新聞': '夕日新聞',
+  'ゆうひ新聞': '夕日新聞',
+  '夕日しんぶん': '夕日新聞',
+};
+
+/**
+ * クエリに対する提案キーワードを取得する
+ * @param query - 検索クエリ
+ * @returns 提案キーワード（存在する場合）
+ */
+const getSpellingSuggestion = (query: string): string | undefined => {
+  const normalizedQuery = query.toLowerCase().trim();
+
+  // 完全一致チェック
+  if (SPELLING_SUGGESTIONS[normalizedQuery]) {
+    return SPELLING_SUGGESTIONS[normalizedQuery];
+  }
+
+  // 部分一致チェック（キーワードを含んでいるか）
+  // 最長一致を優先する
+  const sortedKeys = Object.keys(SPELLING_SUGGESTIONS).sort((a, b) => b.length - a.length);
+  for (const key of sortedKeys) {
+    if (normalizedQuery.includes(key)) {
+      const suggestion = SPELLING_SUGGESTIONS[key];
+      // 提案キーワードが既に元のクエリに含まれている場合はスキップ
+      if (normalizedQuery.includes(suggestion)) {
+        continue;
+      }
+      // 該当部分だけを置換した文字列を返す
+      return normalizedQuery.replace(key, suggestion);
+    }
+  }
+
+  return;
+};
+
+/**
  * Firebaseのsearch_resultsコレクションからデータを取得する
  */
 export const getSearchResults = ensureAuth(async (): Promise<UnifiedSearchResult[]> => {
@@ -42,28 +136,34 @@ export const getSearchResults = ensureAuth(async (): Promise<UnifiedSearchResult
  * キャッシュされたsearch_resultsに対して部分一致検索を実行する
  * 複数のキーワードをスペース、「AND」、「&」で区切って指定した場合、AND検索を実行する
  * @param cache - 検索対象のUnifiedSearchResultの配列
- * @param query - 検索クエリ（スペース、「AND」、「&」で区切って複数キーワード指定可能）
- * @returns Promise<SearchResult[]> - フィルタリングされた検索結果
+ * @param query - 検索クエリ（スペース、「OR」、「|」で区切って複数キーワード指定可能）
+ * @returns Promise<SearchResultsWithSuggestion> - フィルタリングされた検索結果と提案
  */
 export const filterSearchResults = async (
   cache: UnifiedSearchResult[],
   query: string
-): Promise<SearchResult[]> => {
+): Promise<SearchResultsWithSuggestion> => {
+  // クエリ全体に対してスペルチェックを行い、提案を取得
+  const suggestion = getSpellingSuggestion(query);
+
   // クエリを全角・半角スペース、「AND」、「&」で分割してキーワード配列を作成
   const keywords = query
     .split(/\s*(?:AND|&)\s*|[\s　]+/)  // AND、&（前後の空白含む）、またはスペースで分割
-    .map(k => k.toLowerCase().trim())
+    .map(k => k.trim())
     .filter(k => k.length > 0);
+
+  // 検索用に小文字化
+  const keywordsLower = keywords.map(k => k.toLowerCase());
 
   // Playback Machine関連の検索キーワード
   const playbackKeywords = ['playback', 'archive', 'アーカイブ', 'wayback', '過去', 'キャッシュ', 'cache'];
-  const isPlaybackSearch = keywords.some(keyword =>
+  const isPlaybackSearch = keywordsLower.some(keyword =>
     playbackKeywords.some(playbackKeyword => keyword.includes(playbackKeyword))
   );
 
   // Goggles Mail関連の検索キーワード
   const gogglesMailKeywords = ['goggles', 'mail', 'メール', 'ログイン', 'login', 'gmail', 'email'];
-  const isGogglesMailSearch = keywords.some(keyword =>
+  const isGogglesMailSearch = keywordsLower.some(keyword =>
     gogglesMailKeywords.some(gogglesMailKeyword => keyword.includes(gogglesMailKeyword))
   );
 
@@ -93,13 +193,13 @@ export const filterSearchResults = async (
   // キャッシュから部分一致で検索（expired状態のドメインは除外）
   // すべてのキーワードにマッチする結果を返す（AND検索）
   const filteredItems = cache.filter(item => {
-    // expired状態のドメインは検索結果から除外
-    if (item.domainStatus === 'expired') {
+    // expired・hidden状態のドメインは検索結果から除外
+    if (item.domainStatus === 'expired' || item.domainStatus === 'hidden') {
       return false;
     }
 
     // すべてのキーワードがマッチするかチェック（AND検索）
-    const allKeywordsMatch = keywords.every(keyword => {
+    const allKeywordsMatch = keywordsLower.every(keyword => {
       // キーワードフィールドでの部分一致
       const matchesKeywords = item.keywords?.some(k =>
         k.toLowerCase().includes(keyword)
@@ -132,7 +232,16 @@ export const filterSearchResults = async (
     [shuffledResults[i], shuffledResults[j]] = [shuffledResults[j], shuffledResults[i]];
   }
 
-  return shuffledResults;
+  console.log('検索結果:', shuffledResults);
+  console.log('検索結果数:', shuffledResults.length);
+  if (suggestion) {
+    console.log('提案キーワード:', suggestion);
+  }
+
+  return {
+    results: shuffledResults,
+    suggestion
+  };
 };
 
 /**

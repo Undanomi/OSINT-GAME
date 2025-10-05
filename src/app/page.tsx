@@ -36,8 +36,8 @@ export default function HomePage() {
     setGamePhase('scenario-selection');
   };
 
-  const handleScenarioSelect = (scenarioId: string) => {
-    setSelectedScenario(scenarioId); // gamePhase を 'scenario-loading' に設定
+  const handleScenarioSelect = (scenarioId: string, shouldReset?: boolean) => {
+    setSelectedScenario(scenarioId, shouldReset); // gamePhase を 'scenario-loading' に設定
   };
 
   const handleScenarioLoadingComplete = () => {
@@ -45,7 +45,7 @@ export default function HomePage() {
   };
 
   const handleMissionComplete = () => {
-    // ミッション完了後はゲーム画面に戻る
+    setGamePhase('scenario-selection');
   };
 
   const handleGameOverComplete = () => {
@@ -67,21 +67,35 @@ export default function HomePage() {
       return <ScenarioLoading onComplete={handleScenarioLoadingComplete} />;
 
     case 'game':
+      const TASKBAR_HEIGHT = 48; // タスクバーの高さを定義
+
       return (
-        <div className="w-full h-screen overflow-hidden relative">
-          {/* デスクトップ背景とアイコン */}
-          <Desktop />
+        // 画面全体を縦に分割するコンテナ (flex-col)
+        <div className="w-full h-screen overflow-hidden flex flex-col">
 
-          {/* 開いているウィンドウをすべて表示 */}
-          {windows.map((window) => (
-            <Window key={window.id} windowId={window.id} />
-          ))}
+          {/* 1. ウィンドウの移動境界となるエリア */}
+          <div
+            id="desktop-boundary"
+            className="relative flex-grow"
+          >
+            {/* デスクトップ背景とアイコン (境界エリアいっぱいに表示) */}
+            <div className="absolute inset-0">
+              <Desktop />
+            </div>
 
-          {/* タスクバー */}
-          <Taskbar />
+            {/* 開いているウィンドウをすべて表示 (境界エリア内に配置) */}
+            {windows.map((window) => (
+              <Window key={window.id} windowId={window.id} />
+            ))}
+            {/* 通知システム (境界エリア内に配置) */}
+            <NotificationSystem />
+          </div>
 
-          {/* 通知システム */}
-          <NotificationSystem />
+          {/* 2. タスクバー (移動境界の外に配置) */}
+          <div style={{ height: `${TASKBAR_HEIGHT}px`, flexShrink: 0 }}>
+            <Taskbar />
+          </div>
+
         </div>
       );
 

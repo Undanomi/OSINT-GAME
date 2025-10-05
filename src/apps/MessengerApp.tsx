@@ -181,110 +181,115 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
     setIsWaitingForAI(true);
     addMessageToState(userMessage);
 
-    // ユーザーメッセージ保存
-    await handleServerAction(
-      () => addMessage(selectedContact.id, {
-        id: messageId,
-        sender: 'user',
-        text: currentInput,
-        timestamp: userMessage.timestamp,
-      }),
-      async (error) => {
-        // エラーメッセージをFirestoreから取得
-        const errorType = error instanceof Error ? error.message as ErrorType : 'general';
-        const errorMessages = await handleServerAction(
-          () => getErrorMessage(selectedContact.type),
-          () => {}
-        );
-        const customErrorText = errorMessages?.[errorType];
+    try {
+      // ユーザーメッセージ保存
+      await handleServerAction(
+        () => addMessage(selectedContact.id, {
+          id: messageId,
+          sender: 'user',
+          text: currentInput,
+          timestamp: userMessage.timestamp,
+        }),
+        async (error) => {
+          // エラーメッセージをFirestoreから取得
+          const errorType = error instanceof Error ? error.message as ErrorType : 'general';
+          const errorMessages = await handleServerAction(
+            () => getErrorMessage(selectedContact.type),
+            () => {}
+          );
+          const customErrorText = errorMessages?.[errorType];
 
-        // Firestoreからの取得に失敗した場合はgeneral固定メッセージを使用
-        const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
+          // Firestoreからの取得に失敗した場合はgeneral固定メッセージを使用
+          const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
 
-        const errorTimestamp = new Date();
-        const errorMessage: UIMessage = {
-          id: generateTimestampId(errorTimestamp),
-          sender: 'other',
-          text: errorText,
-          time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-          timestamp: errorTimestamp,
-        };
-
-        // NPCエラーメッセージを保存・表示
-        await handleServerAction(
-          () => addMessage(selectedContact.id, {
-            id: errorMessage.id,
-            sender: 'npc',
+          const errorTimestamp = new Date();
+          const errorMessage: UIMessage = {
+            id: generateTimestampId(errorTimestamp),
+            sender: 'other',
             text: errorText,
-            timestamp: errorMessage.timestamp,
-          }),
-          () => {}
-        );
-        addMessageToState(errorMessage);
-      }
-    );
+            time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+            timestamp: errorTimestamp,
+          };
 
-    // AI応答生成
-    const aiText = await handleServerAction(
-      () => generateAIResponse(currentInput, messages, selectedContact.type),
-      async (error) => {
-        // エラーメッセージをFirestoreから取得
-        const errorType = error instanceof Error ? error.message as ErrorType : 'general';
-        const errorMessages = await handleServerAction(
-          () => getErrorMessage(selectedContact.type),
-          () => {}
-        );
-        const customErrorText = errorMessages?.[errorType];
+          // NPCエラーメッセージを保存・表示
+          await handleServerAction(
+            () => addMessage(selectedContact.id, {
+              id: errorMessage.id,
+              sender: 'npc',
+              text: errorText,
+              timestamp: errorMessage.timestamp,
+            }),
+            () => {}
+          );
+          addMessageToState(errorMessage);
+        }
+      );
 
-        // Firestoreからの取得に失敗した場合はgeneral固定メッセージを使用
-        const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
+      // AI応答生成
+      const aiText = await handleServerAction(
+        () => generateAIResponse(currentInput, messages, selectedContact.type),
+        async (error) => {
+          // エラーメッセージをFirestoreから取得
+          const errorType = error instanceof Error ? error.message as ErrorType : 'general';
+          const errorMessages = await handleServerAction(
+            () => getErrorMessage(selectedContact.type),
+            () => {}
+          );
+          const customErrorText = errorMessages?.[errorType];
 
-        const errorTimestamp = new Date();
-        const errorMessage: UIMessage = {
-          id: generateTimestampId(errorTimestamp),
-          sender: 'other',
-          text: errorText,
-          time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-          timestamp: errorTimestamp,
-        };
+          // Firestoreからの取得に失敗した場合はgeneral固定メッセージを使用
+          const errorText = customErrorText || "通信エラーが発生しました。しばらく待ってから再試行してください。";
 
-        // NPCエラーメッセージを保存・表示
-        await handleServerAction(
-          () => addMessage(selectedContact.id, {
-            id: errorMessage.id,
-            sender: 'npc',
+          const errorTimestamp = new Date();
+          const errorMessage: UIMessage = {
+            id: generateTimestampId(errorTimestamp),
+            sender: 'other',
             text: errorText,
-            timestamp: errorMessage.timestamp,
-          }),
-          () => {}
-        );
-        addMessageToState(errorMessage);
-      }
-    );
+            time: errorTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+            timestamp: errorTimestamp,
+          };
 
-    const aiTimestamp = new Date();
-    const aiMessageId = generateTimestampId(aiTimestamp);
-    const aiMessage: UIMessage = {
-      id: aiMessageId,
-      sender: 'other',
-      text: aiText,
-      time: aiTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-      timestamp: aiTimestamp,
-    };
+          // NPCエラーメッセージを保存・表示
+          await handleServerAction(
+            () => addMessage(selectedContact.id, {
+              id: errorMessage.id,
+              sender: 'npc',
+              text: errorText,
+              timestamp: errorMessage.timestamp,
+            }),
+            () => {}
+          );
+          addMessageToState(errorMessage);
+        }
+      );
 
-    // AI応答保存
-    await handleServerAction(
-      () => addMessage(selectedContact.id, {
+      const aiTimestamp = new Date();
+      const aiMessageId = generateTimestampId(aiTimestamp);
+      const aiMessage: UIMessage = {
         id: aiMessageId,
-        sender: 'npc',
+        sender: 'other',
         text: aiText,
-        timestamp: aiMessage.timestamp,
-      }),
-      () => {}
-    );
-    addMessageToState(aiMessage);
+        time: aiTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: aiTimestamp,
+      };
 
-    setIsWaitingForAI(false);
+      // AI応答保存
+      await handleServerAction(
+        () => addMessage(selectedContact.id, {
+          id: aiMessageId,
+          sender: 'npc',
+          text: aiText,
+          timestamp: aiMessage.timestamp,
+        }),
+        () => {}
+      );
+      addMessageToState(aiMessage);
+
+    } catch (e) {
+      console.error('Error in handleSendMessage:', e);
+    } finally {
+      setIsWaitingForAI(false);
+    }
   }, [inputText, selectedContact, user, submissionState, submissionQuestions, addMessageToState, addTemporaryMessage, startSubmissionMode, addSubmissionAnswer, setSubmissionQuestion, setSubmissionResult, completeSubmission, messages, isWaitingForAI]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -350,6 +355,17 @@ export const MessengerApp: React.FC<AppProps> = ({ windowId, isActive }) => {
                 </div>
               </div>
             ))}
+            {isWaitingForAI && (
+              <div className="flex justify-start">
+                <div className="max-w-md px-4 py-2.5 rounded-2xl text-sm bg-gradient-to-br from-blue-950/80 to-blue-900/60 text-gray-100 shadow-lg shadow-blue-900/20">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <div className="p-4 bg-[#2a2d35] border-t border-blue-900/20">
             <div className="flex items-end space-x-2">

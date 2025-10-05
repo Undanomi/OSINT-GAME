@@ -1,8 +1,54 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Source_Code_Pro } from 'next/font/google';
+import { ref, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/lib/firebase';
+
+// Load Source Code Pro font for code blocks and inline code
+const sourceCodePro = Source_Code_Pro({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+});
+
+/**
+ * Firebase Storage Image Component
+ * Converts gs:// URLs to HTTPS URLs
+ */
+const FirebaseStorageImage: React.FC<{ gsUrl: string; alt: string; className: string }> = ({ gsUrl, alt, className }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const convertUrl = async () => {
+      try {
+        const url = await getDownloadURL(ref(storage, gsUrl));
+        setImageUrl(url);
+      } catch (err) {
+        console.error('Failed to load image from Firebase Storage:', err);
+        setError(true);
+      }
+    };
+
+    convertUrl();
+  }, [gsUrl]);
+
+  if (error) {
+    return React.createElement('span', { className: 'text-red-500 text-xs' }, `[画像読み込みエラー: ${alt}]`);
+  }
+
+  if (!imageUrl) {
+    return React.createElement('span', { className: 'text-gray-400 text-xs' }, '[画像読み込み中...]');
+  }
+
+  return React.createElement('img', {
+    src: imageUrl,
+    alt,
+    className
+  });
+};
 
 /**
  * Parse markdown text and return React nodes
- * Supports tables, code blocks, lists, bold, italic, inline code, and line breaks
+ * Supports tables, code blocks, lists, bold, italic, underline, inline code, images, and line breaks
  */
 export const parseMarkdown = (text: string): React.ReactNode => {
   if (!text) return null;
@@ -23,6 +69,11 @@ export const parseMarkdown = (text: string): React.ReactNode => {
     }
   }
 
+  // Check for headings(#, ##, ###, etc.)
+  if (hasHeadingPattern(text)) {
+    return parseWithHeadings(text);
+  }
+
   // Check for code blocks
   if (text.includes('```')) {
     return parseCodeBlocks(text);
@@ -38,6 +89,18 @@ export const parseMarkdown = (text: string): React.ReactNode => {
 };
 
 /**
+ * Check if text contains heading patterns
+ */
+const hasHeadingPattern = (text: string): boolean => {
+  const lines = text.trim().split('\n');
+  return lines.some(line => {
+    const trimmed = line.trim();
+    // Headings: #, ##, ###, ####, etc.
+    return /^#{1,6}\s/.test(trimmed);
+  });
+};
+
+/**
  * Check if text contains list patterns
  */
 const hasListPattern = (text: string): boolean => {
@@ -50,6 +113,71 @@ const hasListPattern = (text: string): boolean => {
     if (/^\d+\.\s/.test(trimmed)) return true;
     return false;
   });
+};
+
+/**
+ * Parse content with headings
+ */
+const parseWithHeadings = (text: string): React.ReactNode => {
+  const lines = text.trim().split('\n');
+  const result: React.ReactNode[] = [];
+  let nonHeadingLines: string[] = [];
+  let key = 0;
+
+  const flushNonHeadingLines = () => {
+    if (nonHeadingLines.length > 0) {
+      const content = nonHeadingLines.join('\n').trim();
+      if (content) {
+        // Recursively parse the non-heading content for other markdown
+        const parsed = parseMarkdown(content);
+        result.push(
+          React.createElement('div', { key: `content-${key++}` }, parsed)
+        );
+      }
+      nonHeadingLines = [];
+    }
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+
+    if (headingMatch) {
+      // Flush any accumulated non-heading content
+      flushNonHeadingLines();
+
+      // Create heading element
+      const level = headingMatch[1].length;
+      const headingText = headingMatch[2];
+      const headingTag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+
+      // Apply appropriate styling based on heading level
+      const headingClasses = {
+        h1: 'text-xl font-bold text-gray-900 mt-5 mb-3',
+        h2: 'text-lg font-bold text-gray-900 mt-4 mb-2',
+        h3: 'text-base font-semibold text-gray-900 mt-3 mb-2',
+        h4: 'text-sm font-semibold text-gray-800 mt-3 mb-1',
+        h5: 'text-sm font-semibold text-gray-800 mt-2 mb-1',
+        h6: 'text-xs font-semibold text-gray-700 mt-2 mb-1',
+      };
+
+      result.push(
+        React.createElement(
+          headingTag,
+          { key: `heading-${key++}`, className: headingClasses[headingTag] },
+          parseInlineMarkdownSingleLine(headingText)
+        )
+      );
+    } else {
+      // Accumulate non-heading content
+      nonHeadingLines.push(line);
+    }
+  }
+
+  // Flush any remaining non-heading content
+  flushNonHeadingLines();
+
+  return React.createElement(React.Fragment, null, ...result);
 };
 
 /**
@@ -88,7 +216,7 @@ const parseListContent = (text: string): React.ReactNode => {
         currentList.items.map((item, index) =>
           React.createElement(
             'li',
-            { key: index, className: 'text-gray-800' },
+            { key: index, className: 'text-gray-700' },
             parseInlineMarkdown(item)
           )
         )
@@ -152,13 +280,13 @@ export const parseMarkdownTable = (text: string): React.ReactNode => {
 
   return React.createElement(
     'div',
-    { className: 'overflow-x-auto' },
+    { className: 'overflow-x-auto my-4' },
     React.createElement(
       'table',
-      { className: 'min-w-full divide-y divide-gray-200 border border-gray-300' },
+      { className: 'min-w-full divide-y divide-gray-300 border border-gray-300' },
       React.createElement(
         'thead',
-        { className: 'bg-gray-50' },
+        { className: 'bg-gray-100' },
         React.createElement(
           'tr',
           null,
@@ -167,7 +295,7 @@ export const parseMarkdownTable = (text: string): React.ReactNode => {
               'th',
               {
                 key: index,
-                className: 'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 last:border-r-0'
+                className: 'px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 last:border-r-0'
               },
               parseInlineMarkdown(header)
             )
@@ -189,7 +317,7 @@ export const parseMarkdownTable = (text: string): React.ReactNode => {
                 'td',
                 {
                   key: cellIndex,
-                  className: 'px-4 py-2 text-sm text-gray-900 border-r border-gray-200 last:border-r-0'
+                  className: 'px-4 py-2 text-sm text-gray-800 border-r border-gray-200 last:border-r-0'
                 },
                 parseInlineMarkdown(cell)
               )
@@ -231,16 +359,26 @@ export const parseCodeBlocks = (text: string): React.ReactNode => {
     parts.push(
       React.createElement(
         'div',
-        { key: `code-${key++}`, className: 'my-2' },
+        { key: `code-${key++}`, className: 'bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm mt-4' },
         React.createElement(
           'div',
-          { className: 'bg-gray-100 text-gray-600 text-xs px-3 py-1 border-b' },
-          language
+          { className: 'bg-gray-100 px-3 py-1.5 border-b border-gray-300 flex items-center justify-between' },
+          React.createElement(
+            'span',
+            { className: 'text-xs text-gray-600 font-mono' },
+            language
+          )
         ),
         React.createElement(
           'pre',
-          { className: 'bg-gray-900 text-green-400 p-4 rounded-b-lg overflow-x-auto' },
-          React.createElement('code', null, code)
+          { className: `p-3 overflow-x-auto bg-gray-50 ${sourceCodePro.className}` },
+          React.createElement(
+            'code',
+            {
+              className: 'text-xs text-gray-800'
+            },
+            code
+          )
         )
       )
     );
@@ -266,7 +404,7 @@ export const parseCodeBlocks = (text: string): React.ReactNode => {
 
 /**
  * Parse inline markdown formatting
- * Supports: **bold**, *italic*, `code`, and paragraphs
+ * Supports: **bold**, *italic*, __underline__, `code`, (image名前)[url], and paragraphs
  */
 export const parseInlineMarkdown = (text: string): React.ReactNode => {
   if (!text) return null;
@@ -323,7 +461,7 @@ const parseInlineMarkdownLines = (text: string): React.ReactNode => {
 
 /**
  * Parse inline markdown formatting for a single line
- * Supports: **bold**, *italic*, `code`
+ * Supports: **bold**, *italic*, `code`, __underline__, (image名前)[url]
  */
 const parseInlineMarkdownSingleLine = (text: string): React.ReactNode => {
   if (!text) return null;
@@ -332,7 +470,8 @@ const parseInlineMarkdownSingleLine = (text: string): React.ReactNode => {
   let key = 0;
 
   // Combined regex for all markdown patterns - optimized for performance
-  const markdownRegex = /(\*\*([^*]+)\*\*)|(\*([^*]+)\*)|(`([^`]+)`)/g;
+  // Added: __(text)__ for underline, (image...)[url] for images
+  const markdownRegex = /(\*\*([^*]+)\*\*)|(__([^_]+)__)|(\*([^*]+)\*)|(`([^`]+)`)|(\(image([^)]+)\)\[([^\]]+)\])/g;
   let lastIndex = 0;
   let match;
 
@@ -347,20 +486,55 @@ const parseInlineMarkdownSingleLine = (text: string): React.ReactNode => {
       // Bold (**text**)
       parts.push(React.createElement('strong', { key: key++ }, match[2]));
     } else if (match[3]) {
-      // Italic (*text*)
-      parts.push(React.createElement('em', { key: key++ }, match[4]));
+      // Underline (__text__)
+      parts.push(
+        React.createElement(
+          'u',
+          { key: key++, className: 'underline decoration-1' },
+          match[4]
+        )
+      );
     } else if (match[5]) {
+      // Italic (*text*)
+      parts.push(React.createElement('em', { key: key++ }, match[6]));
+    } else if (match[7]) {
       // Code (`text`)
       parts.push(
         React.createElement(
           'code',
           {
             key: key++,
-            className: 'bg-gray-100 px-1 py-0.5 rounded text-sm font-mono'
+            className: `bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-xs border border-gray-200 ${sourceCodePro.className}`
           },
-          match[6]
+          match[8]
         )
       );
+    } else if (match[9]) {
+      // Image: (image名前)[url]
+      const imageName = match[10];
+      const url = match[11];
+
+      // gs://から始まる場合はFirebaseStorageImageコンポーネントを使用
+      if (url.startsWith('gs://')) {
+        parts.push(
+          React.createElement(FirebaseStorageImage, {
+            key: key++,
+            gsUrl: url,
+            alt: imageName,
+            className: 'inline-block max-w-full h-auto my-2 rounded border border-gray-200'
+          })
+        );
+      } else {
+        // 通常のHTTP/HTTPS URLの場合は直接imgタグを生成
+        parts.push(
+          React.createElement('img', {
+            key: key++,
+            src: url,
+            alt: imageName,
+            className: 'inline-block max-w-full h-auto my-2 rounded border border-gray-200'
+          })
+        );
+      }
     }
 
     lastIndex = match.index + match[0].length;

@@ -7,7 +7,8 @@ import {
   UISocialDMMessage,
   SocialNPC,
   SocialAccount,
-  SocialStore as SocialStoreType
+  SocialStore as SocialStoreType,
+  RelationshipHistoryWithMessage
 } from '@/types/social';
 
 interface SocialStore extends SocialStoreType {
@@ -26,6 +27,7 @@ interface SocialStore extends SocialStoreType {
   setMessages: (accountId: string, contactId: string, messages: UISocialDMMessage[], hasMore: boolean) => void;
   appendMessages: (accountId: string, contactId: string, messages: UISocialDMMessage[], hasMore: boolean) => void;
   addMessage: (accountId: string, contactId: string, message: UISocialDMMessage) => void;
+  setRelationshipHistory: (accountId: string, contactId: string, history: RelationshipHistoryWithMessage[]) => void;
 
   // ユーティリティ
   clearAllData: () => void;
@@ -44,6 +46,7 @@ export const useSocialStore = create<SocialStore>()((set) => ({
       socialNPCPosts: null,
       contacts: {},
       messages: {},
+      relationshipHistories: {},
 
       // タイムライン管理
       setTimeline: (posts, hasMore) => {
@@ -253,6 +256,18 @@ export const useSocialStore = create<SocialStore>()((set) => ({
         });
       },
 
+      // 関係性履歴管理
+      setRelationshipHistory: (accountId, contactId, history) => {
+        set((state) => ({
+          relationshipHistories: {
+            ...state.relationshipHistories,
+            [`${accountId}_${contactId}`]: {
+              history,
+              timestamp: Date.now()
+            }
+          }
+        }));
+      },
 
       // ユーティリティ
       clearAllData: () => {
@@ -265,6 +280,7 @@ export const useSocialStore = create<SocialStore>()((set) => ({
           socialNPCPosts: null,
           contacts: {},
           messages: {},
+          relationshipHistories: {},
         });
       },
 
@@ -275,7 +291,7 @@ export const useSocialStore = create<SocialStore>()((set) => ({
           // アカウント固有のデータを削除
           delete newState.accountPosts[accountId];
 
-          // 連絡先とメッセージからアカウント関連のキーを削除
+          // 連絡先とメッセージと関係性履歴からアカウント関連のキーを削除
           Object.keys(newState.contacts).forEach(key => {
             if (key === accountId) {
               delete newState.contacts[key];
@@ -285,6 +301,12 @@ export const useSocialStore = create<SocialStore>()((set) => ({
           Object.keys(newState.messages).forEach(key => {
             if (key.startsWith(`${accountId}_`)) {
               delete newState.messages[key];
+            }
+          });
+
+          Object.keys(newState.relationshipHistories).forEach(key => {
+            if (key.startsWith(`${accountId}_`)) {
+              delete newState.relationshipHistories[key];
             }
           });
 
