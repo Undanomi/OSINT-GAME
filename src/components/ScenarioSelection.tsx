@@ -90,12 +90,14 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [showStartConfirmDialog, setShowStartConfirmDialog] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
+  const [loadingScenarioId, setLoadingScenarioId] = useState<string | null>(null);
   const isProcessingRef = useRef(false);
 
   const handleScenarioClick = async (scenario: Scenario) => {
     if (isProcessingRef.current) return;
     console.log('Scenario clicked:', scenario.id);
     isProcessingRef.current = true;
+    setLoadingScenarioId(scenario.id);
 
     try {
       if (!scenario.isImplemented) {
@@ -121,6 +123,7 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
       }
     } finally {
       isProcessingRef.current = false;
+      setLoadingScenarioId(null);
     }
   };
 
@@ -258,6 +261,7 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
           {scenarios.map((scenario) => {
             const IconComponent = scenario.icon;
             const isDisabled = !scenario.isImplemented;
+            const isLoading = loadingScenarioId === scenario.id;
 
             return (
               <div
@@ -306,10 +310,19 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
                         推定時間: {scenario.estimatedTime}
                       </span>
                       <div className="flex items-center space-x-2 text-white">
-                        <Play size={16} />
-                        <span className="text-sm">
-                          {scenario.isImplemented ? '開始' : 'Coming Soon'}
-                        </span>
+                        {isLoading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span className="text-sm">読み込み中...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play size={16} />
+                            <span className="text-sm">
+                              {scenario.isImplemented ? '開始' : 'Coming Soon'}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
