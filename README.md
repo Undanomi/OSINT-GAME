@@ -1,7 +1,7 @@
 # OSINT GAME
 ![title](./docs/img/title.png)
 
-[デモサイト](https://osint-game.vercel.app/)と[ゲームクリア後の解説動画](https://youtu.be/DZABwppGMG8)を公開しています。
+[デモサイト](https://osint-game.vercel.app/)とゲームクリア後にゲーム内で閲覧できる[解説動画](https://youtu.be/DZABwppGMG8)を公開しています。
 
 ぜひ、OSINTの世界を体験してみてください！
 
