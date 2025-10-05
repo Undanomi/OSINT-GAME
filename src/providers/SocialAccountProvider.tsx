@@ -134,7 +134,11 @@ export function SocialAccountProvider({ children }: { children: React.ReactNode 
       () => updateSocialAccount(accountId, updates),
       (error) => {
         console.error('Failed to update account:', error);
-        setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
+        if (error.message.includes('accountDuplicate')) {
+          setError("そのIDは使用できません。別のIDを入力してください。");
+        } else {
+          setError("アカウントの処理に失敗しました。しばらく待ってから再試行してください。");
+        }
         throw error;
       }
     );

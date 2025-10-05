@@ -503,7 +503,11 @@ export const useSocial = (
         () => updateAccount(activeAccount.id, profileData),
         (error) => {
           console.error('Failed to update profile:', error);
-          setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+          if (error.message === 'accountDuplicate') {
+            setError("そのアカウントIDは既に使用されています。別のIDを選択してください。");
+          } else {
+            setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+          }
         }
       );
     } else {
@@ -512,7 +516,11 @@ export const useSocial = (
         () => updateSocialAccount(activeAccount.id, profileData),
         (error) => {
           console.error('Failed to update profile:', error);
-          setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+          if (error.message === 'accountDuplicate') {
+            setError("そのアカウントIDは既に使用されています。別のIDを選択してください。");
+          } else {
+            setError("データの読み込みに失敗しました。しばらく待ってから再試行してください。");
+          }
         }
       );
     }
