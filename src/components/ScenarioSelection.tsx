@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Play, FileText, Search, MapPin, Globe } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Play, FileText, Search, MapPin, Globe, X } from 'lucide-react';
 import { checkUserDataExists } from '@/actions/user';
 import { handleServerAction } from '@/utils/handleServerAction';
 
@@ -88,33 +88,40 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [comingSoonScenario, setComingSoonScenario] = useState<string>('');
   const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showStartConfirmDialog, setShowStartConfirmDialog] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
+  const isProcessingRef = useRef(false);
 
   const handleScenarioClick = async (scenario: Scenario) => {
-    if (!scenario.isImplemented) {
-      setComingSoonScenario(scenario.title);
-      setShowComingSoon(true);
-      setTimeout(() => {
-        setShowComingSoon(false);
-      }, 3000);
-      return;
-    }
+    if (isProcessingRef.current) return;
+    console.log('Scenario clicked:', scenario.id);
+    isProcessingRef.current = true;
 
-    // ユーザーデータの存在をチェック
-    const hasData = await handleServerAction(
-      () => checkUserDataExists(scenario.id),
-      (error) => console.error('Failed to check user data:', error)
-    );
+    try {
+      if (!scenario.isImplemented) {
+        setComingSoonScenario(scenario.title);
+        setShowComingSoon(true);
+        return;
+      }
 
-    if (hasData) {
-      // データが存在する場合は進行状況確認ダイアログを表示
+      // ユーザーデータの存在をチェック
+      const hasData = await handleServerAction(
+        () => checkUserDataExists(scenario.id),
+        (error) => console.error('Failed to check user data:', error)
+      );
+
       setSelectedScenario(scenario);
-      setShowProgressDialog(true);
-      return;
-    }
 
-    // データが存在しない場合はそのままシナリオを開始（リセット不要）
-    onScenarioSelect(scenario.id, false);
+      if (hasData) {
+        // 進行状況確認ダイアログを表示
+        setShowProgressDialog(true);
+      } else {
+        // 開始確認ダイアログを表示
+        setShowStartConfirmDialog(true);
+      }
+    } finally {
+      isProcessingRef.current = false;
+    }
   };
 
   const handleScenarioStart = (shouldReset: boolean) => {
@@ -129,8 +136,20 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
     setSelectedScenario(null);
   };
 
+  const handleConfirmStart = () => {
+    setShowStartConfirmDialog(false);
+    if (selectedScenario) {
+      onScenarioSelect(selectedScenario.id, false);
+    }
+  };
+
+  const handleCancelStartDialog = () => {
+    setShowStartConfirmDialog(false);
+    setSelectedScenario(null);
+  };
+
   return (
-    <div className="w-screen h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 overflow-y-auto overflow-x-hidden relative">
+    <div className="w-screen h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 overflow-hidden relative">
       {/* 背景アニメーション */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute w-96 h-96 rounded-full bg-blue-500 blur-3xl -top-48 -left-48 animate-pulse"></div>
@@ -140,7 +159,14 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
       {/* Coming Soon モーダル */}
       {showComingSoon && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-8 max-w-md mx-4 text-center border border-gray-700">
+          <div className="bg-gray-900 rounded-lg p-8 max-w-md mx-4 text-center border border-gray-700 relative">
+            <button
+              onClick={() => setShowComingSoon(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              aria-label="閉じる"
+            >
+              <X size={24} />
+            </button>
             <h3 className="text-2xl font-bold text-white mb-4">Coming Soon!</h3>
             <p className="text-cyan-300 mb-4">
               「{comingSoonScenario}」は現在開発中です。
@@ -186,6 +212,32 @@ export const ScenarioSelection: React.FC<ScenarioSelectionProps> = ({ onScenario
             <p className="text-yellow-300 text-xs">
               最初からやり直すとすべてのプレイデータが削除されます
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* 開始確認ダイアログ */}
+      {showStartConfirmDialog && selectedScenario && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-8 max-w-md mx-4 text-center border border-gray-700">
+            <h3 className="text-2xl font-bold text-white mb-4">シナリオの開始</h3>
+            <p className="text-cyan-300 mb-6">
+              「{selectedScenario.title}」を開始しますか？
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleConfirmStart}
+                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+              >
+                開始する
+              </button>
+              <button
+                onClick={handleCancelStartDialog}
+                className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors"
+              >
+                キャンセル
+              </button>
+            </div>
           </div>
         </div>
       )}
